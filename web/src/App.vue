@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { api } from './api.js'
 import { dict } from './i18n.js'
 import { passkeySupported } from './passkey.js'
-import Dial from './components/Dial.vue'
 import SevChip from './components/SevChip.vue'
 import Segmented from './components/Segmented.vue'
 import FindingRow from './components/FindingRow.vue'
@@ -134,7 +133,13 @@ const groups = computed(() => {
   }
   return [...by.values()].sort((a, b) => sevOrder.indexOf(a.first.severity) - sevOrder.indexOf(b.first.severity))
 })
-const sections = computed(() => sevOrder.map(sev => ({ sev, groups: groups.value.filter(g => g.first.severity === sev) })).filter(x => x.groups.length))
+// On "All", the most important group becomes the single "next step" card.
+const nextGroup = computed(() => (cat.value === 'all' ? groups.value[0] || null : null))
+const listGroups = computed(() => (nextGroup.value ? groups.value.slice(1) : groups.value))
+const sections = computed(() => sevOrder.map(sev => ({ sev, groups: listGroups.value.filter(g => g.first.severity === sev) })).filter(x => x.groups.length))
+const nextOpen = ref(false)
+const scoreColor = computed(() => { const sc = data.value?.scan.score ?? 0; return sc >= 75 ? 'var(--color-ok)' : sc >= 50 ? 'var(--color-med)' : 'var(--color-crit)' })
+const RING = 2 * Math.PI * 30
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
 // Points earned by fixing every safe item (each rule counts once).
 const safeGain = computed(() => { const seen = {}; for (const f of safeFixes.value) seen[f.rule_id] = f.gain || 0; return Object.values(seen).reduce((a, b) => a + b, 0) })
@@ -229,27 +234,33 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
       </div>
     </header>
 
-    <div class="mx-auto grid max-w-[1280px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[320px_1fr]">
+    <div class="mx-auto grid max-w-[1280px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[290px_1fr]">
       <!-- left: score, counts, groups -->
       <aside class="grid content-start gap-5">
-        <section class="panel p-5">
-          <Dial :score="data?.scan.score ?? 0" :label="t.score" />
-          <p class="mt-3 text-center text-[15px] font-semibold">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
-          <div class="mt-4 grid grid-cols-2 gap-2.5">
-            <div class="rounded-xl border border-line bg-crit-bg px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-crit">{{ sevCounts.critical || 0 }}</b><span class="caps">{{ t.statsCritical }}</span></div>
-            <div class="rounded-xl border border-line bg-high-bg px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-high">{{ sevCounts.high || 0 }}</b><span class="caps">{{ t.statsHigh }}</span></div>
-            <div class="rounded-xl border border-line px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-med">{{ sevCounts.medium || 0 }}</b><span class="caps">{{ t.statsMedium }}</span></div>
-            <div class="rounded-xl border border-line px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-ok">{{ passedN }}<span class="text-[14px] font-semibold text-muted">/{{ data?.scan.checked || 0 }}</span></b><span class="caps">{{ t.statsPassed }}</span></div>
-          </div>
-          <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
-            <div class="grid grid-cols-2 gap-2">
-              <button class="inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2.5 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
-                <svg :class="busy ? 'animate-spin' : ''" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                {{ busy ? t.scanning : t.rescan }}
-              </button>
-              <button class="rounded-xl border border-line bg-panel2 px-3 py-2.5 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
+        <section class="panel grid gap-4 p-5">
+          <div class="flex items-center gap-4">
+            <svg width="76" height="76" viewBox="0 0 76 76" role="img" :aria-label="`${t.score}: ${data?.scan.score ?? 0}/100`">
+              <circle cx="38" cy="38" r="30" fill="none" stroke="var(--color-line)" stroke-width="7" />
+              <circle cx="38" cy="38" r="30" fill="none" :stroke="scoreColor" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${(RING * Math.max(data?.scan.score ?? 0, 1)) / 100} ${RING}`" transform="rotate(-90 38 38)" class="transition-all duration-700" />
+              <text x="38" y="44" text-anchor="middle" font-size="21" font-weight="800" :fill="scoreColor" font-family="Plus Jakarta Sans, sans-serif">{{ data?.scan.score ?? 0 }}</text>
+            </svg>
+            <div class="min-w-0">
+              <div class="caps">{{ t.score }}</div>
+              <p class="mt-0.5 text-[15px] leading-snug font-semibold">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
             </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[13px] text-muted"><span>{{ t.passedOf(passedN, data?.scan.checked || 0) }}</span><span class="num">{{ data?.scan.checked ? Math.round((passedN / data.scan.checked) * 100) : 0 }}%</span></div>
+            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-ok transition-[width] duration-700" :style="{ width: (data?.scan.checked ? (passedN / data.scan.checked) * 100 : 0) + '%' }" /></div>
+          </div>
+          <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
+              <svg :class="busy ? 'animate-spin' : ''" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              {{ busy ? t.scanning : t.rescan }}
+            </button>
+            <button class="rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
           </div>
         </section>
 
@@ -339,7 +350,31 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
 
         <!-- issues -->
         <div v-else>
-          <p v-if="data && !groups.length" class="px-5 py-10 text-center text-muted">{{ t.noIssues }}</p>
+          <p v-if="data && !groups.length && cat !== 'all'" class="px-5 py-10 text-center text-muted">{{ t.noIssues }}</p>
+          <p v-if="data && !groups.length && cat === 'all'" class="mx-5 my-6 rounded-xl bg-ok-bg px-5 py-4 text-center text-[15px] font-semibold text-ok">{{ t.allClear }}</p>
+          <article v-if="nextGroup" class="m-3 mb-1 grid gap-3 rounded-2xl p-5 ring-1"
+            :class="{ critical: 'bg-crit-bg ring-crit/30', high: 'bg-high-bg ring-high/25', medium: 'bg-med-bg ring-med/25', low: 'bg-low-bg ring-low/25', info: 'bg-info-bg ring-line' }[nextGroup.first.severity]">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="caps" :class="{ critical: '!text-crit', high: '!text-high', medium: '!text-med', low: '!text-low', info: '' }[nextGroup.first.severity]">{{ t.nextUp }} · {{ t.sev[nextGroup.first.severity] }}</span>
+              <span v-if="nextGroup.first.gain" class="num ml-auto text-[13.5px] font-bold text-ok">{{ t.gain(nextGroup.first.gain) }}</span>
+            </div>
+            <h2 class="text-[21px] leading-snug font-extrabold tracking-tight">{{ nextGroup.first.title.split(': ')[0] }}</h2>
+            <p class="max-w-[72ch] text-[15px] leading-relaxed text-fg/85">{{ nextGroup.first.explain }}</p>
+            <div class="rounded-xl bg-panel/70 px-4 py-3 ring-1 ring-line">
+              <div class="caps mb-1">{{ t.howLabel }}</div>
+              <div v-if="nextGroup.first.plan" class="font-mono text-[13.5px]">{{ nextGroup.first.plan.map(p => '$ ' + p).join('\n') }}</div>
+              <p v-else class="text-[14.5px] leading-relaxed">{{ nextGroup.first.fix }}</p>
+            </div>
+            <ul v-if="nextOpen" class="grid max-h-60 gap-1 overflow-y-auto rounded-xl bg-panel/70 px-4 py-3 font-mono text-[12.5px] text-muted ring-1 ring-line">
+              <li v-for="x in [nextGroup.first, ...nextGroup.rest]" :key="x.key" class="break-all">{{ x.title.includes(': ') ? x.title.slice(x.title.indexOf(': ') + 2) : x.title }}</li>
+            </ul>
+            <div class="flex flex-wrap items-center gap-2">
+              <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>
+              <button v-if="nextGroup.rest.length" class="rounded-xl border border-line bg-panel px-4 py-2.5 text-[14px] font-semibold hover:text-accent" @click="nextOpen = !nextOpen">{{ nextOpen ? t.showLess : t.seePlaces(nextGroup.rest.length + 1) }}</button>
+              <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="ignoreFindings([nextGroup.first, ...nextGroup.rest], 7)">{{ t.later }}</button>
+            </div>
+          </article>
+          <h2 v-if="nextGroup && sections.length" class="px-5 pt-5 text-[13px] font-bold tracking-[.1em] text-muted uppercase">{{ t.remaining }} · {{ listGroups.length }}</h2>
           <section v-for="sec in sections" :key="sec.sev">
             <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
               <span class="h-2.5 w-2.5 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[sec.sev]" />
