@@ -13,8 +13,8 @@ explain:
   en: "{plist} starts {program}, which no longer exists. Leftovers like this can be hijacked by whoever creates that path."
   vi: "{plist} khởi động {program} nhưng file đó không còn. Mục sót lại kiểu này có thể bị chiếm bởi ai tạo được đường dẫn đó."
 fix:
-  en: "The program it starts is gone, so this is left over from an uninstalled app. Remove it: in Finder press Cmd+Shift+G, paste {plist}, press Enter and move the file to the Trash (your admin password is needed for /Library), then restart."
-  vi: "Chương trình nó gọi đã không còn, nên đây là phần sót lại của ứng dụng đã gỡ. Gỡ nó: trong Finder bấm Cmd+Shift+G, dán {plist}, bấm Enter rồi kéo tệp vào Thùng rác (tệp trong /Library cần mật khẩu quản trị), rồi khởi động lại máy."
+  en: "The program it starts is gone, so this is left over from an uninstalled app. Remove it: in Finder press Cmd+Shift+G, paste `{plist}`, press Enter and move the file to the Trash (your admin password is needed for `/Library`), then restart."
+  vi: "Chương trình nó gọi đã không còn, nên đây là phần sót lại của ứng dụng đã gỡ. Gỡ nó: trong Finder bấm Cmd+Shift+G, dán `{plist}`, bấm Enter rồi kéo tệp vào Thùng rác (tệp trong `/Library` cần mật khẩu quản trị), rồi khởi động lại máy."
 author: the-last-devops
 tests:
   - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": false, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}

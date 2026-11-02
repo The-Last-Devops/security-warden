@@ -217,6 +217,28 @@ func Render(s string, it Item) string {
 	})
 }
 
+// markupFields are item fields built by Security Warden itself from fixed
+// tables (no text from the machine), allowed to carry `code` markup.
+var markupFields = map[string]bool{"stop_cmd": true}
+
+// RenderFix is Render for fix texts, where `backticks` mark commands for
+// the web UI: a backtick inside a value from the machine (a file name can
+// contain one) becomes ' so it cannot end a command early or start a fake one.
+func RenderFix(s string, it Item) string {
+	return placeholder.ReplaceAllStringFunc(s, func(m string) string {
+		name := m[1 : len(m)-1]
+		v, ok := it[name]
+		if !ok {
+			return m
+		}
+		out := Clean(fmt.Sprint(v))
+		if !markupFields[name] {
+			out = strings.ReplaceAll(out, "`", "'")
+		}
+		return out
+	})
+}
+
 // Clean makes a value from the machine (a file, repo, process or extension
 // name, all of which an attacker can choose) safe to print: control
 // characters and bidi overrides are shown escaped, so they cannot move the
@@ -274,7 +296,7 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 				Source:   r.Source,
 				Title:    Render(r.Title.Get(lang), it),
 				Explain:  Render(r.Explain.Get(lang), it),
-				Fix:      Render(r.Fix.Get(lang), it),
+				Fix:      RenderFix(r.Fix.Get(lang), it),
 				Remedy:   renderRemedy(r.Remedy, it),
 				Item:     it,
 			})

@@ -13,8 +13,8 @@ explain:
   en: "extensions.autoUpdate is false in {file}, so security fixes in extensions never arrive."
   vi: "extensions.autoUpdate đang false trong {file}, nên bản vá bảo mật của extension không bao giờ tới."
 fix:
-  en: "Open {file} (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and delete \"extensions.autoUpdate\": false (or set it to true)."
-  vi: "Mở {file} (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và xoá \"extensions.autoUpdate\": false (hoặc đặt thành true)."
+  en: "Open `{file}` (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and delete `\"extensions.autoUpdate\": false` (or set it to `true`)."
+  vi: "Mở `{file}` (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và xoá `\"extensions.autoUpdate\": false` (hoặc đặt thành `true`)."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": true, "has_secret": false}, "expect": true}

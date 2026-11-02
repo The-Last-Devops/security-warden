@@ -13,8 +13,8 @@ explain:
   en: "It is an exit node or advertises subnets ({subnet_routes}). Other devices in {tailnet} can reach the internet or your local network through it."
   vi: "Nó là exit node hoặc quảng bá subnet ({subnet_routes}). Thiết bị khác trong {tailnet} đi ra internet hoặc vào mạng nội bộ của bạn qua nó."
 fix:
-  en: "Run: tailscale set --advertise-exit-node=false --advertise-routes="
-  vi: "Chạy: tailscale set --advertise-exit-node=false --advertise-routes="
+  en: "Run: `tailscale set --advertise-exit-node=false --advertise-routes=`"
+  vi: "Chạy: `tailscale set --advertise-exit-node=false --advertise-routes=`"
 author: the-last-devops
 tests:
   - {item: {tailnet: t, exit_node: true, advertises_subnets: false, subnet_routes: ""}, expect: true}

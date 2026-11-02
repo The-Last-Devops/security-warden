@@ -199,5 +199,7 @@ func tunnelStopCmd(tool string, pid int) string {
 	if tool != "code-tunnel" {
 		cmds = append(cmds, fmt.Sprintf("kill %d", pid))
 	}
-	return strings.Join(cmds, " · ")
+	// The rule wraps {stop_cmd} in backticks; closing and reopening them
+	// here gives each command its own code span (and copy button).
+	return strings.Join(cmds, "` · `")
 }

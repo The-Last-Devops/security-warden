@@ -13,8 +13,8 @@ explain:
   en: "With UAC off (EnableLUA = 0), every program an administrator starts runs with full rights, so malware from a download or an e-mail attachment can change the whole system without any prompt."
   vi: "Tắt UAC (EnableLUA = 0) thì mọi chương trình do tài khoản quản trị mở đều chạy với toàn quyền, nên mã độc từ file tải về hay tệp đính kèm email sửa được cả hệ thống mà không hỏi gì."
 fix:
-  en: "Pro or Enterprise: run secpol.msc > Local Policies > Security Options > \"User Account Control: Run all administrators in Admin Approval Mode\" > Enabled. Windows Home: in a terminal opened with \"Run as administrator\": reg add HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v EnableLUA /t REG_DWORD /d 1 /f. Then restart. If your organisation manages this PC, ask IT."
-  vi: "Bản Pro hay Enterprise: mở secpol.msc > Local Policies > Security Options > \"User Account Control: Run all administrators in Admin Approval Mode\" > Enabled. Windows Home: trong cửa sổ lệnh mở bằng \"Run as administrator\": reg add HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v EnableLUA /t REG_DWORD /d 1 /f. Rồi khởi động lại máy. Máy do tổ chức quản lý thì hỏi bộ phận IT."
+  en: "1. Pro or Enterprise: run `secpol.msc` > Local Policies > Security Options > \"User Account Control: Run all administrators in Admin Approval Mode\" > Enabled. Windows Home: in a terminal opened with \"Run as administrator\": `reg add HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v EnableLUA /t REG_DWORD /d 1 /f`. 2. Restart. If your organisation manages this PC, ask IT."
+  vi: "1. Bản Pro hay Enterprise: mở `secpol.msc` > Local Policies > Security Options > \"User Account Control: Run all administrators in Admin Approval Mode\" > Enabled. Windows Home: trong cửa sổ lệnh mở bằng \"Run as administrator\": `reg add HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v EnableLUA /t REG_DWORD /d 1 /f`. 2. Khởi động lại máy. Máy do tổ chức quản lý thì hỏi bộ phận IT."
 author: the-last-devops
 tests:
   - {item: {os: windows, uac_enabled: false}, expect: true}

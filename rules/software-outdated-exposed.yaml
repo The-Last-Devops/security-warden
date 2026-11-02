@@ -13,8 +13,8 @@ explain:
   en: "A newer version ({latest}) is available. Old versions of network-facing software are the easiest way in, because their bugs are public."
   vi: "Đã có bản mới ({latest}). Phần mềm mở ra mạng mà dùng bản cũ là cửa dễ vào nhất, vì lỗi của nó đã công khai."
 fix:
-  en: "Press Fix to update it, or run: brew upgrade {name}, then restart it (brew services restart {name})."
-  vi: "Bấm Sửa để cập nhật, hoặc chạy: brew upgrade {name}, rồi khởi động lại (brew services restart {name})."
+  en: "Press Fix to update it, or run: `brew upgrade {name}`, then restart it (`brew services restart {name}`)."
+  vi: "Bấm Sửa để cập nhật, hoặc chạy: `brew upgrade {name}`, rồi khởi động lại (`brew services restart {name}`)."
 author: the-last-devops
 tests:
   - {item: {kind: running, name: redis, version: "7.2.4", latest: "7.4.1", reachable: true}, expect: true}

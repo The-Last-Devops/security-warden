@@ -13,8 +13,8 @@ explain:
   en: "{tool} can publish services on this machine to the internet, past the firewall and the office network."
   vi: "{tool} có thể đưa dịch vụ trên máy này ra internet, vượt qua tường lửa và mạng công ty."
 fix:
-  en: "1. In Terminal, run these one at a time (a message that nothing is running or installed is fine, go on): {stop_cmd} 2. Scan again to check it is gone. 3. When you need it again, start it only for that task and protect what it publishes with a login, not a public link."
-  vi: "1. Mở Terminal, chạy lần lượt từng lệnh (nếu lệnh báo không có gì đang chạy hoặc chưa cài thì bỏ qua, làm tiếp): {stop_cmd} 2. Quét lại để chắc nó đã tắt. 3. Khi cần dùng lại, chỉ bật trong lúc làm việc đó và đặt đăng nhập cho thứ nó mở ra, đừng để link công khai."
+  en: "1. In Terminal, run these one at a time (a message that nothing is running or installed is fine, go on): `{stop_cmd}` 2. Scan again to check it is gone. 3. When you need it again, start it only for that task and protect what it publishes with a login, not a public link."
+  vi: "1. Mở Terminal, chạy lần lượt từng lệnh (nếu lệnh báo không có gì đang chạy hoặc chưa cài thì bỏ qua, làm tiếp): `{stop_cmd}` 2. Quét lại để chắc nó đã tắt. 3. Khi cần dùng lại, chỉ bật trong lúc làm việc đó và đặt đăng nhập cho thứ nó mở ra, đừng để link công khai."
 author: the-last-devops
 tests:
   - {item: {tool: ngrok, kind: tunnel, pid: 42, stop_cmd: "sudo ngrok service stop · sudo ngrok service uninstall · kill 42"}, expect: true}

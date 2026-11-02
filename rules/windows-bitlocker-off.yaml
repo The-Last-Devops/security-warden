@@ -13,8 +13,8 @@ explain:
   en: "Anyone who gets the laptop or its disk can read every file on it, including browser sessions, SSH keys and tokens, without knowing your password."
   vi: "Ai cầm được laptop hay ổ đĩa là đọc được mọi file, kể cả phiên đăng nhập trình duyệt, khoá SSH và token, mà không cần biết mật khẩu của bạn."
 fix:
-  en: "First make sure you can save the recovery key (Microsoft account, USB stick or printout). Windows Home: Settings > Privacy & security > Device encryption > On. Pro, Enterprise or Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Needs an administrator; you can keep working while it encrypts."
-  vi: "Trước tiên hãy chắc là bạn lưu được khoá khôi phục (tài khoản Microsoft, USB hoặc bản in). Windows Home: Cài đặt > Quyền riêng tư & bảo mật > Mã hoá thiết bị > Bật. Bản Pro, Enterprise hay Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Cần quyền quản trị; vẫn dùng máy bình thường trong lúc mã hoá."
+  en: "1. First make sure you can save the recovery key (Microsoft account, USB stick or printout). 2. Windows Home: Settings > Privacy & security > Device encryption > On. Pro, Enterprise or Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Needs an administrator; you can keep working while it encrypts."
+  vi: "1. Trước tiên hãy chắc là bạn lưu được khoá khôi phục (tài khoản Microsoft, USB hoặc bản in). 2. Windows Home: Cài đặt > Quyền riêng tư & bảo mật > Mã hoá thiết bị > Bật. Bản Pro, Enterprise hay Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Cần quyền quản trị; vẫn dùng máy bình thường trong lúc mã hoá."
 author: the-last-devops
 tests:
   - {item: {os: windows, bitlocker: "off"}, expect: true}

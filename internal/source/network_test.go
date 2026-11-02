@@ -7,9 +7,9 @@ import (
 
 func TestTunnelStopCmd(t *testing.T) {
 	cases := map[string]string{
-		"code-tunnel": "code tunnel service uninstall · code tunnel kill · code tunnel unregister",
-		"ngrok":       "sudo ngrok service stop · sudo ngrok service uninstall · kill 42",
-		"cloudflared": "sudo cloudflared service uninstall · cloudflared service uninstall · kill 42",
+		"code-tunnel": "code tunnel service uninstall` · `code tunnel kill` · `code tunnel unregister",
+		"ngrok":       "sudo ngrok service stop` · `sudo ngrok service uninstall` · `kill 42",
+		"cloudflared": "sudo cloudflared service uninstall` · `cloudflared service uninstall` · `kill 42",
 		"bore":        "kill 42",
 	}
 	for tool, want := range cases {

@@ -208,21 +208,39 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 	entries, _ := ignore.Default().List(time.Now())
 	findings, ignored := ignore.Split(all, entries, time.Now())
 	score, gain := engine.Score(rs, findings, ran, platform())
+	scoped := func(scope string) int {
+		var srs []*engine.Rule
+		for _, r := range rs {
+			if report.Scope(r.Source) == scope {
+				srs = append(srs, r)
+			}
+		}
+		var sfs []engine.Finding
+		for _, f := range findings {
+			if report.Scope(f.Source) == scope {
+				sfs = append(sfs, f)
+			}
+		}
+		s, _ := engine.Score(srs, sfs, ran, platform())
+		return s
+	}
 	host, _ := os.Hostname()
 	return report.Scan{
-		Version:  version,
-		Lang:     l,
-		Platform: platform(),
-		Host:     strings.TrimSuffix(host, ".local"),
-		Time:     time.Now().Format("2006-01-02 15:04"),
-		Score:    score,
-		Gain:     gain,
-		Checked:  checked,
-		Passed:   passed,
-		Sources:  report.Statuses(results),
-		Findings: findings,
-		Ignored:  ignored,
-		Root:     os.Geteuid() == 0,
+		Version:      version,
+		Lang:         l,
+		Platform:     platform(),
+		Host:         strings.TrimSuffix(host, ".local"),
+		Time:         time.Now().Format("2006-01-02 15:04"),
+		Score:        score,
+		ScoreMachine: scoped("machine"),
+		ScoreCode:    scoped("code"),
+		Gain:         gain,
+		Checked:      checked,
+		Passed:       passed,
+		Sources:      report.Statuses(results),
+		Findings:     findings,
+		Ignored:      ignored,
+		Root:         os.Geteuid() == 0,
 	}
 }
 

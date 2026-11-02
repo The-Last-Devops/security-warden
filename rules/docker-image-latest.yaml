@@ -13,8 +13,8 @@ explain:
   en: "{image} has no tag or the tag latest, which points to whatever was pushed last. You cannot tell which version is running, and a compromised or broken push is pulled in silently."
   vi: "{image} không có tag hoặc dùng tag latest, tức là trỏ tới bản đẩy lên gần nhất. Bạn không biết phiên bản nào đang chạy, và một bản đẩy lên bị chèn mã hay bị lỗi sẽ được kéo về lặng lẽ."
 fix:
-  en: "Use a version tag (image:1.2.3), or pin the digest (image@sha256:…) and update it on purpose."
-  vi: "Dùng tag phiên bản (image:1.2.3), hoặc ghim digest (image@sha256:…) và chủ động cập nhật."
+  en: "Use a version tag (`image:1.2.3`), or pin the digest (`image@sha256:…`) and update it on purpose."
+  vi: "Dùng tag phiên bản (`image:1.2.3`), hoặc ghim digest (`image@sha256:…`) và chủ động cập nhật."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false, "image_age_days": 30, "latest_tag": true}, "expect": true}

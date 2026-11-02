@@ -13,8 +13,8 @@ explain:
   en: "{container} ({image}) mounts {risky_mount} from the host. Anything that breaks into the container gets your files, keys or system configuration."
   vi: "{container} ({image}) mount {risky_mount} từ máy chủ. Thứ gì lọt được vào container là lấy được file, khoá hoặc cấu hình hệ thống của bạn."
 fix:
-  en: "In the compose file of {container}, mount only the project folder it needs, read-only where possible (./data:/data:ro). Then apply it: docker compose up -d (recreates only the changed containers)."
-  vi: "Trong tệp compose của {container}, chỉ gắn thư mục dự án cần thiết, chỉ-đọc khi có thể (./data:/data:ro). Rồi áp dụng: docker compose up -d (chỉ tạo lại container có thay đổi)."
+  en: "1. In the compose file of {container}, mount only the project folder it needs, read-only where possible (`./data:/data:ro`). 2. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Trong tệp compose của {container}, chỉ gắn thư mục dự án cần thiết, chỉ-đọc khi có thể (`./data:/data:ro`). 2. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "/Users/a/.ssh", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": true}

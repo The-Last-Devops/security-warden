@@ -13,8 +13,8 @@ explain:
   en: "{container} mounts {shared_mount} with shared propagation: anything it mounts inside that folder also appears on the host, so it can change what the host sees."
   vi: "{container} mount {shared_mount} ở chế độ shared: thứ gì nó mount bên trong thư mục đó cũng hiện ra trên máy chủ, nên nó có thể thay đổi những gì máy chủ nhìn thấy."
 fix:
-  en: "Drop :shared / :rshared from the volume of {container} (the default, rprivate, is safe) unless it really has to mount things for the host. Then apply it: docker compose up -d (recreates only the changed containers)."
-  vi: "Bỏ :shared / :rshared khỏi volume của {container} (mặc định rprivate là an toàn), trừ khi nó thật sự phải gắn ổ cho máy chủ. Rồi áp dụng: docker compose up -d (chỉ tạo lại container có thay đổi)."
+  en: "1. Drop `:shared` / `:rshared` from the volume of {container} (the default, `rprivate`, is safe) unless it really has to mount things for the host. 2. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Bỏ `:shared` / `:rshared` khỏi volume của {container} (mặc định `rprivate` là an toàn), trừ khi nó thật sự phải gắn ổ cho máy chủ. 2. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "/srv/data", "host_uts": false, "host_userns": false}, "expect": true}

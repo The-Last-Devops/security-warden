@@ -13,8 +13,8 @@ explain:
   en: "Every kubectl command, including a mistyped delete, goes to production."
   vi: "Mọi lệnh kubectl, kể cả lệnh delete gõ nhầm, đều chạy trên production."
 fix:
-  en: "When you finish with production, switch away: kubectl config get-contexts lists them, then kubectl config use-context <non-production name>. Tools like kubectx or kubie let each terminal use its own context."
-  vi: "Xong việc với production thì chuyển đi: kubectl config get-contexts để xem danh sách, rồi kubectl config use-context <tên môi trường không phải production>. Công cụ như kubectx hoặc kubie cho mỗi terminal dùng context riêng."
+  en: "When you finish with production, switch away: `kubectl config get-contexts` lists them, then `kubectl config use-context <non-production name>`. Tools like kubectx or kubie let each terminal use its own context."
+  vi: "Xong việc với production thì chuyển đi: `kubectl config get-contexts` để xem danh sách, rồi `kubectl config use-context <tên môi trường không phải production>`. Công cụ như kubectx hoặc kubie cho mỗi terminal dùng context riêng."
 author: the-last-devops
 tests:
   - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "prod-eks", "current_is_prod": true, "sa_type": ""}, "expect": true}

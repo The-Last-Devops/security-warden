@@ -16,19 +16,22 @@ import (
 
 // Scan is everything one run produced.
 type Scan struct {
-	Version  string           `json:"version"`
-	Lang     string           `json:"lang"`
-	Platform string           `json:"platform"`
-	Host     string           `json:"host"`
-	Time     string           `json:"time"`
-	Score    int              `json:"score"`
-	Gain     map[string]int   `json:"gain"`
-	Checked  int              `json:"checked"`
-	Passed   []string         `json:"passed"`
-	Sources  []SourceStatus   `json:"sources"`
-	Findings []engine.Finding `json:"findings"`
-	Ignored  []engine.Finding `json:"ignored"`
-	Root     bool             `json:"root"`
+	Version  string `json:"version"`
+	Lang     string `json:"lang"`
+	Platform string `json:"platform"`
+	Host     string `json:"host"`
+	Time     string `json:"time"`
+	Score    int    `json:"score"`
+	// ScoreMachine and ScoreCode score the two scopes on their own.
+	ScoreMachine int              `json:"score_machine"`
+	ScoreCode    int              `json:"score_code"`
+	Gain         map[string]int   `json:"gain"`
+	Checked      int              `json:"checked"`
+	Passed       []string         `json:"passed"`
+	Sources      []SourceStatus   `json:"sources"`
+	Findings     []engine.Finding `json:"findings"`
+	Ignored      []engine.Finding `json:"ignored"`
+	Root         bool             `json:"root"`
 }
 
 // SourceStatus says whether a source ran, and how many items it found.
@@ -202,14 +205,14 @@ func Text(w io.Writer, s Scan, o Options) {
 		indent := strings.Repeat(" ", width+4)
 		if short && !o.Verbose {
 			// One line of advice is enough for minor findings.
-			fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
+			fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), plainFix(tilde(f.Fix)))
 			if total[f.RuleID] > 1 {
 				fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.same_issue"), total[f.RuleID]-1)))
 			}
 			continue
 		}
 		fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(tilde(f.Explain)))
-		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
+		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), plainFix(tilde(f.Fix)))
 		if o.Verbose {
 			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(f.RuleID))
 		}
@@ -249,3 +252,6 @@ func Text(w io.Writer, s Scan, o Options) {
 	}
 	fmt.Fprintf(w, "  %s\n\n", c.dim(t("report.private")))
 }
+
+// plainFix drops the web UI's light markup (`code` spans) for the terminal.
+func plainFix(s string) string { return strings.ReplaceAll(s, "`", "") }

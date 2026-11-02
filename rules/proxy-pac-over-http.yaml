@@ -13,8 +13,8 @@ explain:
   en: "Anyone on the network path can replace the PAC file from {host} and send your traffic anywhere."
   vi: "Ai đứng giữa đường mạng cũng thay được file PAC từ {host} và lái lưu lượng của bạn đi nơi khác."
 fix:
-  en: "macOS: System Settings › Network › (your network) › Details › Proxies › Automatic proxy configuration: change the URL to https://, or ask IT for one. Windows: Settings › Network & internet › Proxy › Use setup script."
-  vi: "macOS: Cài đặt hệ thống › Mạng › (mạng đang dùng) › Chi tiết › Proxy › Cấu hình proxy tự động: đổi URL sang https://, hoặc nhờ IT cấp. Windows: Settings › Network & internet › Proxy › Use setup script."
+  en: "macOS: System Settings › Network › (your network) › Details › Proxies › Automatic proxy configuration: change the URL to `https://`, or ask IT for one. Windows: Settings › Network & internet › Proxy › Use setup script."
+  vi: "macOS: Cài đặt hệ thống › Mạng › (mạng đang dùng) › Chi tiết › Proxy › Cấu hình proxy tự động: đổi URL sang `https://`, hoặc nhờ IT cấp. Windows: Settings › Network & internet › Proxy › Use setup script."
 author: the-last-devops
 tests:
   - {"item": {"kind": "proxy", "type": "pac", "host": "wpad.corp", "scheme": "http", "loopback": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "{program} starts by itself ({location}) from a folder any program can write to. Real apps install into C:\\Program Files or their own AppData folder; malware dropped by a script or a fake installer often starts from %TEMP% or Downloads."
   vi: "{program} tự khởi động ({location}) từ thư mục chương trình nào cũng ghi được. App thật cài vào C:\\Program Files hoặc thư mục AppData riêng; mã độc do script hay trình cài giả thả xuống thường chạy từ %TEMP% hoặc Downloads."
 fix:
-  en: "If you don't recognise {name}, disable it first: Task Manager > Startup apps (Run keys and the Startup folder; entries for all users need an administrator), or Task Scheduler > {location} > {name} > Disable for a scheduled task. Then scan {program} with Microsoft Defender before deleting it."
-  vi: "Không nhận ra {name} thì tắt nó trước: Task Manager > Startup apps (khoá Run và thư mục Startup; mục của mọi người dùng cần quyền quản trị), hoặc Task Scheduler > {location} > {name} > Disable nếu là tác vụ hẹn giờ. Sau đó quét {program} bằng Microsoft Defender rồi mới xoá."
+  en: "1. If you don't recognise {name}, disable it first: Task Manager > Startup apps (Run keys and the Startup folder; entries for all users need an administrator), or Task Scheduler > {location} > {name} > Disable for a scheduled task. 2. Scan `{program}` with Microsoft Defender before deleting it."
+  vi: "1. Không nhận ra {name} thì tắt nó trước: Task Manager > Startup apps (khoá Run và thư mục Startup; mục của mọi người dùng cần quyền quản trị), hoặc Task Scheduler > {location} > {name} > Disable nếu là tác vụ hẹn giờ. 2. Quét `{program}` bằng Microsoft Defender rồi mới xoá."
 author: the-last-devops
 tests:
   - {"item": {"kind": "autostart", "where": "run_key", "name": "Updater", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Local\\Temp\\upd\\svch0st.exe", "in_temp": true, "in_downloads": false, "appdata_root": false, "script_loader": false}, "expect": true}

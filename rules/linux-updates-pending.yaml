@@ -13,8 +13,8 @@ explain:
   en: "{manager} lists {total} packages with a newer version. Bug and security fixes pile up the longer updates wait. The count comes from the package list saved at the last refresh, so the real number may be higher."
   vi: "{manager} có {total} gói đã có bản mới hơn. Càng để lâu, bản sửa lỗi và vá bảo mật càng dồn lại. Con số lấy từ danh sách gói lưu ở lần làm mới gần nhất, nên thực tế có thể còn nhiều hơn."
 fix:
-  en: "Run: {upgrade_command} (needs your sudo password)."
-  vi: "Chạy: {upgrade_command} (cần mật khẩu sudo)."
+  en: "Run: `{upgrade_command}` (needs your sudo password)."
+  vi: "Chạy: `{upgrade_command}` (cần mật khẩu sudo)."
 author: the-last-devops
 tests:
   - {item: {kind: packages, manager: dnf, total: 30, security: -1, cache_days: 2, upgrade_command: "sudo dnf upgrade --refresh"}, expect: true}

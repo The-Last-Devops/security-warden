@@ -13,8 +13,8 @@ explain:
   en: "{path} (process {pid}) has the name of a well-known cryptocurrency miner. Unless you started it yourself, it usually means the machine was broken into: miners are what attackers install first, and they burn your CPU, battery and power bill."
   vi: "{path} (tiến trình {pid}) mang tên một chương trình đào tiền ảo phổ biến. Nếu không phải bạn tự chạy, thường là máy đã bị xâm nhập: đây là thứ kẻ tấn công cài đầu tiên, nó ngốn CPU, pin và tiền điện của bạn."
 fix:
-  en: "If you did not start it: 1. Stop it: kill {pid} (Windows: taskkill /PID {pid}) 2. Move {path} to the Trash. 3. Look for what starts it again: crontab -l, macOS System Settings › General › Login Items & Extensions, Linux systemctl --user list-units, Windows Task Scheduler. 4. Change the passwords and keys used on this machine."
-  vi: "Nếu bạn không chạy nó: 1. Dừng: kill {pid} (Windows: taskkill /PID {pid}) 2. Chuyển {path} vào Thùng rác. 3. Tìm thứ khởi động lại nó: crontab -l, macOS Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng, Linux systemctl --user list-units, Windows Task Scheduler. 4. Đổi mật khẩu và khoá đã dùng trên máy này."
+  en: "If you did not start it: 1. Stop it: `kill {pid}` (Windows: `taskkill /PID {pid}`) 2. Move `{path}` to the Trash. 3. Look for what starts it again: `crontab -l`, macOS System Settings › General › Login Items & Extensions, Linux `systemctl --user list-units`, Windows Task Scheduler. 4. Change the passwords and keys used on this machine."
+  vi: "Nếu bạn không chạy nó: 1. Dừng: `kill {pid}` (Windows: `taskkill /PID {pid}`) 2. Chuyển `{path}` vào Thùng rác. 3. Tìm thứ khởi động lại nó: `crontab -l`, macOS Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng, Linux `systemctl --user list-units`, Windows Task Scheduler. 4. Đổi mật khẩu và khoá đã dùng trên máy này."
 author: the-last-devops
 tests:
   - {"item": {"name": "xmrig", "path": "/tmp/.x/xmrig", "pid": 4242, "from_temp": true, "from_downloads": false, "miner": true}, "expect": true}

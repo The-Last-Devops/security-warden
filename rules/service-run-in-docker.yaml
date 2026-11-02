@@ -13,8 +13,8 @@ explain:
   en: "{product} ({installed_by}) shares your user account, files and network. In a container it is isolated, easy to remove, and can be bound to 127.0.0.1."
   vi: "{product} ({installed_by}) dùng chung tài khoản, file và mạng với bạn. Chạy trong container thì nó bị cô lập, gỡ dễ, và bind được về 127.0.0.1."
 fix:
-  en: "Run it in Docker instead: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
-  vi: "Chuyển sang Docker: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
+  en: "Run it in Docker instead: `docker run -d -p 127.0.0.1:{port}:{port} {docker_image}`"
+  vi: "Chuyển sang Docker: `docker run -d -p 127.0.0.1:{port}:{port} {docker_image}`"
 author: the-last-devops
 tests:
   - {item: {product: PostgreSQL, kind: database, installed_by: homebrew, in_container: false, port: 5432, docker_image: "postgres:17"}, expect: true}

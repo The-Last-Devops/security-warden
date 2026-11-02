@@ -13,8 +13,8 @@ explain:
   en: "Any program running as you (an npm install script, a browser exploit) can become root silently."
   vi: "Chương trình nào chạy dưới tên bạn (script cài npm, lỗi trình duyệt) cũng lên root được mà không ai hay."
 fix:
-  en: "Keep this terminal open. 1. Find the rule: sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d 2. Edit that file with sudo visudo -f <file> (it checks the syntax before saving) and remove NOPASSWD: from the rule. 3. In a new terminal, run sudo -v: it should now ask for your password."
-  vi: "Giữ terminal này mở. 1. Tìm quy tắc: sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d 2. Sửa tệp đó bằng sudo visudo -f <tệp> (nó kiểm tra cú pháp trước khi lưu) và bỏ NOPASSWD: khỏi quy tắc. 3. Mở terminal mới, chạy sudo -v: giờ nó phải hỏi mật khẩu."
+  en: "Keep this terminal open. 1. Find the rule: `sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d` 2. Edit that file with `sudo visudo -f <file>` (it checks the syntax before saving) and remove `NOPASSWD:` from the rule. 3. In a new terminal, run `sudo -v`: it should now ask for your password."
+  vi: "Giữ terminal này mở. 1. Tìm quy tắc: `sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d` 2. Sửa tệp đó bằng `sudo visudo -f <tệp>` (nó kiểm tra cú pháp trước khi lưu) và bỏ `NOPASSWD:` khỏi quy tắc. 3. Mở terminal mới, chạy `sudo -v`: giờ nó phải hỏi mật khẩu."
 author: the-last-devops
 tests:
   - {"item": {"kind": "sudo", "nopasswd_any": true, "nopasswd_all": true}, "expect": true}

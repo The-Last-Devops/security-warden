@@ -13,8 +13,8 @@ explain:
   en: Anyone on the internet can reach the service shared with Funnel, not only your tailnet.
   vi: Bất kỳ ai trên internet cũng vào được dịch vụ chia sẻ bằng Funnel, không chỉ người trong tailnet.
 fix:
-  en: "Run: tailscale funnel reset"
-  vi: "Chạy: tailscale funnel reset"
+  en: "Run: `tailscale funnel reset`"
+  vi: "Chạy: `tailscale funnel reset`"
 author: the-last-devops
 tests:
   - {item: {funnel: true}, expect: true}

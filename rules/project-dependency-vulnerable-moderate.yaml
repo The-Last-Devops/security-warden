@@ -13,8 +13,8 @@ explain:
   en: "{lockfile} in {repo} pins {package} {version} ({ecosystem}), which has a published vulnerability: {ids}. Vulnerable packages in this repo: {packages}, none rated high or critical. Matched offline against the OSV database (osv.dev); nothing about your projects was sent."
   vi: "{lockfile} trong {repo} đang dùng {package} {version} ({ecosystem}), bản này có lỗ hổng đã công bố: {ids}. Số thư viện có lỗ hổng trong repo này: {packages}, không cái nào ở mức cao hay nghiêm trọng. Đối chiếu ngay trên máy với dữ liệu OSV (osv.dev); không gửi gì về dự án của bạn ra ngoài."
 fix:
-  en: "In {project}: {upgrade_cmd}. If it stays below {fixed}, another package pulls it in ({why} shows which): upgrade that one. Then run the tests and commit the lock file."
-  vi: "Trong {project}: {upgrade_cmd}. Nếu vẫn chưa lên {fixed} thì nó đi kèm một thư viện khác ({why} cho biết thư viện nào): nâng thư viện đó. Rồi chạy test và commit file lock."
+  en: "1. In `{project}`: `{upgrade_cmd}`. If it stays below {fixed}, another package pulls it in (`{why}` shows which): upgrade that one. 2. Run the tests and commit the lock file."
+  vi: "1. Trong `{project}`: `{upgrade_cmd}`. Nếu vẫn chưa lên {fixed} thì nó đi kèm một thư viện khác (`{why}` cho biết thư viện nào): nâng thư viện đó. 2. Chạy test và commit file lock."
 author: the-last-devops
 tests:
   - {"item": {"repo": "/h/Code/api", "repo_name": "api", "project": "/h/Code/api", "lockfile": "requirements.txt", "ecosystem": "PyPI", "package": "requests", "version": "2.31.0", "fixed": "2.32.0", "ids": "CVE-2024-35195", "more_ids": 0, "severity": "moderate", "severe": false, "packages": 1, "others": 0, "upgrade_cmd": "pip install 'requests>=2.32.0'", "why": "pip show requests"}, "expect": true}

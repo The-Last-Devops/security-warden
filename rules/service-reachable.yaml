@@ -13,8 +13,8 @@ explain:
   en: "{product} on this machine can be reached from the network you are on. Dev databases and caches often have no password or a default one."
   vi: "Máy khác trong mạng bạn đang dùng kết nối được vào {product} trên máy này. Database và cache để dev thường không có mật khẩu, hoặc dùng mật khẩu mặc định."
 fix:
-  en: "Make {product} listen on 127.0.0.1 only, or run it in Docker: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
-  vi: "Cho {product} chỉ nghe ở 127.0.0.1, hoặc chạy trong Docker: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
+  en: "Make {product} listen on `127.0.0.1` only, or run it in Docker: `docker run -d -p 127.0.0.1:{port}:{port} {docker_image}`"
+  vi: "Cho {product} chỉ nghe ở `127.0.0.1`, hoặc chạy trong Docker: `docker run -d -p 127.0.0.1:{port}:{port} {docker_image}`"
 author: the-last-devops
 tests:
   - {item: {product: Redis, port: 6379, reachable: true, docker_image: "redis:7"}, expect: true}

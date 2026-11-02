@@ -13,8 +13,8 @@ explain:
   en: "{manager} lists {total} packages with a newer version: this machine has not been updated for a while. Some of them likely fix security bugs. The count comes from the package list saved at the last refresh, so the real number may be higher."
   vi: "{manager} có {total} gói đã có bản mới hơn: máy này lâu rồi chưa cập nhật. Nhiều khả năng trong đó có bản vá lỗi bảo mật. Con số lấy từ danh sách gói lưu ở lần làm mới gần nhất, nên thực tế có thể còn nhiều hơn."
 fix:
-  en: "Run: {upgrade_command} (needs your sudo password), then restart if a new kernel was installed."
-  vi: "Chạy: {upgrade_command} (cần mật khẩu sudo), rồi khởi động lại máy nếu có kernel mới."
+  en: "Run: `{upgrade_command}` (needs your sudo password), then restart if a new kernel was installed."
+  vi: "Chạy: `{upgrade_command}` (cần mật khẩu sudo), rồi khởi động lại máy nếu có kernel mới."
 author: the-last-devops
 tests:
   - {item: {kind: packages, manager: dnf, total: 105, security: -1, cache_days: 3, upgrade_command: "sudo dnf upgrade --refresh"}, expect: true}

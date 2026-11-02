@@ -105,3 +105,13 @@ func TestCleanEscapesControlCharacters(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderFixNeutralisesBackticks(t *testing.T) {
+	it := engine.Item{"path": "/tmp/a`rm -rf ~`b", "stop_cmd": "a` · `b"}
+	if got := engine.RenderFix("Run `ls {path}`", it); got != "Run `ls /tmp/a'rm -rf ~'b`" {
+		t.Errorf("machine value kept a backtick: %q", got)
+	}
+	if got := engine.RenderFix("`{stop_cmd}`", it); got != "`a` · `b`" {
+		t.Errorf("trusted markup field changed: %q", got)
+	}
+}

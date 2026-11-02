@@ -13,8 +13,8 @@ explain:
   en: "Images from insecure-registries travel without TLS and can be replaced."
   vi: "Image từ insecure-registries đi không qua TLS và có thể bị thay."
 fix:
-  en: "Docker Desktop › Settings › Docker Engine (Linux: sudo nano /etc/docker/daemon.json): remove the entries under \"insecure-registries\", then Apply & restart (Linux: sudo systemctl restart docker, which restarts running containers). Give the registry a TLS certificate instead."
-  vi: "Docker Desktop › Settings › Docker Engine (Linux: sudo nano /etc/docker/daemon.json): xoá các mục trong \"insecure-registries\", rồi Apply & restart (Linux: sudo systemctl restart docker, lệnh này khởi động lại các container đang chạy). Thay vào đó, cấp chứng chỉ TLS cho registry."
+  en: "Docker Desktop › Settings › Docker Engine (Linux: `sudo nano /etc/docker/daemon.json`): remove the entries under `\"insecure-registries\"`, then Apply & restart (Linux: `sudo systemctl restart docker`, which restarts running containers). Give the registry a TLS certificate instead."
+  vi: "Docker Desktop › Settings › Docker Engine (Linux: `sudo nano /etc/docker/daemon.json`): xoá các mục trong `\"insecure-registries\"`, rồi Apply & restart (Linux: `sudo systemctl restart docker`, lệnh này khởi động lại các container đang chạy). Thay vào đó, cấp chứng chỉ TLS cho registry."
 author: the-last-devops
 tests:
   - {"item": {"expose_tcp_no_tls": false, "insecure_registries": 2, "found": true}, "expect": true}

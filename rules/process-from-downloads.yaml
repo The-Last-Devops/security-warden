@@ -13,8 +13,8 @@ explain:
   en: "{path} (process {pid}) runs from the Downloads folder. Programs there skipped installation, and fake installers and cracked apps are a common way malware gets in."
   vi: "{path} (tiến trình {pid}) đang chạy từ thư mục Downloads. Chương trình ở đó chưa qua bước cài đặt, và trình cài giả hay app crack là đường mã độc hay dùng để lọt vào."
 fix:
-  en: "If you trust {name}, install it properly (for example into /Applications, or with its installer on Windows) and move the copy in Downloads to the Trash. If you don't recognise it, stop it (kill {pid} (Windows: taskkill /PID {pid})) and move it to the Trash."
-  vi: "Nếu tin {name}, cài nó đúng cách (ví dụ vào /Applications, hoặc bằng trình cài đặt trên Windows) và chuyển bản trong Downloads vào Thùng rác. Nếu không nhận ra, dừng nó (kill {pid} (Windows: taskkill /PID {pid})) và chuyển vào Thùng rác."
+  en: "If you trust {name}, install it properly (for example into `/Applications`, or with its installer on Windows) and move the copy in Downloads to the Trash. If you don't recognise it, stop it (`kill {pid}` (Windows: `taskkill /PID {pid}`)) and move it to the Trash."
+  vi: "Nếu tin {name}, cài nó đúng cách (ví dụ vào `/Applications`, hoặc bằng trình cài đặt trên Windows) và chuyển bản trong Downloads vào Thùng rác. Nếu không nhận ra, dừng nó (`kill {pid}` (Windows: `taskkill /PID {pid}`)) và chuyển vào Thùng rác."
 author: the-last-devops
 tests:
   - {"item": {"name": "Installer", "path": "/Users/a/Downloads/Installer", "pid": 4242, "from_temp": false, "from_downloads": true, "miner": false}, "expect": true}

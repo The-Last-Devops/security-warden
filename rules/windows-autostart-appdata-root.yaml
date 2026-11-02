@@ -13,8 +13,8 @@ explain:
   en: "{program} sits directly in AppData or ProgramData instead of in its own vendor folder, and starts by itself ({location}). Installers almost always use a named subfolder; malware often drops a single file there."
   vi: "{program} nằm thẳng trong AppData hoặc ProgramData chứ không trong thư mục riêng của hãng, và tự khởi động ({location}). Trình cài đặt gần như luôn dùng một thư mục con có tên; mã độc hay thả một file lẻ vào đó."
 fix:
-  en: "If you don't recognise {name}, disable it: Task Manager > Startup apps (Run keys and the Startup folder; all-users entries need an administrator), or Task Scheduler > {location} > {name} > Disable. Then scan {program} with Microsoft Defender."
-  vi: "Không nhận ra {name} thì tắt nó: Task Manager > Startup apps (khoá Run và thư mục Startup; mục của mọi người dùng cần quyền quản trị), hoặc Task Scheduler > {location} > {name} > Disable. Sau đó quét {program} bằng Microsoft Defender."
+  en: "1. If you don't recognise {name}, disable it: Task Manager > Startup apps (Run keys and the Startup folder; all-users entries need an administrator), or Task Scheduler > {location} > {name} > Disable. 2. Scan `{program}` with Microsoft Defender."
+  vi: "1. Không nhận ra {name} thì tắt nó: Task Manager > Startup apps (khoá Run và thư mục Startup; mục của mọi người dùng cần quyền quản trị), hoặc Task Scheduler > {location} > {name} > Disable. 2. Quét `{program}` bằng Microsoft Defender."
 author: the-last-devops
 tests:
   - {"item": {"kind": "autostart", "where": "run_key", "name": "sync", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Roaming\\winsync.exe", "in_temp": false, "in_downloads": false, "appdata_root": true, "script_loader": false}, "expect": true}

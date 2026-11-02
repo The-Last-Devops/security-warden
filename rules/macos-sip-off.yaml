@@ -13,8 +13,8 @@ explain:
   en: Malware running as admin can modify macOS itself and hide there.
   vi: Mã độc có quyền admin sửa được chính macOS và ẩn mình trong đó.
 fix:
-  en: "Start up in Recovery (Apple silicon: hold the power button until Loading startup options, then Options; Intel: hold Cmd+R while starting). Open Utilities › Terminal, run csrutil enable, then restart."
-  vi: "Khởi động vào Recovery (Apple silicon: giữ nút nguồn tới khi thấy Đang tải tuỳ chọn khởi động, chọn Tuỳ chọn; Intel: giữ Cmd+R khi khởi động). Mở Tiện ích › Terminal, chạy csrutil enable, rồi khởi động lại."
+  en: "1. Start up in Recovery (Apple silicon: hold the power button until Loading startup options, then Options; Intel: hold Cmd+R while starting). 2. Open Utilities › Terminal, run `csrutil enable`, then restart."
+  vi: "1. Khởi động vào Recovery (Apple silicon: giữ nút nguồn tới khi thấy Đang tải tuỳ chọn khởi động, chọn Tuỳ chọn; Intel: giữ Cmd+R khi khởi động). 2. Mở Tiện ích › Terminal, chạy `csrutil enable`, rồi khởi động lại."
 author: the-last-devops
 tests:
   - {item: {sip: false}, expect: true}

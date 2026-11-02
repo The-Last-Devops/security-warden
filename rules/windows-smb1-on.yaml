@@ -13,8 +13,8 @@ explain:
   en: "SMBv1 is the 30-year-old file sharing protocol that WannaCry and NotPetya spread through. Microsoft no longer installs it by default; it is only needed by very old NAS boxes and printers."
   vi: "SMBv1 là giao thức chia sẻ file 30 năm tuổi mà WannaCry và NotPetya dùng để lây lan. Microsoft không còn cài nó mặc định; chỉ ổ NAS hay máy in rất cũ mới cần."
 fix:
-  en: "Control Panel > Programs > Turn Windows features on or off > clear \"SMB 1.0/CIFS File Sharing Support\" > OK, then restart. Or in PowerShell opened with \"Run as administrator\": Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol. A device that only speaks SMBv1 will stop working: update or replace it."
-  vi: "Control Panel > Programs > Turn Windows features on or off > bỏ chọn \"SMB 1.0/CIFS File Sharing Support\" > OK, rồi khởi động lại. Hoặc trong PowerShell mở bằng \"Run as administrator\": Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol. Thiết bị nào chỉ biết SMBv1 sẽ ngừng kết nối được: cập nhật hoặc thay nó."
+  en: "Control Panel > Programs > Turn Windows features on or off > clear \"SMB 1.0/CIFS File Sharing Support\" > OK, then restart. Or in PowerShell opened with \"Run as administrator\": `Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol`. A device that only speaks SMBv1 will stop working: update or replace it."
+  vi: "Control Panel > Programs > Turn Windows features on or off > bỏ chọn \"SMB 1.0/CIFS File Sharing Support\" > OK, rồi khởi động lại. Hoặc trong PowerShell mở bằng \"Run as administrator\": `Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol`. Thiết bị nào chỉ biết SMBv1 sẽ ngừng kết nối được: cập nhật hoặc thay nó."
 author: the-last-devops
 tests:
   - {item: {os: windows, smb1: true}, expect: true}

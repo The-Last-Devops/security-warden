@@ -13,8 +13,8 @@ explain:
   en: "{container} runs with --network host, --pid host or --ipc host. It sees every port and process of this machine, and every port it opens is open on the machine."
   vi: "{container} chạy với --network host, --pid host hoặc --ipc host. Nó thấy mọi port và tiến trình của máy, và port nó mở cũng là port của máy."
 fix:
-  en: "In the compose file of {container}, remove network_mode: host, pid: host and ipc: host, and publish only the ports you need on 127.0.0.1 (ports: [\"127.0.0.1:8080:8080\"]). Then apply it: docker compose up -d (recreates only the changed containers)."
-  vi: "Trong tệp compose của {container}, bỏ network_mode: host, pid: host và ipc: host, chỉ mở cổng cần thiết trên 127.0.0.1 (ports: [\"127.0.0.1:8080:8080\"]). Rồi áp dụng: docker compose up -d (chỉ tạo lại container có thay đổi)."
+  en: "1. In the compose file of {container}, remove `network_mode: host`, `pid: host` and `ipc: host`, and publish only the ports you need on `127.0.0.1` (`ports: [\"127.0.0.1:8080:8080\"]`). 2. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Trong tệp compose của {container}, bỏ `network_mode: host`, `pid: host` và `ipc: host`, chỉ mở cổng cần thiết trên `127.0.0.1` (`ports: [\"127.0.0.1:8080:8080\"]`). 2. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": true, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": true}

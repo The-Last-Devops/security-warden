@@ -13,8 +13,8 @@ explain:
   en: "A newer version ({latest}) is available and may fix security bugs."
   vi: "Đã có bản mới ({latest}), có thể đã vá lỗi bảo mật."
 fix:
-  en: "Press Fix to update it, or run: brew upgrade {name}, then quit and reopen it."
-  vi: "Bấm Sửa để cập nhật, hoặc chạy: brew upgrade {name}, rồi tắt và mở lại nó."
+  en: "Press Fix to update it, or run: `brew upgrade {name}`, then quit and reopen it."
+  vi: "Bấm Sửa để cập nhật, hoặc chạy: `brew upgrade {name}`, rồi tắt và mở lại nó."
 author: the-last-devops
 tests:
   - {item: {kind: running, name: node, version: "22.1.0", latest: "22.11.0", reachable: false}, expect: true}

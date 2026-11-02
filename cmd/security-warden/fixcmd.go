@@ -102,7 +102,7 @@ func runFix(lang string, findings []engine.Finding, yes, dryRun bool) int {
 	if len(manual) > 0 {
 		fmt.Println("\n  " + t("fix.manual"))
 		for _, f := range manual {
-			fmt.Printf("    • %s\n      → %s\n", tilde(f.Title), tilde(f.Fix))
+			fmt.Printf("    • %s\n      → %s\n", tilde(f.Title), strings.ReplaceAll(tilde(f.Fix), "`", ""))
 		}
 	}
 	if applied > 0 {

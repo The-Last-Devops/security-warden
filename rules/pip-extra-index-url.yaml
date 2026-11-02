@@ -13,8 +13,8 @@ explain:
   en: "extra-index-url lets a public package with the same name as your private one win (dependency confusion)."
   vi: "extra-index-url khiến gói công khai trùng tên gói nội bộ có thể được cài thay (dependency confusion)."
 fix:
-  en: "Open {file} and delete the extra-index-url line (pip config list shows what is set). Install private packages from a single index-url that proxies PyPI (Artifactory, Nexus, devpi), or pin hashes with --require-hashes."
-  vi: "Mở {file} và xoá dòng extra-index-url (pip config list cho biết đang đặt gì). Cài gói nội bộ qua một index-url duy nhất có làm proxy cho PyPI (Artifactory, Nexus, devpi), hoặc khoá mã băm bằng --require-hashes."
+  en: "1. Open `{file}` and delete the `extra-index-url` line (`pip config list` shows what is set). 2. Install private packages from a single `index-url` that proxies PyPI (Artifactory, Nexus, devpi), or pin hashes with `--require-hashes`."
+  vi: "1. Mở `{file}` và xoá dòng `extra-index-url` (`pip config list` cho biết đang đặt gì). 2. Cài gói nội bộ qua một `index-url` duy nhất có làm proxy cho PyPI (Artifactory, Nexus, devpi), hoặc khoá mã băm bằng `--require-hashes`."
 author: the-last-devops
 tests:
   - {"item": {"tool": "pip", "file": "/h/.npmrc", "strict_ssl_off": false, "http_registry": false, "trusted_host": false, "extra_index": true}, "expect": true}

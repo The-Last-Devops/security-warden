@@ -13,8 +13,8 @@ explain:
   en: "Developer mode lets anyone with a minute at your computer, or a program running as you, load an extension that never went through the store."
   vi: "Chế độ này cho phép người ngồi vào máy bạn một phút, hay chương trình chạy dưới tên bạn, nạp extension chưa từng qua cửa hàng."
 fix:
-  en: "Turn it off at the top right of chrome://extensions when you are not building an extension."
-  vi: "Tắt ở góc trên bên phải chrome://extensions khi bạn không làm extension."
+  en: "Turn it off at the top right of `chrome://extensions` when you are not building an extension."
+  vi: "Tắt ở góc trên bên phải `chrome://extensions` khi bạn không làm extension."
 author: the-last-devops
 tests:
   - {"item": {"browser": "Chrome", "profile": "Default", "safe_browsing_off": false, "developer_mode": true}, "expect": true}
