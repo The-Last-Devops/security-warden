@@ -15,7 +15,7 @@ import (
 	ui "github.com/The-Last-Devops/security-warden/web"
 )
 
-func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open bool) int {
+func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab bool) int {
 	t := func(k string) string { return i18n.T(lang, k) }
 	if os.Geteuid() == 0 {
 		fmt.Println(t("serve.root"))
@@ -58,7 +58,11 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open bool
 	// Open the browser for the person at this machine; a Tailscale address is
 	// for another device, so only print the link then.
 	if open && kind == web.KindLoopback {
-		if err := web.OpenBrowser(srv.LoginURL()); err == nil {
+		openFn := web.OpenApp
+		if tab {
+			openFn = web.OpenBrowser
+		}
+		if err := openFn(srv.LoginURL()); err == nil {
 			fmt.Println("  " + t("serve.opened") + "\n")
 		}
 	}

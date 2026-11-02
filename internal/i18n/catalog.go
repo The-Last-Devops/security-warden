@@ -61,7 +61,7 @@ Usage:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open]
+  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -174,7 +174,7 @@ Cách dùng:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open]
+  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version

@@ -58,6 +58,7 @@ func run(args []string) int {
 	listen := fs.String("listen", "", "serve: one IP:PORT of this machine (loopback or Tailscale); default 127.0.0.1:7348")
 	allowLAN := fs.Bool("allow-lan", false, "serve: allow a LAN address (never 0.0.0.0)")
 	noOpen := fs.Bool("no-open", false, "serve: do not open the browser")
+	tab := fs.Bool("tab", false, "serve: open in a browser tab instead of an app window")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -103,7 +104,7 @@ func run(args []string) int {
 	case "ignore":
 		return runIgnore(l, subArgs)
 	case "serve":
-		return runServe(l, rs, *listen, *allowLAN, !*noOpen)
+		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab)
 	case "help":
 		fs.Usage()
 		return 0
