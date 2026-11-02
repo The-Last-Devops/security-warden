@@ -62,3 +62,14 @@ func TestLiteralSecret(t *testing.T) {
 		t.Error("literalValue")
 	}
 }
+
+func TestReadSmallRefusesFIFO(t *testing.T) {
+	dir := t.TempDir()
+	fifo := filepath.Join(dir, "pipe")
+	if err := mkfifo(fifo); err != nil {
+		t.Skip("mkfifo not available:", err)
+	}
+	if _, err := readSmall(fifo); err == nil {
+		t.Error("readSmall read from a FIFO instead of refusing it")
+	}
+}

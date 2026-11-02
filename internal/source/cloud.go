@@ -11,7 +11,7 @@ import (
 )
 
 func readSmallN(path string, n int64) ([]byte, error) {
-	f, err := os.Open(path)
+	f, err := openRegular(path)
 	if err != nil {
 		return nil, err
 	}

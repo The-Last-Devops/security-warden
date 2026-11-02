@@ -15,3 +15,17 @@ func owner(fi os.FileInfo) (uid, gid uint32, ok bool) {
 	}
 	return st.Uid, st.Gid, true
 }
+
+// openRegular opens a regular file for reading without blocking on FIFOs or
+// devices, and refuses anything that is not a regular file.
+func openRegular(path string) (*os.File, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+	if fi, err := f.Stat(); err != nil || !fi.Mode().IsRegular() {
+		f.Close()
+		return nil, os.ErrInvalid
+	}
+	return f, nil
+}

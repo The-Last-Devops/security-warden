@@ -19,7 +19,7 @@ var home = func() string { h, _ := os.UserHomeDir(); return h }
 const maxRead = 256 << 10
 
 func readSmall(path string) ([]byte, error) {
-	f, err := os.Open(path)
+	f, err := openRegular(path)
 	if err != nil {
 		return nil, err
 	}

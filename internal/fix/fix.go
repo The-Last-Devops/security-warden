@@ -101,14 +101,11 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			fi, err := os.Stat(path)
+			prev, err := chmodNoFollow(path, 0o600)
 			if err != nil {
 				return nil, err
 			}
-			if err := os.Chmod(path, 0o600); err != nil {
-				return nil, err
-			}
-			return map[string]string{"path": path, "mode": fmt.Sprintf("%04o", fi.Mode().Perm())}, nil
+			return map[string]string{"path": path, "mode": fmt.Sprintf("%04o", prev)}, nil
 		},
 		Undo: func(p map[string]string) error {
 			path, err := privatePath(p["path"])
@@ -116,10 +113,11 @@ func init() {
 				return err
 			}
 			m, err := strconv.ParseUint(p["mode"], 8, 32)
-			if err != nil {
-				return err
+			if err != nil || m > 0o777 {
+				return fmt.Errorf("bad mode %q", p["mode"])
 			}
-			return os.Chmod(path, fs.FileMode(m))
+			_, err = chmodNoFollow(path, fs.FileMode(m))
+			return err
 		},
 	})
 
