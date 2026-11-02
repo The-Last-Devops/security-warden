@@ -365,11 +365,11 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 	until := map[string]string{}
 	if es, err := ignore.Default().List(time.Now()); err == nil {
 		for _, e := range es {
-			if e.Until.IsZero() {
-				until[e.ID] = ""
-			} else {
-				until[e.ID] = e.Until.Format(time.RFC3339)
+			end := e.Until
+			if end.IsZero() { // written by an older version: ends MaxHide after
+				end = e.Created.Add(ignore.MaxHide)
 			}
+			until[e.ID] = end.Format(time.RFC3339)
 		}
 	}
 	type apiIgnored struct {

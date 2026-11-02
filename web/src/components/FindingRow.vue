@@ -20,7 +20,6 @@ const parts = computed(() => {
 })
 const title = computed(() => parts.value[0])
 const sub = computed(() => (props.group.rest.length ? props.t.places(props.group.rest.length + 1) : parts.value[1]))
-function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
 </script>
 
 <template>
@@ -57,14 +56,7 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
       <div class="relative flex flex-wrap items-center gap-2 pt-1">
         <span v-if="f.needs_root" class="text-[13px] text-muted">{{ t.needsAdmin }}</span>
         <span v-else-if="f.plan" class="text-[13px] text-muted">{{ f.undoable ? t.undoable : t.noUndo }}</span>
-        <button class="ml-auto rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" :aria-expanded="menu" @click="menu = !menu">
-          {{ t.ignore }} ▾
-        </button>
-        <div v-if="menu" class="absolute right-0 bottom-10 z-10 grid min-w-48 overflow-hidden rounded-xl border border-line bg-panel py-1 text-[13.5px] shadow-2xl" role="menu">
-          <button v-for="d in [1, 7, 30]" :key="d" class="px-4 py-2 text-left hover:bg-panel2" role="menuitem" @click="ignore(d)">{{ t.ignoreFor(d) }}</button>
-          <button v-if="f.severity !== 'critical'" class="px-4 py-2 text-left hover:bg-panel2" role="menuitem" @click="ignore(0)">{{ t.ignoreForever }}</button>
-          <div v-else class="px-4 py-2 text-[12px] text-muted">{{ t.criticalMax }}</div>
-        </div>
+        <button class="ml-auto rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="emit('ignore', all)">{{ t.ignore }}…</button>
       </div>
     </div>
   </div>

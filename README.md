@@ -146,7 +146,7 @@ you about new problems, and opens the window for new high or critical ones (at m
 - **Fixes** are built in, never written in rules: tighten file permissions, turn the firewall on, turn the
   guest account off, raise Tailscale shields, upgrade a Homebrew package. Each reversible change is
   journaled for undo. Risky steps (rotating a key) stay written instructions.
-- **Snooze** a finding for 1, 7 or 30 days or for good (critical: 30 days at most).
+- **Hide** a finding for 1, 7 or 30 days, never longer, after a confirmation. Hidden findings stay listed at the bottom with a one-click Show again.
 
 <details>
 <summary>Use it from another device over Tailscale</summary>

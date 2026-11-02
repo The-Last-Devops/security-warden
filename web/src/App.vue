@@ -203,6 +203,20 @@ async function undo() {
     if (r.undone) await load(true)
   } catch (e) { fail(e) }
 }
+// Hiding always asks first: what, for how long, and where to get it back.
+const hideAsk = ref(null) // { list, days }
+function askHide(list) { hideAsk.value = { list, days: 7 } }
+const hideUntil = computed(() => (hideAsk.value ? fmtDate(new Date(Date.now() + hideAsk.value.days * 864e5).toISOString()) : ''))
+async function confirmHide() { const h = hideAsk.value; hideAsk.value = null; await ignoreFindings(h.list, h.days) }
+// Hidden findings grouped per kind of problem, for the list's last section.
+const hiddenGroups = computed(() => {
+  const by = new Map()
+  for (const x of ignored.value) {
+    if (!by.has(x.rule_id)) by.set(x.rule_id, { first: x, keys: [] })
+    by.get(x.rule_id).keys.push(x.key)
+  }
+  return [...by.values()]
+})
 async function ignoreFindings(list, days) {
   const keys = list.map(f => f.key)
   try {
@@ -423,7 +437,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <div class="flex flex-wrap items-center gap-2">
               <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>
               <button v-if="nextGroup.rest.length" class="rounded-xl border border-line bg-panel px-4 py-2.5 text-[14px] font-semibold hover:text-accent" @click="nextOpen = !nextOpen">{{ nextOpen ? t.showLess : t.seePlaces(nextGroup.rest.length + 1) }}</button>
-              <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="ignoreFindings([nextGroup.first, ...nextGroup.rest], 7)">{{ t.later }}</button>
+              <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="askHide([nextGroup.first, ...nextGroup.rest])">{{ t.ignore }}…</button>
             </div>
             </div>
           </article>
@@ -435,7 +449,19 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
             </h2>
             <div class="grid gap-2 px-3 pt-2 pb-1">
-              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />
+              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" />
+            </div>
+          </section>
+          <section v-if="hiddenGroups.length" class="mx-3 mt-4 mb-1 rounded-2xl bg-panel2/60 px-4 py-3.5 ring-1 ring-line">
+            <div class="flex items-center gap-2">
+              <h2 class="caps">{{ t.hiddenHere }} · <span class="num">{{ hiddenGroups.length }}</span></h2>
+              <button class="ml-auto rounded-lg px-2 py-1 text-[13px] font-semibold text-accent hover:bg-panel" @click="restore(ignored.map(x => x.key))">{{ t.restoreAll }}</button>
+            </div>
+            <div v-for="g in hiddenGroups" :key="g.first.rule_id" class="mt-2 flex items-center gap-3 text-[14px]">
+              <span class="h-2 w-2 shrink-0 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[g.first.severity]" />
+              <span class="min-w-0 flex-1 truncate">{{ g.first.title.split(': ')[0] }}<span v-if="g.keys.length > 1" class="text-muted"> · {{ t.places(g.keys.length) }}</span></span>
+              <span class="hidden shrink-0 text-[12.5px] text-muted sm:inline">{{ t.until(fmtDate(g.first.until)) }}</span>
+              <button class="shrink-0 rounded-lg border border-line bg-panel px-2.5 py-1 text-[13px] font-semibold hover:text-accent" @click="restore(g.keys)">{{ t.restore }}</button>
             </div>
           </section>
           <section v-if="data && cat !== 'all' && catPassed.length" class="px-5 pt-5 pb-4">
@@ -490,6 +516,31 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         </section>
       </div>
     </Transition>
+
+    <!-- hide confirmation -->
+    <div v-if="hideAsk" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="hideAsk = null">
+      <section class="panel rise grid w-full max-w-md gap-4 p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="hide-title">
+        <h2 id="hide-title" class="text-[18px] font-bold">{{ t.hideTitle }}</h2>
+        <p class="rounded-xl bg-panel2 px-4 py-3 text-[14.5px] font-semibold ring-1 ring-line">{{ hideAsk.list[0].title.split(': ')[0] }}<span v-if="hideAsk.list.length > 1" class="font-normal text-muted"> · {{ t.places(hideAsk.list.length) }}</span></p>
+        <div class="grid gap-2">
+          <span class="caps">{{ t.hideFor }}</span>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button v-for="d in [1, 7, 30]" :key="d" class="rounded-lg px-2 py-2 text-[13.5px] font-semibold ring-1"
+              :class="hideAsk.days === d ? 'bg-accent text-accent-ink ring-accent' : 'bg-panel2 ring-line hover:text-accent'"
+              @click="hideAsk.days = d">{{ t.ignoreFor(d) }}</button>
+          </div>
+        </div>
+        <ul class="grid gap-1.5 text-[14px] leading-snug">
+          <li>• {{ t.hideBack(hideUntil) }}</li>
+          <li>• {{ t.hideScore }}</li>
+          <li>• {{ t.hideWhere }}</li>
+        </ul>
+        <div class="flex justify-end gap-2">
+          <button class="rounded-xl px-4 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="hideAsk = null">{{ t.cancel }}</button>
+          <button class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110" @click="confirmHide">{{ t.hideConfirm }}</button>
+        </div>
+      </section>
+    </div>
 
     <!-- fix confirmation -->
     <div v-if="sheet" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="sheet = null">

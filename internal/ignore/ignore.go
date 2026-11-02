@@ -15,8 +15,9 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 )
 
-// MaxCritical is the longest a critical finding may be snoozed.
-const MaxCritical = 30 * 24 * time.Hour
+// MaxHide is the longest any finding may be hidden: nothing is hidden for
+// good, so a forgotten problem always comes back.
+const MaxHide = 30 * 24 * time.Hour
 
 // Entry is one snoozed finding.
 type Entry struct {
@@ -29,7 +30,15 @@ type Entry struct {
 }
 
 // Active reports whether the entry still applies at t.
-func (e Entry) Active(t time.Time) bool { return e.Until.IsZero() || t.Before(e.Until) }
+// Active: still hidden at t. Old "for good" entries (no Until) last
+// MaxHide from when they were made.
+func (e Entry) Active(t time.Time) bool {
+	until := e.Until
+	if until.IsZero() {
+		until = e.Created.Add(MaxHide)
+	}
+	return t.Before(until)
+}
 
 // Store is the ignore list on disk (ignores.json, 0600).
 type Store struct {
@@ -98,8 +107,7 @@ func (s *Store) List(now time.Time) ([]Entry, error) {
 	return keep, nil
 }
 
-// Add snoozes findings for d (0 = for good). Critical findings are capped
-// at MaxCritical.
+// Add hides findings for d, at most MaxHide (0 or longer means MaxHide).
 func (s *Store) Add(fs []engine.Finding, d time.Duration, now time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -113,13 +121,11 @@ func (s *Store) Add(fs []engine.Finding, d time.Duration, now time.Time) error {
 	}
 	for _, f := range fs {
 		dd := d
-		if f.Severity == "critical" && (dd == 0 || dd > MaxCritical) {
-			dd = MaxCritical
+		if dd <= 0 || dd > MaxHide {
+			dd = MaxHide
 		}
 		e := Entry{ID: engine.FindingID(f), RuleID: f.RuleID, Title: f.Title, Severity: f.Severity, Created: now}
-		if dd > 0 {
-			e.Until = now.Add(dd)
-		}
+		e.Until = now.Add(dd)
 		if i, ok := byID[e.ID]; ok {
 			es[i] = e
 		} else {
