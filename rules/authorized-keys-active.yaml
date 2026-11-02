@@ -1,0 +1,18 @@
+id: authorized-keys-active
+severity: medium
+platforms: [macos, windows, linux]
+source: authorized_keys
+match: "item.count > 0 && item.ssh_on"
+title:
+  en: "{count} keys can log in to this account over SSH"
+  vi: "{count} khoá đăng nhập được vào tài khoản này qua SSH"
+explain:
+  en: "Remote Login is on and {path} lists {count} keys. Each one is a way in."
+  vi: "Đăng nhập từ xa đang bật và {path} có {count} khoá. Mỗi khoá là một lối vào."
+fix:
+  en: "Remove keys you don't recognise from {path}, and turn Remote Login off if you don't use it."
+  vi: "Xoá các khoá bạn không nhận ra khỏi {path}, và tắt Đăng nhập từ xa nếu không dùng."
+author: the-last-devops
+tests:
+  - {"item": {"path": "/h/.ssh/authorized_keys", "count": 2, "weak": 0, "restricted": 0, "ssh_on": true, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": true}
+  - {"item": {"path": "/h/.ssh/authorized_keys", "count": 2, "weak": 0, "restricted": 0, "ssh_on": false, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": false}

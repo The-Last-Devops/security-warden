@@ -1,0 +1,18 @@
+id: printer-sharing-on
+severity: low
+platforms: [macos]
+source: sharing
+match: "item.kind == \"printer\" && item.service_on"
+title:
+  en: "Printer sharing is on"
+  vi: "Đang chia sẻ máy in"
+explain:
+  en: "The print service accepts jobs from the network, which exposes CUPS to other machines."
+  vi: "Dịch vụ in nhận lệnh in từ mạng, tức là CUPS lộ ra cho máy khác."
+fix:
+  en: "System Settings > General > Sharing > Printer Sharing: off."
+  vi: "Cài đặt hệ thống > Cài đặt chung > Chia sẻ > Chia sẻ máy in: tắt."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "printer", "service_on": true}, "expect": true}
+  - {"item": {"kind": "printer", "service_on": false}, "expect": false}

@@ -62,6 +62,10 @@ func All() []Collector {
 		{"ai_agents", aiAgents},
 		{"cloud_config", cloudConfig},
 		{"shell_history", shellHistory},
+		{"sharing", sharing},
+		{"authorized_keys", authorizedKeys},
+		{"browser_extensions", browserExtensions},
+		{"dev_files", devFiles},
 	}
 }
 

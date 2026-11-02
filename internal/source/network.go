@@ -120,6 +120,7 @@ func remoteServices(ctx context.Context) ([]Item, error) {
 		{"apple_remote_desktop", 3283},
 		{"rdp", 3389},
 		{"smb", 445},
+		{"remote_apple_events", 3031},
 	}
 	var items []Item
 	for _, s := range services {

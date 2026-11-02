@@ -159,7 +159,33 @@ func Text(w io.Writer, s Scan, o Options) {
 	for _, f := range s.Findings {
 		width = max(width, utf8.RuneCountInString(t("severity."+f.Severity)))
 	}
+	// A rule that fires many times gets one card: the first finding in full,
+	// then a short list of the others.
+	const listMax = 5
+	shown := map[string]int{}
+	total := map[string]int{}
 	for _, f := range s.Findings {
+		total[f.RuleID]++
+	}
+	for _, f := range s.Findings {
+		shown[f.RuleID]++
+		if n := shown[f.RuleID]; n > 1 && !o.Verbose {
+			rail := c.wrap(sevColor[f.Severity], "┃")
+			if !c.on {
+				rail = "|"
+			}
+			indent := strings.Repeat(" ", width+4)
+			switch {
+			case n <= listMax+1:
+				fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.dim("•"), tilde(f.Title))
+			case n == listMax+2:
+				fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.and_more"), total[f.RuleID]-listMax-1)))
+			}
+			if n == total[f.RuleID] {
+				fmt.Fprintln(w)
+			}
+			continue
+		}
 		rail := c.wrap(sevColor[f.Severity], "┃")
 		if !c.on {
 			rail = "|"
@@ -175,12 +201,19 @@ func Text(w io.Writer, s Scan, o Options) {
 		if short && !o.Verbose {
 			// One line of advice is enough for minor findings.
 			fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
+			if total[f.RuleID] > 1 {
+				fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.same_issue"), total[f.RuleID]-1)))
+			}
 			continue
 		}
 		fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(tilde(f.Explain)))
 		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
 		if o.Verbose {
 			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(f.RuleID))
+		}
+		if total[f.RuleID] > 1 && !o.Verbose {
+			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.same_issue"), total[f.RuleID]-1)))
+			continue
 		}
 		fmt.Fprintln(w)
 	}

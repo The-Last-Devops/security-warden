@@ -1,0 +1,19 @@
+id: file-sharing-guest
+severity: high
+platforms: [macos]
+source: sharing
+match: "item.kind == \"smb_share\" && item.service_on && item.shared && item.guest"
+title:
+  en: "Guests can open the shared folder {name} without a password"
+  vi: "Khách mở được thư mục chia sẻ {name} không cần mật khẩu"
+explain:
+  en: "File Sharing is on and {path} allows guest access. Anyone on the same network can read it."
+  vi: "File Sharing đang bật và {path} cho khách truy cập. Ai cùng mạng cũng đọc được thư mục này."
+fix:
+  en: "System Settings > General > Sharing > File Sharing > (i): turn off guest access for {name}, or turn File Sharing off."
+  vi: "Cài đặt hệ thống > Cài đặt chung > Chia sẻ > Chia sẻ file > (i): tắt quyền khách cho {name}, hoặc tắt hẳn Chia sẻ file."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "smb_share", "name": "Public", "path": "/Users/a/Public", "service_on": true, "shared": true, "guest": true, "read_only": false}, "expect": true}
+  - {"item": {"kind": "smb_share", "name": "Public", "path": "/Users/a/Public", "service_on": false, "shared": true, "guest": true, "read_only": false}, "expect": false, "note": "File Sharing off"}
+  - {"item": {"kind": "smb_share", "name": "Public", "path": "/Users/a/Public", "service_on": true, "shared": true, "guest": false, "read_only": false}, "expect": false}

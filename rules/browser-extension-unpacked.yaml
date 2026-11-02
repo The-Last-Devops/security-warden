@@ -1,0 +1,18 @@
+id: browser-extension-unpacked
+severity: medium
+platforms: [macos, windows, linux]
+source: browser_extensions
+match: "item.unpacked"
+title:
+  en: "{browser} runs an unpacked extension: {name}"
+  vi: "{browser} đang chạy extension cài tay: {name}"
+explain:
+  en: "Unpacked extensions skip the store's review and update checks. Malware installs itself this way."
+  vi: "Extension cài tay bỏ qua bước duyệt và cập nhật của store. Mã độc hay tự cài theo cách này."
+fix:
+  en: "If you didn't load {name} yourself for development, remove it."
+  vi: "Nếu không phải bạn tự nạp {name} để phát triển thì gỡ nó."
+author: the-last-devops
+tests:
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": true, "from_webstore": true, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": false}

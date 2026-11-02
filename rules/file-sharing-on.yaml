@@ -1,0 +1,18 @@
+id: file-sharing-on
+severity: medium
+platforms: [macos]
+source: sharing
+match: "item.kind == \"smb_share\" && item.service_on && item.shared && !item.guest"
+title:
+  en: "File Sharing shares {name}"
+  vi: "Đang chia sẻ thư mục {name}"
+explain:
+  en: "{path} is shared over SMB. Anyone with an account on this Mac can reach it from the network."
+  vi: "{path} đang được chia sẻ qua SMB. Ai có tài khoản trên máy này đều vào được từ mạng."
+fix:
+  en: "Turn File Sharing off when you don't need it: System Settings > General > Sharing."
+  vi: "Không cần thì tắt Chia sẻ file: Cài đặt hệ thống > Cài đặt chung > Chia sẻ."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "smb_share", "name": "Public", "path": "/Users/a/Public", "service_on": true, "shared": true, "guest": false, "read_only": false}, "expect": true}
+  - {"item": {"kind": "smb_share", "name": "Public", "path": "/Users/a/Public", "service_on": false, "shared": true, "guest": false, "read_only": false}, "expect": false}

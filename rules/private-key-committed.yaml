@@ -1,0 +1,19 @@
+id: private-key-committed
+severity: critical
+platforms: [macos, windows, linux]
+source: dev_files
+match: "item.kind == \"key\" && item.tracked"
+title:
+  en: "Private key committed to Git: {repo_name}/{file}"
+  vi: "Khoá riêng đã bị commit vào Git: {repo_name}/{file}"
+explain:
+  en: "{file} holds a private key and is tracked in {repo}. Anyone who has ever cloned the repository can use it to log in or decrypt."
+  vi: "{file} chứa khoá riêng và đang được Git theo dõi trong {repo}. Ai từng clone repo đều dùng được nó để đăng nhập hoặc giải mã."
+fix:
+  en: "Replace the key (new key pair, remove the old public key from every server), then git rm --cached {file} and add it to .gitignore."
+  vi: "Thay khoá (tạo cặp khoá mới, gỡ khoá công khai cũ khỏi mọi server), rồi git rm --cached {file} và thêm vào .gitignore."
+author: the-last-devops
+tests:
+  - {"item": {"path": "/h/Code/infra/k.pem", "repo": "/h/Code/infra", "repo_name": "infra", "file": "k.pem", "kind": "key", "tracked": true, "ignored": false}, "expect": true}
+  - {"item": {"path": "/h/Code/infra/k.pem", "repo": "/h/Code/infra", "repo_name": "infra", "file": "k.pem", "kind": "key", "tracked": false, "ignored": true}, "expect": false}
+  - {"item": {"path": "/h/Code/app/.env", "repo": "/h/Code/app", "repo_name": "app", "file": ".env", "kind": "env", "tracked": true, "ignored": false}, "expect": false}
