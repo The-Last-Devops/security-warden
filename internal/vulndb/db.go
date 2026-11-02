@@ -161,10 +161,30 @@ func convert(eco string, b []byte) (*Vuln, time.Time, error) {
 			v.Affected = append(v.Affected, out)
 		}
 	}
-	if len(v.Affected) == 0 {
+	if len(v.Affected) == 0 || (eco == "Go" && everyVersionNoFix(v)) {
 		return nil, r.Modified, nil
 	}
 	return v, r.Modified, nil
+}
+
+// everyVersionNoFix: every range starts at 0 and never ends. In the Go
+// database these are notices about unmaintained packages (for example
+// x/crypto/openpgp), matched per module although only one package is meant,
+// so they flag every project using the module.
+func everyVersionNoFix(v *Vuln) bool {
+	for _, a := range v.Affected {
+		if len(a.Versions) > 0 {
+			return false
+		}
+		for _, rg := range a.Ranges {
+			for _, e := range rg {
+				if e.Fixed != "" || e.LastAffected != "" || (e.Introduced != "" && e.Introduced != "0") {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
 
 func normSeverity(s string) string {

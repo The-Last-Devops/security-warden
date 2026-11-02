@@ -194,6 +194,10 @@ func historyItem(ctx context.Context, repo string) Item {
 // until then is still used, minus a possibly cut last name).
 func deletedSecretFiles(ctx context.Context, repo string) (files []string, complete bool) {
 	args := append([]string{"log", "--all", "--no-renames", "--diff-filter=D", "--name-only", "--format=", "-z", "--"}, historyPathspecs...)
+	// A huge history must not hold up the whole scan: what git printed in
+	// 3 seconds is still used, and the background service caches results.
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 	out, err := gitSafe(ctx, repo, nil, args...)
 	names := strings.Split(string(out), "\x00")
 	if err != nil {

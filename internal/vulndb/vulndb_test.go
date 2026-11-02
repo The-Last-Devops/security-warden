@@ -305,3 +305,18 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("index file: %v %v", fi, err)
 	}
 }
+
+func TestGoUnmaintainedNoticeSkipped(t *testing.T) {
+	rec := []byte(`{"id":"GO-2026-5932","modified":"2026-01-01T00:00:00Z","affected":[{"package":{"ecosystem":"Go","name":"golang.org/x/crypto"},"ranges":[{"type":"SEMVER","events":[{"introduced":"0"}]}]}]}`)
+	if v, _, err := convert("Go", rec); err != nil || v != nil {
+		t.Fatalf("an every-version, no-fix Go notice should be dropped: %v %v", v, err)
+	}
+	fixed := []byte(`{"id":"GO-2026-0001","modified":"2026-01-01T00:00:00Z","affected":[{"package":{"ecosystem":"Go","name":"example.com/m"},"ranges":[{"type":"SEMVER","events":[{"introduced":"0"},{"fixed":"1.2.3"}]}]}]}`)
+	if v, _, err := convert("Go", fixed); err != nil || v == nil {
+		t.Fatalf("a Go advisory with a fix must be kept: %v %v", v, err)
+	}
+	npm := []byte(`{"id":"GHSA-xxxx","modified":"2026-01-01T00:00:00Z","affected":[{"package":{"ecosystem":"npm","name":"left-pad"},"ranges":[{"type":"SEMVER","events":[{"introduced":"0"}]}]}]}`)
+	if v, _, err := convert("npm", npm); err != nil || v == nil {
+		t.Fatalf("npm advisories without a fix are kept: %v %v", v, err)
+	}
+}
