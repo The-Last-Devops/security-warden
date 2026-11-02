@@ -243,7 +243,11 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
           <svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" fill="var(--color-accent)" /></svg>
           Security Warden
         </button>
-        <span v-if="upd?.current" class="num -ml-2 rounded-md px-1.5 py-0.5 text-[12px] font-semibold text-muted ring-1 ring-line">{{ upd.current }}</span>
+        <button v-if="upd?.current" class="num -ml-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ring-1"
+          :class="upd.available ? 'bg-crit-bg text-crit ring-crit/40' : 'bg-ok-bg text-ok ring-ok/30'"
+          :title="upd.available ? t.newVersion(upd.latest) : t.upToDate" @click.stop="menuOpen = true; watchOpen = false">
+          <i class="h-1.5 w-1.5 rounded-full" :class="upd.available ? 'bg-crit' : 'bg-ok'" />{{ upd.current }}
+        </button>
         <div v-if="data" class="relative">
           <button class="flex items-center gap-2 rounded-lg px-2 py-1 text-[13px] text-muted hover:bg-panel2 hover:text-fg" :aria-expanded="watchOpen" @click.stop="watchOpen = !watchOpen; menuOpen = false">
             <i class="h-2 w-2 rounded-full" :class="data.watching ? 'bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]' : 'bg-muted/60'" />

@@ -548,6 +548,16 @@ func (s *Server) handleUnignore(w http.ResponseWriter, r *http.Request, _ string
 
 func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
 	st := update.Load()
+	// The daily check can be up to a day old: refresh it when the page asks
+	// and the last answer is more than an hour old, so the badge is right.
+	if time.Since(st.Checked) > time.Hour && s.Version != "dev" {
+		ctx, cancel := context.WithTimeout(r.Context(), 4*time.Second)
+		if latest, err := update.Latest(ctx); err == nil {
+			st.Latest, st.Checked, st.LastError = latest, time.Now(), ""
+			_ = update.Save(st)
+		}
+		cancel()
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"current": s.Version, "latest": st.Latest, "auto": st.Auto, "method": update.Method(),
 		"available": update.Newer(st.Latest, s.Version), "checked": st.Checked, "error": st.LastError,
