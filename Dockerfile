@@ -9,6 +9,9 @@
 
 ARG GO_VERSION=1.27
 ARG NODE_VERSION=22
+# What the build stage starts from: "test" (default) gates binaries on the
+# tests; releases pass "src" because CI already tested that commit.
+ARG BUILD_BASE=test
 
 # ui: the Vue + Tailwind web UI, built once and embedded in the binary.
 # Scripts from dependencies never run (--ignore-scripts).
@@ -30,28 +33,33 @@ FROM dev AS deps
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-# test: vet and unit tests, including every rule's sample items.
-FROM deps AS test
+# src: the source tree with the built web UI in place.
+FROM deps AS src
 COPY . .
 COPY --from=ui /web/dist/ web/dist/
+
+# test: vet and unit tests, including every rule's sample items.
+FROM src AS test
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w ."; exit 1; }; \
     go vet ./... && GOOS=darwin go vet ./... && GOOS=windows go vet ./... && go test ./...
 
-# build: cross-compile for macOS (arm64 + amd64) and Windows (amd64).
-FROM test AS build
+# build: cross-compile every target in TARGETS, in parallel.
+FROM ${BUILD_BASE} AS build
 ARG VERSION=dev
+ARG TARGETS="darwin/arm64 darwin/amd64 windows/amd64 linux/amd64 linux/arm64"
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    set -e; \
-    for t in darwin/arm64 darwin/amd64 windows/amd64 linux/amd64 linux/arm64; do \
-      os=${t%/*}; arch=${t#*/}; ext=; [ "$os" = windows ] && ext=.exe; \
+    set -e; mkdir -p /out; pids=; \
+    for t in $TARGETS; do ( \
+      set -e; os=${t%/*}; arch=${t#*/}; ext=; [ "$os" = windows ] && ext=.exe; \
       GOOS=$os GOARCH=$arch go build -ldflags "-s -w -X main.version=${VERSION}" \
         -o /out/security-warden-$os-$arch$ext ./cmd/security-warden; \
       if [ "$os" != windows ]; then \
-        mkdir -p /tmp/pkg && cp /out/security-warden-$os-$arch /tmp/pkg/security-warden && \
-        tar -C /tmp/pkg -czf /out/security-warden-$os-$arch.tar.gz security-warden && rm -rf /tmp/pkg; \
-      fi; \
+        pkg=$(mktemp -d) && cp /out/security-warden-$os-$arch $pkg/security-warden && \
+        tar -C $pkg -czf /out/security-warden-$os-$arch.tar.gz security-warden && rm -rf $pkg; \
+      fi ) & pids="$pids $!"; \
     done; \
+    for p in $pids; do wait $p; done; \
     cd /out && sha256sum security-warden-* > SHA256SUMS
 
 # export: just the binaries, for --output.

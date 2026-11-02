@@ -10,31 +10,57 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  # Two builds side by side: the macOS binaries first, so the .dmg can start
+  # while Linux and Windows still compile. CI already tested this commit.
+  build-mac:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build every platform
+      - name: Build darwin/arm64 darwin/amd64
         run: |
           docker buildx build --target export --output dist \
             --build-arg VERSION=${GITHUB_REF_NAME} \
-            --cache-from type=gha .
+            --build-arg BUILD_BASE=src \
+            --build-arg "TARGETS=darwin/arm64 darwin/amd64" \
+            --cache-from type=gha --cache-from type=gha,scope=release-mac \
+            --cache-to type=gha,scope=release-mac,mode=max .
+          rm dist/SHA256SUMS
           ls -l dist
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-mac
+          path: dist/
+
+  build-rest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build linux/amd64 linux/arm64 windows/amd64
+        run: |
+          docker buildx build --target export --output dist \
+            --build-arg VERSION=${GITHUB_REF_NAME} \
+            --build-arg BUILD_BASE=src \
+            --build-arg "TARGETS=linux/amd64 linux/arm64 windows/amd64" \
+            --cache-from type=gha --cache-from type=gha,scope=release-rest \
+            --cache-to type=gha,scope=release-rest,mode=max .
+          rm dist/SHA256SUMS
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-rest
           path: dist/
 
   # hdiutil and lipo only exist on macOS.
   dmg:
-    needs: build
+    needs: build-mac
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-mac
           path: dist
       - name: Build .dmg
         env:
@@ -53,7 +79,7 @@ jobs:
           path: dist/*.dmg
 
   publish:
-    needs: [build, dmg]
+    needs: [build-mac, build-rest, dmg]
     runs-on: ubuntu-latest
     permissions:
       contents: write
