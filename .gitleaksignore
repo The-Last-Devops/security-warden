@@ -1,0 +1,5 @@
+# Reviewed gitleaks findings that are not secrets (fingerprint per line):
+# test fixtures with only a key header, the key-type detector, and a gitleaks pattern.
+464a527a1fbcfb09610cab22402e0298444ba34d:internal/source/sshkeytype_test.go:private-key:48
+a2b34f140b3818eac203fbbe4454abfc5e1ec50c:internal/source/proc_test.go:private-key:26
+9097f97576df9c0449d7fa4850afecdaee4bd0bb:internal/source/secrets.go:private-key:74

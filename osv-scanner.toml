@@ -1,0 +1,5 @@
+# Reviewed vulnerabilities that do not affect Security Warden.
+
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "golang.org/x/crypto/openpgp is not imported; govulncheck confirms no vulnerable code is called."

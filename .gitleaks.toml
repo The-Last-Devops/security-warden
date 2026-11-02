@@ -1,0 +1,8 @@
+# gitleaks config for this repository: the default rules, plus the generated
+# file that holds gitleaks' own patterns (it would match itself).
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Secret patterns generated from gitleaks"
+paths = ['''internal/source/secretpatterns_gen\.go''']

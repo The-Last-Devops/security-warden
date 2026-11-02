@@ -1,0 +1,98 @@
+name: security
+
+# Security scans of this repository: on every push to main, every pull
+# request, and weekly (new advisories appear without code changes).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Known vulnerabilities in Go dependencies that our code actually calls.
+  govulncheck:
+    runs-on: ubuntu-latest
+    container: golang:1.27
+    steps:
+      - uses: actions/checkout@v4
+      - name: govulncheck
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p web/dist && touch web/dist/.keep
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          govulncheck ./...
+
+  # Vulnerabilities in every dependency: Go modules and the web UI's npm packages.
+  osv-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OSV-Scanner
+        run: |
+          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:v2.2.4 \
+            scan source -r --no-call-analysis=go --config /src/osv-scanner.toml /src
+
+  # Secrets committed anywhere in the history.
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+            git /repo --no-banner --redact --config /repo/.gitleaks.toml
+
+  # Go static analysis. Reported to the Security tab; it does not fail the
+  # build: a security scanner runs commands and reads files by design, so
+  # most hits need a human look (reviewed so far: no real issue).
+  gosec:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container: golang:1.27
+    steps:
+      - uses: actions/checkout@v4
+      - name: gosec
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p web/dist && touch web/dist/.keep
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.10
+          gosec -no-fail -exclude-dir=tools -fmt sarif -out gosec.sarif ./...
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gosec.sarif
+          category: gosec
+
+  # GitHub's semantic analysis for Go and the web UI's JavaScript.
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        language: [go, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        if: matrix.language == 'go'
+        with:
+          go-version: "1.27"
+      - name: Placeholder for the embedded UI
+        if: matrix.language == 'go'
+        run: mkdir -p web/dist && touch web/dist/.keep
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

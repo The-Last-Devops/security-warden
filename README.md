@@ -201,7 +201,7 @@ docker compose run --rm build    # ./dist/security-warden for this Mac
 ```
 
 Development builds use port **7349** and their own data folder and service (`security-warden-dev`), so they
-never collide with an installed release. Releases: push a `v*` tag; GitHub Actions builds every platform,
+never collide with an installed release. Every push also runs security scans of this project: govulncheck and OSV-Scanner (vulnerable dependencies), gitleaks (committed secrets), gosec and CodeQL (code analysis); Dependabot proposes dependency updates. Releases: push a `v*` tag; GitHub Actions builds every platform,
 signs and notarizes the `.dmg`, publishes the release and updates `Formula/security-warden.rb` (this
 repository is its own Homebrew tap).
 
