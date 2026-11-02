@@ -111,3 +111,27 @@ jobs:
           git add Formula/security-warden.rb
           git commit -m "Homebrew formula for ${GITHUB_REF_NAME}" || exit 0
           git push origin main
+
+  # Install the release the way users do and make sure it really is the new
+  # version: catches a formula that points at the wrong files or version.
+  verify-brew:
+    needs: publish
+    runs-on: macos-latest
+    steps:
+      - name: Install from the tap
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          brew tap the-last-devops/security-warden https://github.com/${{ github.repository }}
+          brew trust the-last-devops/security-warden 2>/dev/null || true
+          brew install security-warden
+      - name: Version matches the tag
+        run: |
+          got=$(security-warden version)
+          echo "installed $got, tag $GITHUB_REF_NAME"
+          [ "$got" = "$GITHUB_REF_NAME" ]
+      - name: Scan runs
+        run: |
+          security-warden --json > report.json || [ $? -eq 1 ]
+          python3 -c "import json; r=json.load(open('report.json')); print(r['score'], r['checked'], len(r['findings']))"

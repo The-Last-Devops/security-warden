@@ -100,6 +100,9 @@ func StableExecutable() (string, error) {
 	return real, nil
 }
 
+// brewPath finds Homebrew; a variable so tests can use a fake brew.
+var brewPath = brewBin
+
 func brewBin() string {
 	if p, err := exec.LookPath("brew"); err == nil {
 		return p
@@ -114,7 +117,7 @@ func brewBin() string {
 
 // ApplyBrew runs brew upgrade for this formula.
 func ApplyBrew(ctx context.Context) error {
-	b := brewBin()
+	b := brewPath()
 	if b == "" {
 		return errors.New("brew not found")
 	}
@@ -134,17 +137,43 @@ func ApplyBrew(ctx context.Context) error {
 }
 
 // InstalledVersion asks the binary Homebrew links (the one the service
-// runs) for its version, e.g. "v0.2.5".
+// runs) for its version, e.g. "v0.2.5". It looks in Homebrew's opt folder
+// first: after an upgrade the running binary's own Cellar folder may be gone.
 func InstalledVersion(ctx context.Context) string {
-	exe, err := StableExecutable()
-	if err != nil {
-		return ""
+	exe := ""
+	if b := brewPath(); b != "" {
+		opt := filepath.Join(filepath.Dir(filepath.Dir(b)), "opt", "security-warden", "bin", "security-warden")
+		if _, err := os.Stat(opt); err == nil {
+			exe = opt
+		}
+	}
+	if exe == "" {
+		var err error
+		if exe, err = StableExecutable(); err != nil {
+			return ""
+		}
 	}
 	out, err := exec.CommandContext(ctx, exe, "version").Output()
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// ErrNotUpdated: brew finished but the installed version did not change.
+var ErrNotUpdated = errors.New("Homebrew did not install a newer version")
+
+// UpgradeBrew updates with Homebrew and checks that a version newer than
+// current is really installed, returning it. Callers restart only on success.
+func UpgradeBrew(ctx context.Context, current string) (string, error) {
+	if err := ApplyBrew(ctx); err != nil {
+		return "", err
+	}
+	got := InstalledVersion(ctx)
+	if !Newer(got, current) {
+		return got, fmt.Errorf("%w (installed %q, running %s)", ErrNotUpdated, got, current)
+	}
+	return got, nil
 }
 
 func lastLine(s string) string {
