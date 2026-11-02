@@ -1,0 +1,18 @@
+id: ssh-host-key-checking-off
+severity: medium
+platforms: [macos, windows, linux]
+source: ssh_config
+match: "item.key == \"stricthostkeychecking\" && item.value in [\"no\", \"off\"] && item.all_hosts"
+title:
+  en: "SSH does not verify servers"
+  vi: "SSH không xác minh server"
+explain:
+  en: "StrictHostKeyChecking no under Host * means a fake server can pose as yours and capture what you type."
+  vi: "StrictHostKeyChecking no dưới Host * nghĩa là server giả có thể đóng vai server của bạn và lấy những gì bạn gõ."
+fix:
+  en: "Use StrictHostKeyChecking accept-new in {file}."
+  vi: "Dùng StrictHostKeyChecking accept-new trong {file}."
+author: the-last-devops
+tests:
+  - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "stricthostkeychecking", "value": "no", "weak_algorithm": false}, "expect": true}
+  - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "stricthostkeychecking", "value": "accept-new", "weak_algorithm": false}, "expect": false}

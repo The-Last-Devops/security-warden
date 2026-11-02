@@ -1,0 +1,18 @@
+id: sudo-nopasswd-some
+severity: medium
+platforms: [macos, linux]
+source: privilege
+match: "item.kind == \"sudo\" && item.nopasswd_any && !item.nopasswd_all"
+title:
+  en: "Some commands run as root without a password"
+  vi: "Một số lệnh chạy bằng root không cần mật khẩu"
+explain:
+  en: "Commands allowed with NOPASSWD can often be abused to get a full root shell."
+  vi: "Lệnh được phép NOPASSWD thường bị lợi dụng để mở shell root đầy đủ."
+fix:
+  en: "Review the NOPASSWD rules (sudo -l) and keep only commands that cannot run other programs."
+  vi: "Xem lại các rule NOPASSWD (sudo -l), chỉ giữ lệnh không chạy được chương trình khác."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "sudo", "nopasswd_any": true, "nopasswd_all": false}, "expect": true}
+  - {"item": {"kind": "sudo", "nopasswd_any": false, "nopasswd_all": false}, "expect": false}

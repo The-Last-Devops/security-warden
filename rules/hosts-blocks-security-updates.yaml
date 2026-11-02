@@ -1,0 +1,18 @@
+id: hosts-blocks-security-updates
+severity: medium
+platforms: [macos]
+source: network_config
+match: "item.kind == \"hosts\" && item.blocks && item.name.endsWith(\"apple.com\")"
+title:
+  en: "/etc/hosts blocks {name}"
+  vi: "/etc/hosts chặn {name}"
+explain:
+  en: "Blocking Apple hosts can stop security updates and XProtect from downloading."
+  vi: "Chặn máy chủ của Apple có thể làm bản vá bảo mật và XProtect không tải về được."
+fix:
+  en: "Remove the {name} line from /etc/hosts."
+  vi: "Xoá dòng {name} khỏi /etc/hosts."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "hosts", "name": "swscan.apple.com", "ip": "0.0.0.0", "blocks": true, "high_value": true}, "expect": true}
+  - {"item": {"kind": "hosts", "name": "ads.example.com", "ip": "0.0.0.0", "blocks": true, "high_value": false}, "expect": false}

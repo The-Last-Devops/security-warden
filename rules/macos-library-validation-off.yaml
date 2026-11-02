@@ -1,0 +1,18 @@
+id: macos-library-validation-off
+severity: high
+platforms: [macos]
+source: posture
+match: "has(item.library_validation_disabled) && item.library_validation_disabled"
+title:
+  en: "Library validation is turned off"
+  vi: "Đã tắt kiểm tra thư viện (library validation)"
+explain:
+  en: "Any library can be loaded into other apps, a common way to inject code."
+  vi: "Thư viện bất kỳ đều nạp được vào app khác, đây là cách chèn code phổ biến."
+fix:
+  en: "Run: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation"
+  vi: "Chạy: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation"
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "library_validation_disabled": true}, "expect": true}
+  - {"item": {"os": "macos", "library_validation_disabled": false}, "expect": false}

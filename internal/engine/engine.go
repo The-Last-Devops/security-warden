@@ -72,7 +72,7 @@ func (r *Rule) File() string { return r.file }
 // Severities in report order, with the points each finding costs.
 var Severities = []string{"critical", "high", "medium", "low", "info"}
 
-var penalty = map[string]int{"critical": 25, "high": 15, "medium": 7, "low": 3, "info": 0}
+var penalty = map[string]int{"critical": 30, "high": 10, "medium": 4, "low": 1, "info": 0}
 
 var tiers = map[string]bool{"stable": true, "community": true, "experimental": true}
 
@@ -281,11 +281,20 @@ func renderRemedy(r *Remedy, it Item) *Remedy {
 	return out
 }
 
-// Score is 100 minus a penalty per finding, never below 0.
+// Score is 100 minus a penalty per rule that fired, never below 0. A rule
+// that matches many items (ten outdated packages) costs a little more than
+// one match, but not ten times as much.
 func Score(fs []Finding) int {
-	s := 100
+	hits := map[string]int{}
+	sev := map[string]string{}
 	for _, f := range fs {
-		s -= penalty[f.Severity]
+		hits[f.RuleID]++
+		sev[f.RuleID] = f.Severity
+	}
+	s := 100
+	for id, n := range hits {
+		p := penalty[sev[id]]
+		s -= p + min(n-1, 2)*p/4
 	}
 	return max(s, 0)
 }

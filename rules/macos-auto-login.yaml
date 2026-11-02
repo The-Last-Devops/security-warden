@@ -1,0 +1,18 @@
+id: macos-auto-login
+severity: high
+platforms: [macos]
+source: posture
+match: "has(item.auto_login) && item.auto_login"
+title:
+  en: "The Mac logs in automatically"
+  vi: "Máy tự đăng nhập khi khởi động"
+explain:
+  en: "Anyone who turns the Mac on gets your session without a password, and the login password is stored in /etc/kcpassword."
+  vi: "Ai bật máy là vào thẳng phiên làm việc của bạn không cần mật khẩu, và mật khẩu đăng nhập bị lưu trong /etc/kcpassword."
+fix:
+  en: "System Settings > Users & Groups > Automatically log in as: Off."
+  vi: "Cài đặt hệ thống > Người dùng & Nhóm > Tự động đăng nhập: Tắt."
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "auto_login": true}, "expect": true}
+  - {"item": {"os": "macos", "auto_login": false}, "expect": false}

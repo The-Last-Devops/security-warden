@@ -49,6 +49,7 @@ func posture(ctx context.Context) ([]Item, error) {
 			it["screen_lock"] = true
 		}
 	}
+	macExtra(ctx, it)
 	return []Item{it}, nil
 }
 

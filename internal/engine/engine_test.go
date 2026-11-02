@@ -72,8 +72,13 @@ func containsPlaceholder(s string) bool {
 }
 
 func TestScore(t *testing.T) {
-	fs := []engine.Finding{{Severity: "high"}, {Severity: "medium"}, {Severity: "info"}}
-	if got := engine.Score(fs); got != 78 {
-		t.Errorf("score = %d, want 78", got)
+	fs := []engine.Finding{{RuleID: "a", Severity: "high"}, {RuleID: "b", Severity: "medium"}, {RuleID: "c", Severity: "info"}}
+	if got := engine.Score(fs); got != 86 {
+		t.Errorf("score = %d, want 86", got)
+	}
+	// The same rule five times costs its penalty plus at most half again.
+	many := []engine.Finding{{RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}}
+	if got := engine.Score(many); got != 100-10-5 {
+		t.Errorf("repeated score = %d, want %d", got, 100-10-5)
 	}
 }

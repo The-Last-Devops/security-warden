@@ -29,6 +29,17 @@ var en = map[string]string{
 	"source.credential_files":  "Credential files",
 	"source.services":          "Servers running on this machine",
 	"source.outdated_software": "Out-of-date software",
+	"source.persistence":       "Login items, launchd and cron",
+	"source.network_config":    "Proxy and hosts file",
+	"source.privilege":         "sudo and PATH",
+	"source.shell_rc":          "Shell startup files",
+	"source.ssh_config":        "SSH client settings",
+	"source.git_config":        "Git settings",
+	"source.pkg_config":        "Package manager settings",
+	"source.docker_config":     "Docker daemon settings",
+	"source.ai_agents":         "AI agents and MCP servers",
+	"source.cloud_config":      "Kubernetes and cloud credentials",
+	"source.shell_history":     "Shell history",
 
 	"skip.platform":          "not supported on this OS yet",
 	"skip.lsof":              "lsof not available",
@@ -37,6 +48,7 @@ var en = map[string]string{
 	"skip.tailscale_stopped": "Tailscale not connected",
 	"skip.no_ssh_dir":        "no ~/.ssh folder",
 	"skip.homebrew":          "Homebrew not installed",
+	"skip.git":               "Git not installed",
 
 	"cli.usage": `security-warden: what doors does your machine leave open, and which secrets are lying around?
 
@@ -102,6 +114,17 @@ var vi = map[string]string{
 	"source.credential_files":  "File chứa thông tin đăng nhập",
 	"source.services":          "Server chạy trên máy",
 	"source.outdated_software": "Phần mềm cũ",
+	"source.persistence":       "Mục tự chạy: launchd và cron",
+	"source.network_config":    "Proxy và file hosts",
+	"source.privilege":         "sudo và PATH",
+	"source.shell_rc":          "File khởi động shell",
+	"source.ssh_config":        "Cấu hình SSH client",
+	"source.git_config":        "Cấu hình Git",
+	"source.pkg_config":        "Cấu hình trình quản lý gói",
+	"source.docker_config":     "Cấu hình Docker daemon",
+	"source.ai_agents":         "AI agent và MCP server",
+	"source.cloud_config":      "Kubernetes và tài khoản cloud",
+	"source.shell_history":     "Lịch sử lệnh shell",
 
 	"skip.platform":          "chưa hỗ trợ hệ điều hành này",
 	"skip.lsof":              "không có lsof",
@@ -110,6 +133,7 @@ var vi = map[string]string{
 	"skip.tailscale_stopped": "Tailscale chưa kết nối",
 	"skip.no_ssh_dir":        "không có thư mục ~/.ssh",
 	"skip.homebrew":          "chưa cài Homebrew",
+	"skip.git":               "chưa cài Git",
 
 	"cli.usage": `security-warden: máy bạn đang mở những cửa nào, và secret nào đang nằm lộ ra?
 

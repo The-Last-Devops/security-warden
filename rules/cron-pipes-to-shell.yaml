@@ -1,0 +1,18 @@
+id: cron-pipes-to-shell
+severity: critical
+platforms: [macos, linux]
+source: persistence
+match: "item.kind == \"cron\" && item.pipes_to_shell"
+title:
+  en: "A cron job downloads code and runs it"
+  vi: "Một cron job tải code về rồi chạy"
+explain:
+  en: "Line {line_no} of your crontab pipes a download into a shell. Whoever controls {url_host} controls this machine."
+  vi: "Dòng {line_no} trong crontab đưa thứ tải về thẳng vào shell. Ai nắm {url_host} là nắm máy này."
+fix:
+  en: "Check it with crontab -l. If you don't recognise it, remove it (crontab -e) and look for other persistence."
+  vi: "Xem bằng crontab -l. Không nhận ra thì xoá (crontab -e) và tìm thêm các mục tự chạy khác."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": false, "pipes_to_shell": true, "runs_every_minute": false}, "expect": true}
+  - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": false, "pipes_to_shell": false, "runs_every_minute": false}, "expect": false}

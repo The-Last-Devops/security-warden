@@ -1,0 +1,19 @@
+id: launchd-runs-from-temp
+severity: high
+platforms: [macos, linux]
+source: persistence
+match: "item.kind == \"launchd\" && (item.program_in_tmp || item.inline_script) && !item.apple"
+title:
+  en: "Login item runs from a temporary folder or inline script: {label}"
+  vi: "Mục tự chạy chạy từ thư mục tạm hoặc script viết liền: {label}"
+explain:
+  en: "{program} starts automatically from a world-writable place or as an inline shell command. Real apps install into /Applications or /Library."
+  vi: "{program} tự khởi động từ chỗ ai cũng ghi được, hoặc là một lệnh shell viết liền. App thật thường cài vào /Applications hoặc /Library."
+fix:
+  en: "If you don't recognise {label}, unload and delete {plist}."
+  vi: "Không nhận ra {label} thì gỡ và xoá {plist}."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/tmp/x", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": true, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": true, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": false}

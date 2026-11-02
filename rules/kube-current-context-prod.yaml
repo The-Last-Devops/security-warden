@@ -1,0 +1,18 @@
+id: kube-current-context-prod
+severity: medium
+platforms: [macos, windows, linux]
+source: cloud_config
+match: "item.kind == \"kubeconfig\" && item.current_is_prod"
+title:
+  en: "kubectl points at production by default ({current_context})"
+  vi: "kubectl đang trỏ vào production ({current_context})"
+explain:
+  en: "Every kubectl command, including a mistyped delete, goes to production."
+  vi: "Mọi lệnh kubectl, kể cả lệnh delete gõ nhầm, đều chạy trên production."
+fix:
+  en: "Switch to a non-production context when done (kubectl config use-context dev), or use kubie/kubectx per shell."
+  vi: "Chuyển về context không phải production khi xong việc (kubectl config use-context dev), hoặc dùng kubie/kubectx theo từng shell."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "prod-eks", "current_is_prod": true, "sa_type": ""}, "expect": true}
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": ""}, "expect": false}

@@ -1,0 +1,19 @@
+id: macos-airdrop-everyone
+severity: medium
+platforms: [macos]
+source: posture
+match: "has(item.airdrop) && item.airdrop == \"Everyone\""
+title:
+  en: "AirDrop accepts files from everyone"
+  vi: "AirDrop đang nhận file từ mọi người"
+explain:
+  en: "Strangers nearby can see your Mac and send it files."
+  vi: "Người lạ ở gần thấy được máy bạn và gửi file tới được."
+fix:
+  en: "Control Center > AirDrop > Contacts Only."
+  vi: "Trung tâm điều khiển > AirDrop > Chỉ danh bạ."
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "airdrop": "Everyone"}, "expect": true}
+  - {"item": {"os": "macos", "airdrop": "Contacts Only"}, "expect": false}
+remedy: {"action": "macos_airdrop_contacts"}

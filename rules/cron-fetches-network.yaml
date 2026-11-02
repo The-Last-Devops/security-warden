@@ -1,0 +1,19 @@
+id: cron-fetches-network
+severity: medium
+platforms: [macos, linux]
+source: persistence
+match: "item.kind == \"cron\" && item.fetches_network && !item.pipes_to_shell"
+title:
+  en: "A cron job reaches out to {url_host}"
+  vi: "Một cron job gọi ra {url_host}"
+explain:
+  en: "Line {line_no} of your crontab runs {command} against {url_host}. Cron jobs are easy to forget and a common foothold for miners and malware."
+  vi: "Dòng {line_no} trong crontab chạy {command} ra mạng ({url_host}). Cron job rất dễ bị quên, và hay bị mã độc, máy đào coin dùng để bám trụ."
+fix:
+  en: "If it is yours (a keep-alive ping, a backup), keep it. Otherwise remove it with crontab -e."
+  vi: "Nếu là của bạn (ping giữ server thức, backup) thì giữ. Không thì xoá bằng crontab -e."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": true, "pipes_to_shell": false, "runs_every_minute": false}, "expect": true}
+  - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": true, "pipes_to_shell": true, "runs_every_minute": false}, "expect": false}
+  - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": false, "pipes_to_shell": false, "runs_every_minute": false}, "expect": false}

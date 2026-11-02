@@ -1,0 +1,18 @@
+id: pip-extra-index-url
+severity: medium
+platforms: [macos, windows, linux]
+source: pkg_config
+match: "item.extra_index"
+title:
+  en: "pip mixes a private and a public index"
+  vi: "pip trộn index riêng và index công khai"
+explain:
+  en: "extra-index-url lets a public package with the same name as your private one win (dependency confusion)."
+  vi: "extra-index-url khiến gói công khai trùng tên gói nội bộ có thể được cài thay (dependency confusion)."
+fix:
+  en: "Use a single index-url that proxies PyPI, or pin hashes (--require-hashes)."
+  vi: "Dùng một index-url duy nhất có proxy PyPI, hoặc ghim hash (--require-hashes)."
+author: the-last-devops
+tests:
+  - {"item": {"tool": "pip", "file": "/h/.npmrc", "strict_ssl_off": false, "http_registry": false, "trusted_host": false, "extra_index": true}, "expect": true}
+  - {"item": {"tool": "pip", "file": "/h/.npmrc", "strict_ssl_off": false, "http_registry": false, "trusted_host": false, "extra_index": false}, "expect": false}

@@ -1,0 +1,19 @@
+id: pkg-tls-off
+severity: high
+platforms: [macos, windows, linux]
+source: pkg_config
+match: "item.strict_ssl_off || item.http_registry || item.trusted_host"
+title:
+  en: "{tool} installs packages without verifying the server"
+  vi: "{tool} cài gói mà không xác minh server"
+explain:
+  en: "{file} turns off TLS checks or uses a plain-HTTP registry, so packages can be swapped in transit."
+  vi: "{file} tắt kiểm tra TLS hoặc dùng registry HTTP thường, nên gói có thể bị tráo trên đường truyền."
+fix:
+  en: "Remove strict-ssl=false / trusted-host / http:// registries from {file}."
+  vi: "Bỏ strict-ssl=false / trusted-host / registry http:// khỏi {file}."
+author: the-last-devops
+tests:
+  - {"item": {"tool": "npm", "file": "/h/.npmrc", "strict_ssl_off": true, "http_registry": false, "trusted_host": false, "extra_index": false}, "expect": true}
+  - {"item": {"tool": "pip", "file": "/h/.npmrc", "strict_ssl_off": false, "http_registry": false, "trusted_host": true, "extra_index": false}, "expect": true}
+  - {"item": {"tool": "npm", "file": "/h/.npmrc", "strict_ssl_off": false, "http_registry": false, "trusted_host": false, "extra_index": false}, "expect": false}

@@ -51,6 +51,17 @@ func All() []Collector {
 		{"tailscale", tailscale},
 		{"ssh_keys", sshKeys},
 		{"credential_files", credentialFiles},
+		{"persistence", persistence},
+		{"network_config", networkConfig},
+		{"privilege", privilege},
+		{"shell_rc", shellRC},
+		{"ssh_config", sshClientConfig},
+		{"git_config", gitConfig},
+		{"pkg_config", pkgConfig},
+		{"docker_config", dockerDaemonConfig},
+		{"ai_agents", aiAgents},
+		{"cloud_config", cloudConfig},
+		{"shell_history", shellHistory},
 	}
 }
 

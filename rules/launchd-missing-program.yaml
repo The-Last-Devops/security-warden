@@ -1,0 +1,18 @@
+id: launchd-missing-program
+severity: low
+platforms: [macos]
+source: persistence
+match: "item.kind == \"launchd\" && !item.program_exists && !item.apple"
+title:
+  en: "Login item points to a missing program: {label}"
+  vi: "Mục tự chạy trỏ tới chương trình không còn: {label}"
+explain:
+  en: "{plist} starts {program}, which no longer exists. Leftovers like this can be hijacked by whoever creates that path."
+  vi: "{plist} khởi động {program} nhưng file đó không còn. Mục sót lại kiểu này có thể bị chiếm bởi ai tạo được đường dẫn đó."
+fix:
+  en: "Remove {plist} (sudo for /Library)."
+  vi: "Xoá {plist} (cần sudo nếu nằm trong /Library)."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": false, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": false}

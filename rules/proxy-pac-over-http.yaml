@@ -1,0 +1,18 @@
+id: proxy-pac-over-http
+severity: high
+platforms: [macos, windows, linux]
+source: network_config
+match: "item.kind == \"proxy\" && item.type == \"pac\" && item.scheme == \"http\""
+title:
+  en: "Proxy settings are downloaded over plain HTTP"
+  vi: "Cấu hình proxy được tải qua HTTP không mã hoá"
+explain:
+  en: "Anyone on the network path can replace the PAC file from {host} and send your traffic anywhere."
+  vi: "Ai đứng giữa đường mạng cũng thay được file PAC từ {host} và lái lưu lượng của bạn đi nơi khác."
+fix:
+  en: "Use an https:// PAC URL, or ask IT to."
+  vi: "Dùng URL PAC https://, hoặc nhờ IT đổi."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "proxy", "type": "pac", "host": "wpad.corp", "scheme": "http", "loopback": false}, "expect": true}
+  - {"item": {"kind": "proxy", "type": "pac", "host": "wpad.corp", "scheme": "https", "loopback": false}, "expect": false}

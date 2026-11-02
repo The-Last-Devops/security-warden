@@ -1,0 +1,18 @@
+id: mcp-plain-http
+severity: high
+platforms: [macos, windows, linux]
+source: ai_agents
+match: "item.kind == \"mcp\" && item.plain_http"
+title:
+  en: "{tool} talks to MCP server {server} over plain HTTP"
+  vi: "{tool} kết nối MCP server {server} qua HTTP không mã hoá"
+explain:
+  en: "Prompts, code and tokens sent to {server} can be read or changed on the way."
+  vi: "Prompt, code và token gửi tới {server} có thể bị đọc hoặc sửa trên đường đi."
+fix:
+  en: "Use the https:// URL of the server."
+  vi: "Dùng URL https:// của server."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "mcp", "tool": "Claude Code", "file": "/h/.claude.json", "server": "github", "secret_keys": "", "has_secret": false, "plain_http": true, "unpinned_npx": false, "world_readable": false}, "expect": true}
+  - {"item": {"kind": "mcp", "tool": "Claude Code", "file": "/h/.claude.json", "server": "github", "secret_keys": "", "has_secret": false, "plain_http": false, "unpinned_npx": false, "world_readable": false}, "expect": false}

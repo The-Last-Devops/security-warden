@@ -1,0 +1,19 @@
+id: launchd-unsigned-system
+severity: medium
+platforms: [macos]
+source: persistence
+match: "item.kind == \"launchd\" && item.scope != \"user\" && !item.apple && item.program_exists && !item.signed && !item.inline_script"
+title:
+  en: "Unsigned program starts for every user: {label}"
+  vi: "Chương trình không có chữ ký tự chạy cho mọi người dùng: {label}"
+explain:
+  en: "{program} is not code-signed. Real vendors sign what they install system-wide, so this deserves a look."
+  vi: "{program} không được ký số. Hãng phần mềm thật đều ký những gì họ cài cho toàn hệ thống, nên mục này đáng xem lại."
+fix:
+  en: "Check who installed {plist}. Remove it if you don't need it."
+  vi: "Xem ai đã cài {plist}. Không cần thì gỡ."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "launchd", "scope": "system-agent", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": false, "team_id": "ABCDE12345"}, "expect": true}
+  - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": false}
+  - {"item": {"kind": "launchd", "scope": "user", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": false, "team_id": "ABCDE12345"}, "expect": false, "note": "your own agents"}

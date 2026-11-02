@@ -1,0 +1,18 @@
+id: ssh-forward-agent-everywhere
+severity: high
+platforms: [macos, windows, linux]
+source: ssh_config
+match: "item.key == \"forwardagent\" && item.value == \"yes\" && item.all_hosts"
+title:
+  en: "SSH agent is forwarded to every server"
+  vi: "SSH agent được chuyển tiếp tới mọi server"
+explain:
+  en: "ForwardAgent yes under Host * lets any server you log in to use your keys to reach other servers."
+  vi: "ForwardAgent yes dưới Host * cho mọi server bạn đăng nhập dùng khoá của bạn để vào server khác."
+fix:
+  en: "Remove it from Host * in {file}; use ProxyJump, or enable ForwardAgent only for the hosts that need it."
+  vi: "Bỏ nó khỏi Host * trong {file}; dùng ProxyJump, hoặc chỉ bật ForwardAgent cho đúng host cần."
+author: the-last-devops
+tests:
+  - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "forwardagent", "value": "yes", "weak_algorithm": false}, "expect": true}
+  - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "bastion", "all_hosts": false, "key": "forwardagent", "value": "yes", "weak_algorithm": false}, "expect": false}

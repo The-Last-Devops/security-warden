@@ -1,0 +1,18 @@
+id: ai-agent-skip-permissions-alias
+severity: medium
+platforms: [macos, windows, linux]
+source: shell_rc
+match: "item.kind == \"agent_skip_permissions\""
+title:
+  en: "AI agent permission prompts are skipped in {file}"
+  vi: "{file} bỏ qua bước hỏi quyền của AI agent"
+explain:
+  en: "Line {line_no} starts a coding agent with its safety prompts off. Text in a web page or README can then run commands on your machine."
+  vi: "Dòng {line_no} chạy coding agent với bước hỏi quyền bị tắt. Khi đó chữ trong trang web hay README cũng có thể chạy lệnh trên máy bạn."
+fix:
+  en: "Use that mode only inside a container or VM. Allow specific commands instead."
+  vi: "Chỉ dùng chế độ đó trong container hoặc máy ảo. Hãy cho phép từng lệnh cụ thể."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "agent_skip_permissions", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": true}
+  - {"item": {"kind": "pipe_to_shell", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": false}

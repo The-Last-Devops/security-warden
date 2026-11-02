@@ -139,6 +139,25 @@ func init() {
 		[]string{"defaults", "write", "/Library/Preferences/com.apple.loginwindow", "GuestEnabled", "-bool", "NO"},
 		[]string{"defaults", "write", "/Library/Preferences/com.apple.loginwindow", "GuestEnabled", "-bool", "YES"})
 
+	register(&Action{
+		ID: "macos_airdrop_contacts", Undoable: true,
+		Plan: func(map[string]string) []string {
+			return []string{`defaults write com.apple.sharingd DiscoverableMode -string "Contacts Only"`}
+		},
+		Apply: func(map[string]string) (map[string]string, error) {
+			prev, _ := exec.Command("defaults", "read", "com.apple.sharingd", "DiscoverableMode").Output()
+			undo := map[string]string{"mode": strings.TrimSpace(string(prev))}
+			return undo, Runner("defaults", "write", "com.apple.sharingd", "DiscoverableMode", "-string", "Contacts Only")
+		},
+		Undo: func(p map[string]string) error {
+			mode := p["mode"]
+			if mode != "Everyone" && mode != "Off" && mode != "Contacts Only" {
+				mode = "Everyone"
+			}
+			return Runner("defaults", "write", "com.apple.sharingd", "DiscoverableMode", "-string", mode)
+		},
+	})
+
 	tsToggle := func(id string, on, off string) {
 		register(&Action{
 			ID: id, Undoable: true,

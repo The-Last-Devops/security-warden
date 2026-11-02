@@ -1,0 +1,18 @@
+id: macos-xprotect-stale
+severity: medium
+platforms: [macos]
+source: posture
+match: "has(item.xprotect_age_days) && item.xprotect_age_days > 45"
+title:
+  en: "Malware definitions are {xprotect_age_days} days old"
+  vi: "Dữ liệu nhận diện mã độc đã cũ {xprotect_age_days} ngày"
+explain:
+  en: "Apple usually updates XProtect every one to three weeks. Old definitions miss recent malware."
+  vi: "Apple thường cập nhật XProtect mỗi 1–3 tuần. Dữ liệu cũ bỏ sót mã độc mới."
+fix:
+  en: "Run: sudo xprotect update (or turn on security responses in Software Update)."
+  vi: "Chạy: sudo xprotect update (hoặc bật phản hồi bảo mật trong Cập nhật phần mềm)."
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "xprotect_age_days": 90}, "expect": true}
+  - {"item": {"os": "macos", "xprotect_age_days": 10}, "expect": false}

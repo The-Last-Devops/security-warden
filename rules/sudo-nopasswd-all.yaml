@@ -1,0 +1,18 @@
+id: sudo-nopasswd-all
+severity: critical
+platforms: [macos, linux]
+source: privilege
+match: "item.kind == \"sudo\" && item.nopasswd_all"
+title:
+  en: "sudo gives root without a password"
+  vi: "sudo cho quyền root không cần mật khẩu"
+explain:
+  en: "Any program running as you (an npm install script, a browser exploit) can become root silently."
+  vi: "Chương trình nào chạy dưới tên bạn (script cài npm, lỗi trình duyệt) cũng lên root được mà không ai hay."
+fix:
+  en: "Remove NOPASSWD from your sudoers rule: sudo visudo -f /etc/sudoers.d/<file>."
+  vi: "Bỏ NOPASSWD trong rule sudoers: sudo visudo -f /etc/sudoers.d/<file>."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "sudo", "nopasswd_any": true, "nopasswd_all": true}, "expect": true}
+  - {"item": {"kind": "sudo", "nopasswd_any": true, "nopasswd_all": false}, "expect": false}

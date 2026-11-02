@@ -1,0 +1,18 @@
+id: kube-skip-tls
+severity: high
+platforms: [macos, windows, linux]
+source: cloud_config
+match: "item.kind == \"kubeconfig\" && item.insecure_skip_tls"
+title:
+  en: "kubectl skips TLS checks for a cluster"
+  vi: "kubectl bỏ qua kiểm tra TLS với một cluster"
+explain:
+  en: "insecure-skip-tls-verify in {file} lets anyone in the middle impersonate the cluster and capture your credentials."
+  vi: "insecure-skip-tls-verify trong {file} cho phép kẻ đứng giữa giả làm cluster và lấy thông tin đăng nhập của bạn."
+fix:
+  en: "Put the cluster's CA in certificate-authority-data and remove insecure-skip-tls-verify."
+  vi: "Đưa CA của cluster vào certificate-authority-data và bỏ insecure-skip-tls-verify."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": true, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": ""}, "expect": true}
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": ""}, "expect": false}

@@ -1,0 +1,18 @@
+id: shell-rc-insecure-flag
+severity: high
+platforms: [macos, linux]
+source: shell_rc
+match: "item.kind == \"insecure_flag\""
+title:
+  en: "TLS checks turned off in {file}"
+  vi: "Tắt kiểm tra TLS trong {file}"
+explain:
+  en: "Line {line_no} disables certificate checks (for Node, Python, Git or npm) for every shell. Anyone on the network can intercept those connections."
+  vi: "Dòng {line_no} tắt kiểm tra chứng chỉ (cho Node, Python, Git hoặc npm) ở mọi shell. Ai trong mạng cũng chặn được các kết nối đó."
+fix:
+  en: "Remove line {line_no}. If a corporate proxy needs it, trust its CA instead (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
+  vi: "Xoá dòng {line_no}. Nếu proxy công ty cần, hãy tin CA của nó thay vì tắt kiểm tra (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "insecure_flag", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": true}
+  - {"item": {"kind": "exported_secret", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": false}

@@ -1,0 +1,18 @@
+id: ai-agent-auto-approve
+severity: high
+platforms: [macos, windows, linux]
+source: ai_agents
+match: "item.kind == \"auto_approve\""
+title:
+  en: "{tool} runs commands without asking ({setting})"
+  vi: "{tool} chạy lệnh không hỏi ({setting})"
+explain:
+  en: "With {setting} in {file}, instructions hidden in a web page, issue or README can make the agent run commands on this machine."
+  vi: "Với {setting} trong {file}, chỉ dẫn giấu trong trang web, issue hay README có thể khiến agent chạy lệnh trên máy này."
+fix:
+  en: "Turn it off and allow specific commands instead. Use full auto mode only in a container or VM."
+  vi: "Tắt nó đi và cho phép từng lệnh cụ thể. Chỉ dùng chế độ tự động hoàn toàn trong container hoặc máy ảo."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "auto_approve", "tool": "Claude Code", "file": "/h/.claude/settings.json", "setting": "bypassPermissions"}, "expect": true}
+  - {"item": {"kind": "mcp", "tool": "Claude Code", "file": "/h/.claude.json", "server": "github", "secret_keys": "", "has_secret": false, "plain_http": false, "unpinned_npx": false, "world_readable": false}, "expect": false}

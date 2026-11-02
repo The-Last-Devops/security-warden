@@ -25,7 +25,7 @@ FROM deps AS test
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w ."; exit 1; }; \
-    go vet ./... && go test ./...
+    go vet ./... && GOOS=darwin go vet ./... && GOOS=windows go vet ./... && go test ./...
 
 # build: cross-compile for macOS (arm64 + amd64) and Windows (amd64).
 FROM test AS build

@@ -1,0 +1,18 @@
+id: macos-dyld-injection
+severity: critical
+platforms: [macos]
+source: posture
+match: "has(item.dyld_insert) && item.dyld_insert"
+title:
+  en: "A library is injected into every app (DYLD_INSERT_LIBRARIES)"
+  vi: "Có thư viện bị chèn vào mọi app (DYLD_INSERT_LIBRARIES)"
+explain:
+  en: "launchd passes DYLD_INSERT_LIBRARIES to every app you open. Malware uses this to read what apps do."
+  vi: "launchd truyền DYLD_INSERT_LIBRARIES cho mọi app bạn mở. Mã độc dùng cách này để đọc hoạt động của app."
+fix:
+  en: "Run: launchctl unsetenv DYLD_INSERT_LIBRARIES, then find what set it (launchctl getenv, your login items)."
+  vi: "Chạy: launchctl unsetenv DYLD_INSERT_LIBRARIES, rồi tìm thứ đã đặt nó (launchctl getenv, các mục tự chạy)."
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "dyld_insert": true}, "expect": true}
+  - {"item": {"os": "macos", "dyld_insert": false}, "expect": false}

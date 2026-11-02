@@ -1,0 +1,18 @@
+id: docker-insecure-registries
+severity: medium
+platforms: [macos, windows, linux]
+source: docker_config
+match: "item.insecure_registries > 0"
+title:
+  en: "Docker pulls images from {insecure_registries} insecure registries"
+  vi: "Docker kéo image từ {insecure_registries} registry không an toàn"
+explain:
+  en: "Images from insecure-registries travel without TLS and can be replaced."
+  vi: "Image từ insecure-registries đi không qua TLS và có thể bị thay."
+fix:
+  en: "Give the registry a TLS certificate and remove it from insecure-registries in daemon.json."
+  vi: "Cấp chứng chỉ TLS cho registry rồi bỏ nó khỏi insecure-registries trong daemon.json."
+author: the-last-devops
+tests:
+  - {"item": {"expose_tcp_no_tls": false, "insecure_registries": 2, "found": true}, "expect": true}
+  - {"item": {"expose_tcp_no_tls": false, "insecure_registries": 0, "found": true}, "expect": false}
