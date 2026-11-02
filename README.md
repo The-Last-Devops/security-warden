@@ -234,6 +234,7 @@ repository is its own Homebrew tap).
 
 - Signed rule updates without a new release; self-update for direct binary installs.
 - Docker image vulnerability scanning.
+- An apt/dnf repository, so Linux installs update themselves.
 - Real-time process and network events (Endpoint Security on macOS, ETW on Windows).
 - Desktop app with a menu bar icon, sharing this web UI.
 
