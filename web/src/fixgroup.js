@@ -11,7 +11,7 @@ export const codesOf = f => [...(f.fix || '').matchAll(/`([^`]+)`/g)].map(m => m
 export const placeOf = x =>
   x.title.includes(': ')
     ? x.title.slice(x.title.indexOf(': ') + 2)
-    : String(x.item?.file || x.item?.path || x.item?.repo_name || x.item?.name || x.title).replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, '~')
+    : x.place || x.title
 
 // perPlace returns null when every place shares the same commands, else
 // { hide: Set of commands to leave out of the steps, places: [{ place, cmds }] }.

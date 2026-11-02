@@ -300,6 +300,10 @@ type apiFinding struct {
 	Gain      int      `json:"gain"`
 	NeedsRoot bool     `json:"needs_root"`
 	Undoable  bool     `json:"undoable"`
+	// Repo and Place are the only parts of the item the page gets: which
+	// repository (for the by-repo view) and where, as display text.
+	Repo  string `json:"repo,omitempty"`
+	Place string `json:"place,omitempty"`
 }
 
 func (s *Server) render(results []source.Result, lang string) map[string]any {
@@ -327,6 +331,20 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 				}
 				af.NeedsRoot, af.Undoable = a.NeedsRoot, a.Undoable
 				af.CanFix = !a.NeedsRoot // admin fixes stay in the terminal
+			}
+		}
+		if report.Scope(f.Source) == "code" {
+			if v, ok := f.Item["repo_name"].(string); ok {
+				af.Repo = engine.Clean(v)
+			}
+		}
+		for _, k := range []string{"file", "path", "name"} {
+			if v, ok := f.Item[k].(string); ok && v != "" {
+				af.Place = tilde(engine.Clean(v))
+				if af.Repo != "" && k == "file" {
+					af.Place = af.Repo + "/" + af.Place
+				}
+				break
 			}
 		}
 		af.Item = nil // raw items stay on the machine; the UI needs only text

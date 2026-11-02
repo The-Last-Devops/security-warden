@@ -176,7 +176,7 @@ const listGroups = computed(() => (nextGroup.value ? groups.value.slice(1) : gro
 // "By repo" view: everything about one repository together; problems of the
 // machine itself come first under its own heading.
 const view = ref('sev')
-const repoOf = f => f.item?.repo_name || (f.item?.repo ? String(f.item.repo).split('/').pop() : '')
+const repoOf = f => f.repo || ''
 const repoSections = computed(() => {
   const by = new Map()
   for (const f of findings.value) {
