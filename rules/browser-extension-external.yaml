@@ -1,0 +1,21 @@
+id: browser-extension-external
+severity: medium
+platforms: [macos, windows, linux]
+source: browser_extensions
+match: "item.external"
+title:
+  en: "{browser} extension added by another program: {name}"
+  vi: "Extension {browser} do chương trình khác tự cài: {name}"
+check:
+  en: "No browser extension was slipped in by another program"
+  vi: "Không extension trình duyệt nào bị chương trình khác lén cài"
+explain:
+  en: "{name} ({id}, profile {profile}) was not installed by you from the store: another program on this machine registered it. Adware and info-stealers often arrive this way."
+  vi: "{name} ({id}, hồ sơ {profile}) không do bạn cài từ cửa hàng mà do một chương trình khác trên máy đăng ký vào. Phần mềm quảng cáo và mã độc đánh cắp dữ liệu hay vào bằng đường này."
+fix:
+  en: "If you do not recognise it, remove it in chrome://extensions and find the program that added it (/Library/Application Support/Google/Chrome/External Extensions on macOS)."
+  vi: "Không nhận ra thì gỡ ở chrome://extensions, rồi tìm chương trình đã cài nó (/Library/Application Support/Google/Chrome/External Extensions trên macOS)."
+author: the-last-devops
+tests:
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": false, "external": true, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": false}

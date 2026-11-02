@@ -283,28 +283,24 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
       <aside class="grid content-start gap-5">
         <section class="panel grid gap-4 p-5">
           <div class="flex items-center gap-4">
-            <svg width="76" height="76" viewBox="0 0 76 76" role="img" :aria-label="`${t.score}: ${data?.scan.score ?? 0}/100`">
-              <circle cx="38" cy="38" r="30" fill="none" stroke="var(--color-line)" stroke-width="7" />
-              <circle cx="38" cy="38" r="30" fill="none" :stroke="scoreColor" stroke-width="7" stroke-linecap="round"
+            <svg width="68" height="68" viewBox="0 0 76 76" class="shrink-0" role="img" :aria-label="`${t.score}: ${data?.scan.score ?? 0}/100`">
+              <circle cx="38" cy="38" r="31" fill="none" stroke="var(--color-line)" stroke-width="6" />
+              <circle cx="38" cy="38" r="31" fill="none" :stroke="scoreColor" stroke-width="6" stroke-linecap="round"
                 :stroke-dasharray="`${(RING * Math.max(data?.scan.score ?? 0, 1)) / 100} ${RING}`" transform="rotate(-90 38 38)" class="transition-all duration-700" />
-              <text x="38" y="44" text-anchor="middle" font-size="21" font-weight="800" :fill="scoreColor" font-family="Plus Jakarta Sans, sans-serif">{{ data?.scan.score ?? 0 }}</text>
+              <text x="38" y="45" text-anchor="middle" font-size="23" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ data?.scan.score ?? 0 }}</text>
             </svg>
             <div class="min-w-0">
-              <div class="caps">{{ t.score }}</div>
-              <p class="mt-0.5 text-[15px] leading-snug font-semibold">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
+              <p class="text-[17px] leading-tight font-bold" :style="{ color: scoreColor }">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
+              <p class="mt-1 text-[13px] text-muted">{{ t.passedShort(passedN, data?.scan.checked || 0) }}</p>
             </div>
           </div>
-          <div>
-            <div class="flex justify-between text-[13px] text-muted"><span>{{ t.passedOf(passedN, data?.scan.checked || 0) }}</span><span class="num">{{ data?.scan.checked ? Math.round((passedN / data.scan.checked) * 100) : 0 }}%</span></div>
-            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-ok transition-[width] duration-700" :style="{ width: (data?.scan.checked ? (passedN / data.scan.checked) * 100 : 0) + '%' }" /></div>
-          </div>
           <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
-              <svg :class="busy ? 'animate-spin' : ''" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <div class="-mt-1 flex items-center justify-between text-[13.5px] font-semibold text-muted">
+            <button class="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
+              <svg :class="busy ? 'animate-spin' : ''" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
               {{ busy ? t.scanning : t.rescan }}
             </button>
-            <button class="rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
+            <button class="rounded-lg px-1.5 py-1 hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
           </div>
         </section>
 

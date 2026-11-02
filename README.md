@@ -6,7 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
-![Rules](https://img.shields.io/badge/rules-103-0b6e52)
+![Rules](https://img.shields.io/badge/rules-104-0b6e52)
 
 </div>
 
@@ -105,7 +105,7 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-103 rules over 28 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+104 rules over 28 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 

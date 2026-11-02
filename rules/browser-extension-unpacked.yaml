@@ -17,5 +17,5 @@ fix:
   vi: "Nếu không phải bạn tự nạp {name} để phát triển thì gỡ nó."
 author: the-last-devops
 tests:
-  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": true, "from_webstore": true, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}
-  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": false}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": true, "from_webstore": true, "external": false, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": false}

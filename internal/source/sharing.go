@@ -123,25 +123,27 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 		profiles, _ := filepath.Glob(filepath.Join(r.dir, "*", "Preferences"))
 		for _, prefPath := range profiles {
 			profile := filepath.Dir(prefPath)
-			b, err := readSmallN(prefPath, 32<<20)
-			if err != nil {
-				continue
+			// Recent Chrome keeps extension settings in "Secure Preferences"
+			// (signed); older versions and some forks in "Preferences".
+			settings := map[string]extSetting{}
+			for _, name := range []string{"Preferences", "Secure Preferences"} {
+				b, err := readSmallN(filepath.Join(profile, name), 32<<20)
+				if err != nil {
+					continue
+				}
+				var prefs struct {
+					Extensions struct {
+						Settings map[string]extSetting `json:"settings"`
+					} `json:"extensions"`
+				}
+				if json.Unmarshal(b, &prefs) != nil {
+					continue
+				}
+				for id, st := range prefs.Extensions.Settings {
+					settings[id] = st
+				}
 			}
-			var prefs struct {
-				Extensions struct {
-					Settings map[string]struct {
-						Location       int    `json:"location"`
-						State          *int   `json:"state"`
-						DisableReasons any    `json:"disable_reasons"`
-						FromWebstore   bool   `json:"from_webstore"`
-						Path           string `json:"path"`
-					} `json:"settings"`
-				} `json:"extensions"`
-			}
-			if json.Unmarshal(b, &prefs) != nil {
-				continue
-			}
-			for id, s := range prefs.Extensions.Settings {
+			for id, s := range settings {
 				if s.Location == 5 || s.Location == 10 { // component / built-in
 					continue
 				}
@@ -202,6 +204,9 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 				items = append(items, Item{
 					"browser": r.browser, "profile": filepath.Base(profile), "id": id, "name": name,
 					"unpacked": s.Location == 4, "from_webstore": s.FromWebstore,
+					// Put there by another program (external_extensions.json or the
+					// registry) rather than installed by you or your admin's policy.
+					"external": (s.Location == 2 || s.Location == 3 || s.Location == 6) && !googleDefaultExtension[id],
 					"all_urls":             allURLs,
 					"debugger":             perms["debugger"],
 					"proxy":                perms["proxy"],
@@ -213,6 +218,23 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 		}
 	}
 	return items, nil
+}
+
+// googleDefaultExtension: apps Chrome itself adds as "external" (Docs
+// Offline, the Google app shortcuts, Web Store payments).
+var googleDefaultExtension = map[string]bool{
+	"ghbmnnjooekpmoecnnnilnnbdlolhkhi": true, "nmmhkkegccagdldgiimedpiccmgmieda": true,
+	"pjkljhegncpnkpknbcohdijeoejaedia": true, "apdfllckaahabafndbhieahigkjlhalf": true,
+	"blpcfgokakmgnkcojhhkbfbldkacnbeo": true, "aapocclcgogkmnckokdopfmhonfmgoek": true,
+	"aohghmighlieiainnegkcijnfilokake": true, "felcaaldnbdncclmgdcncolpebgiejap": true,
+}
+
+type extSetting struct {
+	Location       int    `json:"location"`
+	State          *int   `json:"state"`
+	DisableReasons any    `json:"disable_reasons"`
+	FromWebstore   bool   `json:"from_webstore"`
+	Path           string `json:"path"`
 }
 
 func localizedName(dir, msg string) string {
