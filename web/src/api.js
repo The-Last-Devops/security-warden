@@ -17,6 +17,8 @@ export const api = {
   rescan: lang => call('POST', `/api/scan?lang=${lang}`),
   fix: (keys, lang) => call('POST', `/api/fix?lang=${lang}`, { keys }),
   undo: () => call('POST', '/api/undo'),
+  ignore: (keys, days) => call('POST', '/api/ignore', { keys, days }),
+  unignore: keys => call('POST', '/api/unignore', { keys }),
   logout: () => call('POST', '/api/logout'),
   passkeyStatus: () => call('GET', '/api/passkey'),
   async addPasskey() {

@@ -14,6 +14,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/rules"
@@ -93,6 +94,8 @@ func run(args []string) int {
 		return runWatch(l, rs, *interval, *full)
 	case "agent":
 		return runAgent(l, subArgs)
+	case "ignore":
+		return runIgnore(l, subArgs)
 	case "serve":
 		return runServe(l, rs, *listen, *allowLAN)
 	case "help":
@@ -156,8 +159,10 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 		items[r.Name] = r.Items
 		ran[r.Name] = r.SkipKey == "" && r.Err == nil
 	}
-	findings := engine.Evaluate(rs, items, platform(), l)
-	checked, passed := engine.Coverage(rs, findings, ran, platform())
+	all := engine.Evaluate(rs, items, platform(), l)
+	checked, passed := engine.Coverage(rs, all, ran, platform())
+	entries, _ := ignore.Default().List(time.Now())
+	findings, ignored := ignore.Split(all, entries, time.Now())
 	host, _ := os.Hostname()
 	return report.Scan{
 		Version:  version,
@@ -170,6 +175,44 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 		Passed:   passed,
 		Sources:  report.Statuses(results),
 		Findings: findings,
+		Ignored:  ignored,
 		Root:     os.Geteuid() == 0,
 	}
+}
+
+// runIgnore lists or clears snoozed findings (snoozing happens in the web
+// UI, where each finding has its own button).
+func runIgnore(l string, args []string) int {
+	t := func(k string) string { return i18n.T(l, k) }
+	st := ignore.Default()
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "clear":
+		if err := st.Remove(nil); err != nil {
+			fmt.Println(err)
+			return 2
+		}
+		fmt.Println(t("ignore.cleared"))
+	default:
+		es, err := st.List(time.Now())
+		if err != nil {
+			fmt.Println(err)
+			return 2
+		}
+		if len(es) == 0 {
+			fmt.Println(t("ignore.none"))
+			return 0
+		}
+		for _, e := range es {
+			until := t("ignore.forever")
+			if !e.Until.IsZero() {
+				until = e.Until.Local().Format("2006-01-02 15:04")
+			}
+			fmt.Printf("  %-12s %-18s %s\n    %s\n", e.ID, until, e.RuleID, engine.Clean(e.Title))
+		}
+	}
+	return 0
 }

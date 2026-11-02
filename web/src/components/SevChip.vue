@@ -1,14 +1,11 @@
 <script setup>
-defineProps({ sev: String, label: String, dot: Boolean })
+defineProps({ sev: String, label: String })
 const cls = {
-  critical: 'bg-crit text-white', high: 'bg-high text-white', medium: 'bg-med-bg text-med ring-1 ring-med/30',
-  low: 'bg-low-bg text-low ring-1 ring-low/30', info: 'bg-info-bg text-info',
+  critical: 'bg-crit-bg text-crit', high: 'bg-high-bg text-high', medium: 'bg-med-bg text-med',
+  low: 'bg-low-bg text-low', info: 'bg-info-bg text-info',
 }
-const dotCls = { critical: 'bg-crit', high: 'bg-high', medium: 'bg-med', low: 'bg-low', info: 'bg-info' }
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-[3px] font-mono text-[11.5px] font-bold uppercase tracking-[.06em]" :class="cls[sev]">
-    {{ label }}
-  </span>
+  <span class="inline-block shrink-0 rounded-full px-2.5 py-1 text-[11.5px] leading-none font-bold tracking-[.06em] uppercase" :class="cls[sev]">{{ label }}</span>
 </template>

@@ -11,6 +11,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/agent"
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/notify"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
@@ -60,7 +61,10 @@ func runWatch(lang string, rs []*engine.Rule, interval, full time.Duration) int 
 				items[r.Name] = r.Items
 			}
 		}
-		return engine.Evaluate(rs, items, platform(), lang)
+		found := engine.Evaluate(rs, items, platform(), lang)
+		entries, _ := ignore.Default().List(time.Now())
+		shown, _ := ignore.Split(found, entries, time.Now())
+		return shown
 	}
 	logf := func(format string, a ...any) {
 		fmt.Printf("%s  %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, a...))

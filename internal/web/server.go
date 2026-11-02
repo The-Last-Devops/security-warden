@@ -6,9 +6,7 @@ package web
 
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -23,6 +21,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
@@ -119,6 +118,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
 	mux.HandleFunc("POST /api/fix", s.withSession(s.handleFix))
 	mux.HandleFunc("POST /api/undo", s.withSession(s.handleUndo))
+	mux.HandleFunc("POST /api/ignore", s.withSession(s.handleIgnore))
+	mux.HandleFunc("POST /api/unignore", s.withSession(s.handleUnignore))
 	mux.HandleFunc("GET /api/passkey", s.handlePasskeyStatus)
 	mux.HandleFunc("POST /api/passkey/register/begin", s.withSession(s.handleRegisterBegin))
 	mux.HandleFunc("POST /api/passkey/register/finish", s.withSession(s.handleRegisterFinish))
@@ -245,7 +246,7 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 	out := make([]apiFinding, 0, len(sc.Findings))
 	for _, f := range sc.Findings {
 		f.Title, f.Explain, f.Fix = tilde(engine.Clean(f.Title)), tilde(engine.Clean(f.Explain)), tilde(engine.Clean(f.Fix))
-		af := apiFinding{Finding: f, Key: FindingID(f), Category: report.Category(f.Source)}
+		af := apiFinding{Finding: f, Key: engine.FindingID(f), Category: report.Category(f.Source)}
 		if f.Remedy != nil {
 			if a, ok := fix.Get(f.Remedy.Action); ok {
 				for _, p := range a.Plan(f.Remedy.Params) {
@@ -287,7 +288,32 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 		}
 		srcs = append(srcs, a)
 	}
-	return map[string]any{"scan": sc, "findings": out, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
+	// Snoozed findings, with when they come back.
+	until := map[string]string{}
+	if es, err := ignore.Default().List(time.Now()); err == nil {
+		for _, e := range es {
+			if e.Until.IsZero() {
+				until[e.ID] = ""
+			} else {
+				until[e.ID] = e.Until.Format(time.RFC3339)
+			}
+		}
+	}
+	type apiIgnored struct {
+		Key      string `json:"key"`
+		RuleID   string `json:"rule_id"`
+		Title    string `json:"title"`
+		Severity string `json:"severity"`
+		Category string `json:"category"`
+		Until    string `json:"until"`
+	}
+	ign := []apiIgnored{}
+	for _, f := range sc.Ignored {
+		id := engine.FindingID(f)
+		ign = append(ign, apiIgnored{id, f.RuleID, tilde(engine.Clean(f.Title)), f.Severity, report.Category(f.Source), until[id]})
+	}
+	sc.Ignored = nil
+	return map[string]any{"scan": sc, "findings": out, "ignored": ign, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
@@ -317,7 +343,7 @@ func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *
 	}
 	byKey := map[string]engine.Finding{}
 	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
-		byKey[FindingID(f)] = f
+		byKey[engine.FindingID(f)] = f
 	}
 	batch := fix.NewBatch()
 	type result struct {
@@ -346,6 +372,54 @@ func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *
 	writeJSON(w, http.StatusOK, map[string]any{"results": res})
 }
 
+func (s *Server) handleIgnore(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	var req struct {
+		Keys []string `json:"keys"`
+		Days int      `json:"days"` // 0 = for good (critical: 30 days at most)
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Keys) == 0 || len(req.Keys) > 500 || req.Days < 0 || req.Days > 365 {
+		errJSON(w, http.StatusBadRequest, "send {\"keys\": [...], \"days\": 0..365}")
+		return
+	}
+	s.mu.Lock()
+	results := s.results
+	s.mu.Unlock()
+	if results == nil {
+		errJSON(w, http.StatusConflict, "scan first")
+		return
+	}
+	want := map[string]bool{}
+	for _, k := range req.Keys {
+		want[k] = true
+	}
+	var pick []engine.Finding
+	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
+		if want[engine.FindingID(f)] {
+			pick = append(pick, f)
+		}
+	}
+	if err := ignore.Default().Add(pick, time.Duration(req.Days)*24*time.Hour, time.Now()); err != nil {
+		errJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ignored": len(pick)})
+}
+
+func (s *Server) handleUnignore(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	var req struct {
+		Keys []string `json:"keys"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Keys) == 0 || len(req.Keys) > 500 {
+		errJSON(w, http.StatusBadRequest, "send {\"keys\": [...]}")
+		return
+	}
+	if err := ignore.Default().Remove(req.Keys); err != nil {
+		errJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
 func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
 	done, err := fix.UndoLast()
 	msg := ""
@@ -361,14 +435,6 @@ func tilde(s string) string {
 		return strings.ReplaceAll(s, h, "~")
 	}
 	return s
-}
-
-// FindingID names a finding by its rule and the facts it matched, so the
-// id is the same in every language and across rescans.
-func FindingID(f engine.Finding) string {
-	b, _ := json.Marshal(f.Item) // map keys are sorted: stable
-	h := sha256.Sum256(append([]byte(f.RuleID+"\x00"), b...))
-	return hex.EncodeToString(h[:12])
 }
 
 // Run serves until ctx ends.

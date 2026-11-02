@@ -26,6 +26,7 @@ type Scan struct {
 	Passed   []string         `json:"passed"`
 	Sources  []SourceStatus   `json:"sources"`
 	Findings []engine.Finding `json:"findings"`
+	Ignored  []engine.Finding `json:"ignored"`
 	Root     bool             `json:"root"`
 }
 
@@ -235,6 +236,9 @@ func Text(w io.Writer, s Scan, o Options) {
 		case st.Skipped != "" && o.Verbose:
 			fmt.Fprintf(w, "  %s %s\n", c.dim("–"), c.dim(t("source."+st.Name)+": "+t(st.Skipped)))
 		}
+	}
+	if n := len(s.Ignored); n > 0 {
+		fmt.Fprintf(w, "  %s\n", c.dim(fmt.Sprintf(t("report.ignored"), n)))
 	}
 	if !o.Verbose {
 		fmt.Fprintf(w, "  %s\n", c.dim(t("report.more")))

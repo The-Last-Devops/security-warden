@@ -1,125 +1,132 @@
 @import "tailwindcss";
-@import "@fontsource-variable/bricolage-grotesque";
-@import "@fontsource/ibm-plex-sans/400.css";
-@import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/be-vietnam-pro/800.css";
 @import "@fontsource-variable/jetbrains-mono";
 
 /*
-  Direction: an instrument panel for one machine. Engineering-paper ground,
-  ink type, one signal colour ("warden green") and severity colours that read
-  like gauge zones. Fonts ship inside the binary (no CDN), all with
-  Vietnamese glyphs. Theme: auto (system), light or dark via data-theme.
+  Direction B: a security operations console. Night-blue ground with a soft
+  glow, panels, big numbers and severity colours that stand out. Light mode
+  keeps the same structure on a pale blue ground. Fonts are bundled (no CDN)
+  and include Vietnamese.
 */
 @theme {
-  --color-page: #f2f3f1;
-  --color-grid: #e2e5df;
-  --color-win: #f7f8f6;
+  --color-page: #f3f6fb;
+  --color-glow: #dfe8fb;
   --color-panel: #ffffff;
-  --color-side: #f1f3ef;
-  --color-line: #cfd5cc;
-  --color-fg: #0e1310;
-  --color-muted: #46514a;
-  --color-accent: #0b6e52;
+  --color-panel2: #f6f8fc;
+  --color-line: #dfe5ef;
+  --color-fg: #0b1220;
+  --color-muted: #4a5772;
+  --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #d5ece2;
-  --color-crit: #b3172c;
-  --color-high: #c2410c;
-  --color-med: #8a6400;
-  --color-low: #1d6f94;
-  --color-info: #56615a;
-  --color-ok: #13804b;
-  --color-crit-bg: #fde2e5;
-  --color-high-bg: #ffe7d9;
-  --color-med-bg: #fbefc8;
-  --color-low-bg: #dcedf6;
-  --color-info-bg: #e8ebe6;
-  --color-ok-bg: #dbf2e5;
-  --font-display: "Bricolage Grotesque Variable", "IBM Plex Sans", system-ui, sans-serif;
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --color-accent-soft: rgba(37,99,235,.10);
+  --color-crit: #dc2626;
+  --color-high: #ea580c;
+  --color-med: #a16207;
+  --color-low: #2563eb;
+  --color-info: #475569;
+  --color-ok: #15803d;
+  --color-crit-bg: rgba(220,38,38,.10);
+  --color-high-bg: rgba(234,88,12,.10);
+  --color-med-bg: rgba(202,138,4,.12);
+  --color-low-bg: rgba(37,99,235,.09);
+  --color-info-bg: rgba(71,85,105,.08);
+  --color-ok-bg: rgba(22,163,74,.10);
+  --color-rail-crit: #dc2626;
+  --color-rail-high: #ea580c;
+  --color-rail-med: #ca8a04;
+  --color-rail-low: #2563eb;
+  --color-rail-info: #64748b;
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, Consolas, monospace;
 }
 
 :root[data-theme="dark"] {
-  --color-page: #0a0e0c;
-  --color-grid: #141b17;
-  --color-win: #111714;
-  --color-panel: #171f1b;
-  --color-side: #0f1512;
-  --color-line: #2f3a34;
-  --color-fg: #eef3ef;
-  --color-muted: #a6b2aa;
-  --color-accent: #3ccf95;
-  --color-accent-ink: #06150f;
-  --color-accent-soft: #143428;
-  --color-crit: #ff6b7a;
-  --color-high: #ff8a5c;
-  --color-med: #e7b93e;
-  --color-low: #5cc2ea;
-  --color-info: #8d9a92;
-  --color-ok: #3ccf95;
-  --color-crit-bg: #3d1820;
-  --color-high-bg: #3b2014;
-  --color-med-bg: #352b10;
-  --color-low-bg: #11303d;
-  --color-info-bg: #1c2420;
-  --color-ok-bg: #12301f;
+  --color-page: #070b14;
+  --color-glow: #13224a;
+  --color-panel: #0d1424;
+  --color-panel2: #111a2e;
+  --color-line: #1c2740;
+  --color-fg: #e6ecf8;
+  --color-muted: #8b98b4;
+  --color-accent: #4f8cff;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: rgba(79,140,255,.14);
+  --color-crit: #f87171;
+  --color-high: #fb923c;
+  --color-med: #facc15;
+  --color-low: #60a5fa;
+  --color-info: #94a3b8;
+  --color-ok: #4ade80;
+  --color-crit-bg: rgba(239,68,68,.14);
+  --color-high-bg: rgba(249,115,22,.14);
+  --color-med-bg: rgba(234,179,8,.13);
+  --color-low-bg: rgba(59,130,246,.14);
+  --color-info-bg: rgba(148,163,184,.12);
+  --color-ok-bg: rgba(34,197,94,.12);
+  --color-rail-crit: #ef4444;
+  --color-rail-high: #f97316;
+  --color-rail-med: #eab308;
+  --color-rail-low: #3b82f6;
+  --color-rail-info: #64748b;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) {
-  --color-page: #0a0e0c;
-  --color-grid: #141b17;
-  --color-win: #111714;
-  --color-panel: #171f1b;
-  --color-side: #0f1512;
-  --color-line: #2f3a34;
-  --color-fg: #eef3ef;
-  --color-muted: #a6b2aa;
-  --color-accent: #3ccf95;
-  --color-accent-ink: #06150f;
-  --color-accent-soft: #143428;
-  --color-crit: #ff6b7a;
-  --color-high: #ff8a5c;
-  --color-med: #e7b93e;
-  --color-low: #5cc2ea;
-  --color-info: #8d9a92;
-  --color-ok: #3ccf95;
-  --color-crit-bg: #3d1820;
-  --color-high-bg: #3b2014;
-  --color-med-bg: #352b10;
-  --color-low-bg: #11303d;
-  --color-info-bg: #1c2420;
-  --color-ok-bg: #12301f;
-  color-scheme: dark;
+    --color-page: #070b14;
+    --color-glow: #13224a;
+    --color-panel: #0d1424;
+    --color-panel2: #111a2e;
+    --color-line: #1c2740;
+    --color-fg: #e6ecf8;
+    --color-muted: #8b98b4;
+    --color-accent: #4f8cff;
+    --color-accent-ink: #ffffff;
+    --color-accent-soft: rgba(79,140,255,.14);
+    --color-crit: #f87171;
+    --color-high: #fb923c;
+    --color-med: #facc15;
+    --color-low: #60a5fa;
+    --color-info: #94a3b8;
+    --color-ok: #4ade80;
+    --color-crit-bg: rgba(239,68,68,.14);
+    --color-high-bg: rgba(249,115,22,.14);
+    --color-med-bg: rgba(234,179,8,.13);
+    --color-low-bg: rgba(59,130,246,.14);
+    --color-info-bg: rgba(148,163,184,.12);
+    --color-ok-bg: rgba(34,197,94,.12);
+    --color-rail-crit: #ef4444;
+    --color-rail-high: #f97316;
+    --color-rail-med: #eab308;
+    --color-rail-low: #3b82f6;
+    --color-rail-info: #64748b;
+    color-scheme: dark;
   }
 }
 
 html, body { min-height: 100%; }
 body {
+  font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.55;
-  font-family: var(--font-sans);
   color: var(--color-fg);
-  background-color: var(--color-page);
-  background-image: radial-gradient(var(--color-grid) .9px, transparent 1.1px);
-  background-size: 18px 18px;
+  background: radial-gradient(1100px 520px at 72% -12%, var(--color-glow) 0%, transparent 62%), var(--color-page);
+  background-attachment: fixed;
 }
 
-/* Everything you can press looks pressable. */
 button:not(:disabled), [role="button"], a[href], select, summary, label:has(> input[type="checkbox"]), input[type="checkbox"] { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
 
-.eyebrow { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--color-muted); }
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.rail-critical { background-image: repeating-linear-gradient(135deg, var(--color-crit) 0 4px, transparent 4px 8px); }
+.panel { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 16px; }
+.caps { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--color-muted); }
+.num { font-variant-numeric: tabular-nums; }
 
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.rise { animation: rise .42s cubic-bezier(.2,.7,.2,1) both; }
-@keyframes sweep { from { transform: scaleY(.2); opacity: .3; } to { transform: none; opacity: 1; } }
-.tick { transform-origin: bottom; animation: sweep .5s cubic-bezier(.2,.7,.2,1) both; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-}
+@keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .38s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes draw { from { stroke-dashoffset: var(--len); } }
+.draw { animation: draw .9s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

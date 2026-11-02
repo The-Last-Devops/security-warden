@@ -62,6 +62,7 @@ Usage:
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
   security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
+  security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -76,6 +77,10 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"report.passed":     "Passed %d of %d checks",
 	"report.more":       "Details for every item: security-warden --verbose",
 	"report.progress":   "Checking",
+	"report.ignored":    "%d ignored findings are not counted (security-warden ignore list)",
+	"ignore.none":       "Nothing is ignored.",
+	"ignore.cleared":    "Ignore list cleared.",
+	"ignore.forever":    "for good",
 	"serve.open":        "Open this link in your browser (it signs you in):",
 	"serve.secret":      "Keep the link private: it works until you stop the server (Ctrl+C).",
 	"serve.lan_warning": "Warning: this address is reachable by everyone on that network.",
@@ -169,6 +174,7 @@ Cách dùng:
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
   security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
+  security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -183,6 +189,10 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"report.passed":     "Đạt %d trên %d kiểm tra",
 	"report.more":       "Xem chi tiết từng mục: security-warden --verbose",
 	"report.progress":   "Đang kiểm",
+	"report.ignored":    "%d vấn đề đang bỏ qua không được tính (security-warden ignore list)",
+	"ignore.none":       "Không bỏ qua mục nào.",
+	"ignore.cleared":    "Đã xoá danh sách bỏ qua.",
+	"ignore.forever":    "luôn luôn",
 	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
 	"serve.secret":      "Giữ kín link: nó dùng được tới khi bạn dừng server (Ctrl+C).",
 	"serve.lan_warning": "Cảnh báo: mọi người trong mạng đó đều truy cập được địa chỉ này.",

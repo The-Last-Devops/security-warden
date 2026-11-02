@@ -4,6 +4,9 @@
 package engine
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"path"
@@ -229,6 +232,14 @@ func Clean(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// FindingID names a finding by its rule and the facts it matched, so the
+// id is the same in every language and across rescans.
+func FindingID(f Finding) string {
+	b, _ := json.Marshal(f.Item) // map keys are sorted: stable
+	h := sha256.Sum256(append([]byte(f.RuleID+"\x00"), b...))
+	return hex.EncodeToString(h[:12])
 }
 
 // Finding is one rule matching one item, rendered in one language.
