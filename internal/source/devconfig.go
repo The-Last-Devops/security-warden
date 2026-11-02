@@ -114,9 +114,12 @@ func sshClientConfig(ctx context.Context) ([]Item, error) {
 
 // gitConfig reads the global git settings that weaken security.
 func gitConfig(ctx context.Context) ([]Item, error) {
+	if !gitAvailable() {
+		return nil, Skip{"skip.git"}
+	}
 	out, err := run(ctx, "git", "config", "--global", "--list")
 	if err != nil && out == "" {
-		return nil, Skip{"skip.git"}
+		return nil, nil // no global config
 	}
 	it := Item{"credential_store": false, "ssl_verify_off": false, "safe_directory_all": false,
 		"hooks_path": "", "insteadof_downgrade": false, "file_protocol_always": false}

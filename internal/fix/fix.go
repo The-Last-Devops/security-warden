@@ -74,9 +74,21 @@ func privatePath(p string) (string, error) {
 	if p == "" || !filepath.IsAbs(p) {
 		return "", fmt.Errorf("path must be absolute: %q", p)
 	}
-	clean := filepath.Clean(p)
-	h := filepath.Clean(home())
-	if h == "" || !strings.HasPrefix(clean, h+string(filepath.Separator)) {
+	if strings.Contains(p, "..") {
+		return "", fmt.Errorf("path must not contain ..: %q", p)
+	}
+	h, err := filepath.EvalSymlinks(filepath.Clean(home()))
+	if err != nil || h == "" {
+		return "", fmt.Errorf("cannot resolve home folder")
+	}
+	// Resolve the folder part, so a symlinked folder inside home
+	// (~/a -> /etc) cannot lead outside it.
+	dir, err := filepath.EvalSymlinks(filepath.Dir(filepath.Clean(p)))
+	if err != nil {
+		return "", err
+	}
+	clean := filepath.Join(dir, filepath.Base(p))
+	if !strings.HasPrefix(clean, h+string(filepath.Separator)) {
 		return "", fmt.Errorf("path is outside the home folder: %q", p)
 	}
 	fi, err := os.Lstat(clean)
@@ -86,10 +98,59 @@ func privatePath(p string) (string, error) {
 	if !fi.Mode().IsRegular() {
 		return "", fmt.Errorf("not a regular file: %q", p)
 	}
+	if !ownedByUser(fi) {
+		return "", fmt.Errorf("not owned by you: %q", p)
+	}
 	return clean, nil
 }
 
-var safeName = regexp.MustCompile(`^[A-Za-z0-9@._+-]{1,100}$`)
+var safeName = regexp.MustCompile(`^[A-Za-z0-9@][A-Za-z0-9@._+-]{0,99}$`)
+
+// allowed lists, per action, the sources a rule may use it with and which
+// item field may fill each parameter. A rule cannot point an action at any
+// other value, so a careless or hostile rule cannot chmod arbitrary files.
+var allowed = map[string]struct {
+	sources []string
+	params  map[string]string // param -> required "{field}"
+}{
+	"chmod_private":          {[]string{"credential_files", "ssh_keys", "authorized_keys"}, map[string]string{"path": "{path}"}},
+	"brew_upgrade":           {[]string{"outdated_software"}, map[string]string{"name": "{name}"}},
+	"brew_upgrade_all":       {[]string{"outdated_software"}, nil},
+	"macos_firewall_on":      {[]string{"posture"}, nil},
+	"macos_stealth_on":       {[]string{"posture"}, nil},
+	"macos_gatekeeper_on":    {[]string{"posture"}, nil},
+	"macos_guest_off":        {[]string{"posture"}, nil},
+	"macos_airdrop_contacts": {[]string{"posture"}, nil},
+	"tailscale_shields_up":   {[]string{"tailscale"}, nil},
+	"tailscale_ssh_off":      {[]string{"tailscale"}, nil},
+}
+
+// CheckRemedy is the engine's check for a rule's remedy block.
+func CheckRemedy(action, source string, params map[string]string) error {
+	if _, ok := registry[action]; !ok {
+		return fmt.Errorf("unknown action %q", action)
+	}
+	a, ok := allowed[action]
+	if !ok {
+		return fmt.Errorf("action %q has no allow-list", action)
+	}
+	okSource := false
+	for _, s := range a.sources {
+		okSource = okSource || s == source
+	}
+	if !okSource {
+		return fmt.Errorf("action %q cannot be used with source %q", action, source)
+	}
+	if len(params) != len(a.params) {
+		return fmt.Errorf("action %q takes params %v", action, a.params)
+	}
+	for k, v := range params {
+		if a.params[k] != v {
+			return fmt.Errorf("param %s must be exactly %q", k, a.params[k])
+		}
+	}
+	return nil
+}
 
 func init() {
 	register(&Action{
@@ -113,8 +174,10 @@ func init() {
 				return err
 			}
 			m, err := strconv.ParseUint(p["mode"], 8, 32)
-			if err != nil || m > 0o777 {
-				return fmt.Errorf("bad mode %q", p["mode"])
+			// The journal is a user file; never let it widen permissions
+			// beyond what a home file normally has.
+			if err != nil || m > 0o777 || m&0o022 != 0 {
+				return fmt.Errorf("refusing to restore mode %q", p["mode"])
 			}
 			_, err = chmodNoFollow(path, fs.FileMode(m))
 			return err
@@ -176,7 +239,7 @@ func init() {
 			if !safeName.MatchString(p["name"]) {
 				return nil, fmt.Errorf("bad package name %q", p["name"])
 			}
-			return nil, Runner(brewBin(), "upgrade", p["name"])
+			return nil, Runner(brewBin(), "upgrade", "--", p["name"])
 		},
 	})
 	register(&Action{
@@ -265,7 +328,8 @@ func readJournal() ([]Entry, error) {
 func writeJournal(es []Entry) error {
 	p := JournalPath()
 	tmp := p + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	_ = os.Remove(tmp)
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -282,8 +346,15 @@ func writeJournal(es []Entry) error {
 // NewBatch returns an id grouping the changes of one fix run.
 func NewBatch() string { return time.Now().UTC().Format("20060102T150405Z") }
 
+// ErrRoot is returned when fix runs as root: actions ask for sudo themselves,
+// and running everything as root would touch root-owned files and journal.
+var ErrRoot = errors.New("run security-warden fix as your normal user; it asks for admin rights only when needed")
+
 // Apply runs one action and journals it when it can be undone.
 func Apply(batch, ruleID, actionID string, params map[string]string) error {
+	if os.Geteuid() == 0 && !allowRoot {
+		return ErrRoot
+	}
 	a, ok := Get(actionID)
 	if !ok {
 		return fmt.Errorf("unknown action %q", actionID)
@@ -298,9 +369,15 @@ func Apply(batch, ruleID, actionID string, params map[string]string) error {
 	return nil
 }
 
+// allowRoot is set by tests that run as root in a container.
+var allowRoot = false
+
 // UndoLast reverts every change of the most recent batch that is not undone
 // yet, newest first. It returns the reverted entries.
 func UndoLast() ([]Entry, error) {
+	if os.Geteuid() == 0 && !allowRoot {
+		return nil, ErrRoot
+	}
 	es, err := readJournal()
 	if err != nil || len(es) == 0 {
 		return nil, err

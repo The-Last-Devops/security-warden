@@ -92,6 +92,10 @@ func Install(lang string) (string, error) {
 	if bin, err = filepath.EvalSymlinks(bin); err != nil {
 		return "", err
 	}
+	// The agent runs this file at every login; refuse one others can replace.
+	if fi, err := os.Stat(bin); err == nil && fi.Mode().Perm()&0o022 != 0 {
+		return "", fmt.Errorf("%s is writable by other users; install security-warden somewhere only you or root can write", bin)
+	}
 	unit, logPath := Paths()
 	if err := os.MkdirAll(filepath.Dir(unit), 0o755); err != nil {
 		return "", err
@@ -101,7 +105,7 @@ func Install(lang string) (string, error) {
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		if err := os.WriteFile(unit, []byte(Plist(bin, lang, logPath)), 0o644); err != nil {
+		if err := writeFresh(unit, Plist(bin, lang, logPath)); err != nil {
 			return "", err
 		}
 		domain := fmt.Sprintf("gui/%d", os.Getuid())
@@ -110,7 +114,7 @@ func Install(lang string) (string, error) {
 			return "", fmt.Errorf("launchctl bootstrap: %v: %s", err, out)
 		}
 	case "linux":
-		if err := os.WriteFile(unit, []byte(Unit(bin, lang)), 0o644); err != nil {
+		if err := writeFresh(unit, Unit(bin, lang)); err != nil {
 			return "", err
 		}
 		for _, args := range [][]string{{"--user", "daemon-reload"}, {"--user", "enable", "--now", "security-warden.service"}} {
@@ -122,6 +126,23 @@ func Install(lang string) (string, error) {
 		return "", fmt.Errorf("background agent is not supported on %s yet", runtime.GOOS)
 	}
 	return unit, nil
+}
+
+// writeFresh replaces path with content without following a symlink that
+// might already sit there.
+func writeFresh(path, content string) error {
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // Uninstall stops the service and removes its definition.

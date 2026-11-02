@@ -1,6 +1,7 @@
 package engine_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
@@ -20,7 +21,7 @@ func sourceNames() []string {
 // Every bundled rule must load and pass its own sample items. This is the
 // check CI runs on every contributed rule.
 func TestBundledRules(t *testing.T) {
-	rs, err := engine.Load(rules.FS, sourceNames(), fix.IDs())
+	rs, err := engine.Load(rules.FS, sourceNames(), fix.CheckRemedy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,5 +81,14 @@ func TestScore(t *testing.T) {
 	many := []engine.Finding{{RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}}
 	if got := engine.Score(many); got != 100-10-5 {
 		t.Errorf("repeated score = %d, want %d", got, 100-10-5)
+	}
+}
+
+func TestCleanEscapesControlCharacters(t *testing.T) {
+	got := engine.Render("file {file}", engine.Item{"file": ".env.\r\x1b[2K\u202efdp.exe"})
+	for _, bad := range []string{"\r", "\x1b", "\u202e"} {
+		if strings.Contains(got, bad) {
+			t.Errorf("control character %q reached the output: %q", bad, got)
+		}
 	}
 }

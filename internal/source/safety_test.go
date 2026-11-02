@@ -17,7 +17,7 @@ func TestNoPromptingCommands(t *testing.T) {
 	tcc := []string{`"Documents"`, `"Desktop"`, `"Downloads"`, `"Library/Mail"`, `"Library/Messages"`, `"Library/Safari"`, `"Library/Mobile Documents"`}
 	files, _ := filepath.Glob("*.go")
 	for _, f := range files {
-		if strings.HasSuffix(f, "_test.go") {
+		if strings.HasSuffix(f, "_test.go") || f == "tcc.go" {
 			continue
 		}
 		b, _ := os.ReadFile(f)

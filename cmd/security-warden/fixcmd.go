@@ -23,6 +23,10 @@ func tilde(s string) string {
 // applies the ones the user accepts (all of them with --yes).
 func runFix(lang string, findings []engine.Finding, yes, dryRun bool) int {
 	t := func(k string) string { return i18n.T(lang, k) }
+	if os.Geteuid() == 0 {
+		fmt.Println(fix.ErrRoot)
+		return 2
+	}
 	var fixable, manual []engine.Finding
 	for _, f := range findings {
 		if f.Remedy != nil {
@@ -66,7 +70,7 @@ func runFix(lang string, findings []engine.Finding, yes, dryRun bool) int {
 		}
 		fmt.Printf("  %d. %s\n", i+1, tilde(f.Title))
 		for _, c := range a.Plan(f.Remedy.Params) {
-			fmt.Printf("     $ %s\n", tilde(c))
+			fmt.Printf("     $ %s\n", engine.Clean(tilde(c)))
 		}
 		if len(notes) > 0 {
 			fmt.Printf("     (%s)\n", strings.Join(notes, ", "))

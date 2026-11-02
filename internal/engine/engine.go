@@ -9,7 +9,10 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"cel.dev/cel-go/cel"
 	"gopkg.in/yaml.v3"
@@ -84,7 +87,11 @@ func newEnv() (*cel.Env, error) {
 
 // Load parses and compiles every *.yaml rule in fsys. knownSources lists the
 // source names a rule may refer to.
-func Load(fsys fs.FS, knownSources, knownActions []string) ([]*Rule, error) {
+// RemedyCheck validates a rule's remedy for its source; the fix package
+// supplies it, so only allowed (action, source, field) combinations load.
+type RemedyCheck func(action, source string, params map[string]string) error
+
+func Load(fsys fs.FS, knownSources []string, checkRemedy RemedyCheck) ([]*Rule, error) {
 	env, err := newEnv()
 	if err != nil {
 		return nil, err
@@ -93,10 +100,7 @@ func Load(fsys fs.FS, knownSources, knownActions []string) ([]*Rule, error) {
 	for _, s := range knownSources {
 		known[s] = true
 	}
-	actions := map[string]bool{}
-	for _, a := range knownActions {
-		actions[a] = true
-	}
+
 	files, err := fs.Glob(fsys, "*.yaml")
 	if err != nil {
 		return nil, err
@@ -115,8 +119,10 @@ func Load(fsys fs.FS, knownSources, knownActions []string) ([]*Rule, error) {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
 		r.file = path.Base(f)
-		if r.Remedy != nil && !actions[r.Remedy.Action] {
-			return nil, fmt.Errorf("%s: unknown remedy action %q", f, r.Remedy.Action)
+		if r.Remedy != nil {
+			if err := checkRemedy(r.Remedy.Action, r.Source, r.Remedy.Params); err != nil {
+				return nil, fmt.Errorf("%s: remedy: %w", f, err)
+			}
 		}
 		if err := validate(&r, known); err != nil {
 			return nil, fmt.Errorf("%s: %w", f, err)
@@ -134,7 +140,8 @@ func Load(fsys fs.FS, knownSources, knownActions []string) ([]*Rule, error) {
 		if t := ast.OutputType(); t != cel.BoolType && t != cel.DynType {
 			return nil, fmt.Errorf("%s: match must be a boolean expression", f)
 		}
-		if r.prg, err = env.Program(ast); err != nil {
+		// Cost limit: a rule cannot make a scan or watch tick spin.
+		if r.prg, err = env.Program(ast, cel.CostLimit(100_000), cel.InterruptCheckFrequency(100)); err != nil {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
 		rules = append(rules, &r)
@@ -200,10 +207,28 @@ var placeholder = regexp.MustCompile(`\{([a-z0-9_]+)\}`)
 func Render(s string, it Item) string {
 	return placeholder.ReplaceAllStringFunc(s, func(m string) string {
 		if v, ok := it[m[1:len(m)-1]]; ok {
-			return fmt.Sprint(v)
+			return Clean(fmt.Sprint(v))
 		}
 		return m
 	})
+}
+
+// Clean makes a value from the machine (a file, repo, process or extension
+// name, all of which an attacker can choose) safe to print: control
+// characters and bidi overrides are shown escaped, so they cannot move the
+// cursor, rewrite earlier lines or reorder text on screen.
+func Clean(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == utf8.RuneError, unicode.IsControl(r),
+			r >= 0x202A && r <= 0x202E, r >= 0x2066 && r <= 0x2069, r == 0x200E, r == 0x200F, r == 0x061C:
+			b.WriteString(strings.Trim(strconv.QuoteRune(r), "'"))
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // Finding is one rule matching one item, rendered in one language.

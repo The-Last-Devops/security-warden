@@ -12,6 +12,7 @@ func setup(t *testing.T) string {
 	dir := t.TempDir()
 	home = func() string { return dir }
 	JournalPath = func() string { return filepath.Join(dir, "state", "fixes.jsonl") }
+	allowRoot = true // CI containers run as root
 	return dir
 }
 
@@ -74,5 +75,49 @@ func TestCommandsAreFixed(t *testing.T) {
 	UndoLast()
 	if len(ran) != 2 || ran[1][2] != "--shields-up=false" {
 		t.Fatalf("undo ran: %v", ran)
+	}
+}
+
+func TestChmodRefusesSymlinkedFolder(t *testing.T) {
+	dir := setup(t)
+	outside := t.TempDir()
+	os.WriteFile(filepath.Join(outside, "secret"), []byte("x"), 0o644)
+	os.Symlink(outside, filepath.Join(dir, "a"))
+	if err := Apply("b", "r", "chmod_private", map[string]string{"path": filepath.Join(dir, "a", "secret")}); err == nil {
+		t.Error("chmod followed a symlinked folder out of home")
+	}
+}
+
+func TestUndoRefusesWideMode(t *testing.T) {
+	dir := setup(t)
+	f := filepath.Join(dir, "k")
+	os.WriteFile(f, []byte("x"), 0o600)
+	a, _ := Get("chmod_private")
+	if err := a.Undo(map[string]string{"path": f, "mode": "0777"}); err == nil {
+		t.Error("undo restored a world-writable mode from the journal")
+	}
+}
+
+func TestCheckRemedy(t *testing.T) {
+	if err := CheckRemedy("chmod_private", "credential_files", map[string]string{"path": "{path}"}); err != nil {
+		t.Error(err)
+	}
+	bad := []struct {
+		action, source string
+		params         map[string]string
+	}{
+		{"chmod_private", "dev_files", map[string]string{"path": "{path}"}},
+		{"chmod_private", "credential_files", map[string]string{"path": "{path}/../../.zshrc"}},
+		{"chmod_private", "credential_files", map[string]string{"path": "{file}"}},
+		{"brew_upgrade", "outdated_software", map[string]string{"name": "{name}", "x": "y"}},
+		{"nope", "posture", nil},
+	}
+	for _, b := range bad {
+		if err := CheckRemedy(b.action, b.source, b.params); err == nil {
+			t.Errorf("CheckRemedy accepted %v", b)
+		}
+	}
+	if safeName.MatchString("--force") {
+		t.Error("package name may not start with -")
 	}
 }

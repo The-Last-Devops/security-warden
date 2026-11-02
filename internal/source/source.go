@@ -76,12 +76,17 @@ var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "browse
 // Run executes the collectors in parallel. done, if not nil, is called with
 // each collector's name as it finishes.
 func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
-	out := make([]Result, len(cs))
-	var wg sync.WaitGroup
+	// No source may hold up a scan: after the deadline, the ones still
+	// running are reported as timed out and their late results dropped.
+	ctx, cancel := context.WithTimeout(ctx, RunTimeout)
+	defer cancel()
+	type res struct {
+		i int
+		r Result
+	}
+	ch := make(chan res, len(cs))
 	for i, c := range cs {
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
 			items, err := c.Collect(ctx)
 			r := Result{Name: c.Name, Items: items}
 			var s Skip
@@ -90,15 +95,32 @@ func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
 			} else if err != nil {
 				r.Err = err
 			}
-			out[i] = r
-			if done != nil {
-				done(c.Name)
-			}
+			ch <- res{i, r}
 		}()
 	}
-	wg.Wait()
+	out := make([]Result, len(cs))
+	got := make([]bool, len(cs))
+	for n := 0; n < len(cs); n++ {
+		select {
+		case x := <-ch:
+			out[x.i], got[x.i] = x.r, true
+			if done != nil {
+				done(x.r.Name)
+			}
+		case <-ctx.Done():
+			for i, c := range cs {
+				if !got[i] {
+					out[i] = Result{Name: c.Name, Err: errors.New("timed out")}
+				}
+			}
+			return out
+		}
+	}
 	return out
 }
+
+// RunTimeout bounds one scan.
+var RunTimeout = 60 * time.Second
 
 // run executes a command with a timeout and returns stdout only, so stderr
 // warnings never corrupt JSON or lsof output.

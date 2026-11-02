@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -249,28 +248,32 @@ var envTemplate = regexp.MustCompile(`\.(example|sample|template|dist|defaults|s
 // protected folders) for secret files inside Git repos, and asks Git whether
 // each one is committed or ignored. Bounded in depth, entries and time.
 func devFiles(ctx context.Context) ([]Item, error) {
-	if _, err := exec.LookPath("git"); err != nil {
+	if !gitAvailable() {
 		return nil, Skip{"skip.git"}
 	}
-	roots := []string{}
+	var roots []string
 	if extra := os.Getenv("SW_CODE_DIRS"); extra != "" {
 		roots = append(roots, filepath.SplitList(extra)...)
 	}
-	seenRoot := map[string]bool{}
 	for _, r := range codeRoots {
-		p := filepath.Join(home(), r)
-		if real, err := filepath.EvalSymlinks(p); err == nil && !seenRoot[strings.ToLower(real)] {
-			seenRoot[strings.ToLower(real)] = true
-			roots = append(roots, p)
-		}
+		roots = append(roots, filepath.Join(home(), r))
 	}
+	seenRoot := map[string]bool{}
 	deadline := time.Now().Add(8 * time.Second)
 	entries := 0
-	var items []Item
 	truncated := false
+	type cand struct{ path, rel, kind string }
+	byRepo := map[string][]cand{}
 	for _, root := range roots {
-		baseDepth := strings.Count(root, string(filepath.Separator))
-		filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		// Walk the real folder (a symlinked ~/Code is still scanned), once,
+		// and never inside folders macOS protects with a privacy prompt.
+		real, err := filepath.EvalSymlinks(root)
+		if err != nil || seenRoot[strings.ToLower(real)] || privacyProtected(real) {
+			continue
+		}
+		seenRoot[strings.ToLower(real)] = true
+		baseDepth := strings.Count(real, string(filepath.Separator))
+		filepath.WalkDir(real, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}
@@ -286,16 +289,9 @@ func devFiles(ctx context.Context) ([]Item, error) {
 				return nil
 			}
 			name := d.Name()
-			if !envName.MatchString(name) || envTemplate.MatchString(name) || d.Type()&os.ModeSymlink != 0 {
+			if !d.Type().IsRegular() || !envName.MatchString(name) || envTemplate.MatchString(name) {
 				return nil
 			}
-			repo := repoRoot(filepath.Dir(path))
-			if repo == "" {
-				return nil
-			}
-			rel, _ := filepath.Rel(repo, path)
-			tracked := exec.CommandContext(ctx, "git", "-C", repo, "ls-files", "--error-unmatch", "--", rel).Run() == nil
-			ignored := exec.CommandContext(ctx, "git", "-C", repo, "check-ignore", "-q", "--", rel).Run() == nil
 			kind := "env"
 			switch {
 			case strings.HasSuffix(name, ".tfstate"), strings.HasSuffix(name, ".tfvars"):
@@ -311,9 +307,26 @@ func devFiles(ctx context.Context) ([]Item, error) {
 					return nil // certificates and public keys are fine
 				}
 			}
-			items = append(items, Item{"path": path, "repo": repo, "repo_name": filepath.Base(repo), "file": rel, "kind": kind, "tracked": tracked, "ignored": ignored})
+			repo := repoRoot(filepath.Dir(path))
+			if repo == "" {
+				return nil
+			}
+			rel, _ := filepath.Rel(repo, path)
+			byRepo[repo] = append(byRepo[repo], cand{path, rel, kind})
 			return nil
 		})
+	}
+	var items []Item
+	for repo, cs := range byRepo {
+		var rels []string
+		for _, c := range cs {
+			rels = append(rels, c.rel)
+		}
+		tracked, ignored := gitStatus(ctx, repo, rels)
+		for _, c := range cs {
+			items = append(items, Item{"path": c.path, "repo": repo, "repo_name": filepath.Base(repo), "file": c.rel,
+				"kind": c.kind, "tracked": tracked[c.rel], "ignored": ignored[c.rel]})
+		}
 	}
 	if truncated {
 		items = append(items, Item{"path": "", "repo": "", "repo_name": "", "file": "", "kind": "truncated", "tracked": false, "ignored": true})

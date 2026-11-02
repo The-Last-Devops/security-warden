@@ -87,7 +87,7 @@ func launchdItems(ctx context.Context) []Item {
 	for _, d := range dirs {
 		files, _ := filepath.Glob(filepath.Join(d.dir, "*.plist"))
 		for _, f := range files {
-			out, err := run(ctx, "plutil", "-convert", "json", "-o", "-", f)
+			out, err := run(ctx, "plutil", "-convert", "json", "-o", "-", "--", f)
 			if err != nil {
 				continue
 			}
@@ -179,7 +179,7 @@ var teamRe = regexp.MustCompile(`(?m)^TeamIdentifier=(\S+)`)
 // never prompts. A file we cannot read (root-only helpers) counts as signed:
 // only an explicit "not signed" is reported.
 func codesignInfo(ctx context.Context, path string) (signed bool, team string) {
-	out, _ := runCombined(ctx, "codesign", "-dv", "--verbose=2", path)
+	out, _ := runCombined(ctx, "codesign", "-dv", "--verbose=2", "--", path)
 	if strings.Contains(out, "is not signed at all") {
 		return false, ""
 	}

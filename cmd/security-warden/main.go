@@ -67,7 +67,7 @@ func run(args []string) int {
 	for _, c := range source.All() {
 		names = append(names, c.Name)
 	}
-	rs, err := engine.Load(rules.FS, names, fix.IDs())
+	rs, err := engine.Load(rules.FS, names, fix.CheckRemedy)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
