@@ -9,13 +9,13 @@ func Category(source string) string {
 		return "docker"
 	case "listening_ports", "remote_services", "remote_tools", "tailscale", "sharing", "authorized_keys", "services", "network_config":
 		return "exposure"
-	case "posture", "privilege":
+	case "posture", "privilege", "backup":
 		return "settings"
 	case "persistence":
 		return "persistence"
 	case "ai_agents":
 		return "ai"
-	case "ssh_config", "git_config", "pkg_config", "browser_extensions", "editor_settings", "editor_extensions":
+	case "ssh_config", "git_config", "pkg_config", "browser_extensions", "browser_settings", "editor_settings", "editor_extensions":
 		return "devtools"
 	case "outdated_software":
 		return "software"

@@ -1,0 +1,21 @@
+id: backup-unencrypted
+severity: medium
+platforms: [macos]
+source: backup
+match: "item.configured && !item.encrypted"
+title:
+  en: "Time Machine backups are not encrypted"
+  vi: "Bản sao lưu Time Machine không được mã hoá"
+check:
+  en: "Backups are encrypted"
+  vi: "Bản sao lưu được mã hoá"
+explain:
+  en: "Anyone who picks up the backup disk can read every file, key and saved password on it, even with FileVault on."
+  vi: "Ai cầm được ổ sao lưu cũng đọc được mọi file, khoá và mật khẩu đã lưu trong đó, kể cả khi máy đã bật FileVault."
+fix:
+  en: "Time Machine cannot encrypt in place: remove the disk in System Settings › General › Time Machine, add it again and tick Encrypt Backup."
+  vi: "Time Machine không mã hoá lại tại chỗ được: gỡ ổ trong Cài đặt hệ thống › Cài đặt chung › Time Machine, thêm lại và chọn Mã hoá bản sao lưu."
+author: the-last-devops
+tests:
+  - {"item": {"tool": "Time Machine", "configured": true, "encrypted": false}, "expect": true}
+  - {"item": {"tool": "Time Machine", "configured": true, "encrypted": true}, "expect": false}

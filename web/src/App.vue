@@ -202,6 +202,7 @@ async function ignoreFindings(list, days) {
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
 const menuOpen = ref(false)
+const watchOpen = ref(false)
 const upd = ref(null)
 async function refreshUpdate() { try { upd.value = await api.updateStatus() } catch {} }
 async function toggleAuto() {
@@ -209,8 +210,8 @@ async function toggleAuto() {
   try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
 }
 onMounted(refreshUpdate)
-function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false } }
-onMounted(() => document.addEventListener('click', () => { menuOpen.value = false }))
+function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false } }
+onMounted(() => document.addEventListener('click', () => { menuOpen.value = false; watchOpen.value = false }))
 </script>
 
 <template>
@@ -236,12 +237,25 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
           <svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" fill="var(--color-accent)" /></svg>
           Security Warden
         </button>
-        <span class="hidden items-center gap-2 text-[13px] text-muted lg:flex">
-          <i class="h-2 w-2 rounded-full bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]" />
-          {{ t.watching }} · {{ data?.scan.host || '' }} · {{ t.lastScan(fmtTime(data?.scanned_at)) }}
-        </span>
+        <div v-if="data" class="relative">
+          <button class="flex items-center gap-2 rounded-lg px-2 py-1 text-[13px] text-muted hover:bg-panel2 hover:text-fg" :aria-expanded="watchOpen" @click.stop="watchOpen = !watchOpen; menuOpen = false">
+            <i class="h-2 w-2 rounded-full" :class="data.watching ? 'bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]' : 'bg-muted/60'" />
+            <span class="font-semibold" :class="data.watching ? 'text-fg/85' : ''">{{ data.watching ? t.watching : t.notWatching }}</span>
+            <span class="hidden lg:inline">· {{ data.scan.host }} · {{ t.lastScan(fmtTime(data.scanned_at)) }}</span>
+            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+          </button>
+          <div v-if="watchOpen" class="rise absolute left-0 z-30 mt-2 grid w-[min(24rem,calc(100vw-2rem))] gap-3 rounded-2xl border border-line bg-panel p-5 shadow-2xl" @click.stop>
+            <h2 class="text-[16px] font-bold">{{ data.watching ? t.watchTitle : t.notWatchingTitle }}</h2>
+            <ul v-if="data.watching" class="grid gap-2.5 text-[14px] leading-snug">
+              <li v-for="(line, i) in t.watchLines" :key="i" class="flex gap-2.5"><span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[11px] font-bold text-ok">✓</span><span>{{ line }}</span></li>
+            </ul>
+            <p v-else class="text-[14px] leading-relaxed">{{ t.notWatchingBody }}</p>
+            <p v-if="!data.watching" class="rounded-lg bg-panel2 px-3 py-2 font-mono text-[13px] ring-1 ring-line">security-warden start</p>
+            <p class="border-t border-line pt-3 text-[13px] text-muted">{{ data.watching ? t.watchNext(fmtTime(new Date(new Date(data.scanned_at).getTime() + 10 * 60000).toISOString())) + ' ' + t.watchStop : t.local }}</p>
+          </div>
+        </div>
         <div class="relative ml-auto">
-          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="t.settings" :aria-expanded="menuOpen" @click.stop="menuOpen = !menuOpen">
+          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="t.settings" :aria-expanded="menuOpen" @click.stop="menuOpen = !menuOpen; watchOpen = false">
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="2" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </button>
           <div v-if="menuOpen" class="rise absolute right-0 z-30 mt-2 grid w-72 gap-4 rounded-2xl border border-line bg-panel p-4 shadow-2xl" role="menu" @click.stop>
@@ -295,12 +309,12 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             </div>
           </div>
           <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
-          <div class="-mt-1 flex items-center justify-between text-[13.5px] font-semibold text-muted">
-            <button class="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
-              <svg :class="busy ? 'animate-spin' : ''" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <div class="flex items-center gap-2">
+            <button class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-4 py-2.5 text-[14px] font-semibold hover:border-accent hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
+              <svg :class="busy ? 'animate-spin' : ''" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
               {{ busy ? t.scanning : t.rescan }}
             </button>
-            <button class="rounded-lg px-1.5 py-1 hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
+            <button class="rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-muted hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
           </div>
         </section>
 
@@ -340,6 +354,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
 
         <!-- checked -->
         <div v-if="cat === 'checked'">
+          <p class="border-b border-line px-5 py-3 text-[14.5px] text-muted">{{ t.checkedNote(sources.length, data?.scan.checked || 0) }}</p>
           <div v-for="(s, i) in sources" :key="s.name" class="rise grid grid-cols-[1fr_auto] items-center gap-x-4 border-t border-line px-5 py-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_8rem_auto]" :style="{ animationDelay: `${Math.min(i, 20) * 18}ms` }">
             <div class="min-w-0"><div class="text-[15px] font-semibold">{{ s.label }}</div><div class="text-[13px] text-muted">{{ t[s.category] || '' }}<span v-if="s.detail"> · {{ s.detail }}</span></div></div>
             <div class="num hidden text-right text-[13px] text-muted sm:block">{{ s.state === 'skipped' ? '—' : t.items(s.items) }}</div>

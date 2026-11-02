@@ -44,6 +44,8 @@ var en = map[string]string{
 	"source.authorized_keys":    "Keys allowed to log in",
 	"source.browser_extensions": "Browser extensions",
 	"source.editor_settings":    "VS Code and Cursor settings",
+	"source.backup":             "Backups",
+	"source.browser_settings":   "Browser protection settings",
 	"source.editor_extensions":  "VS Code and Cursor extensions",
 	"source.dev_files":          "Secret files in code folders",
 
@@ -178,6 +180,8 @@ var vi = map[string]string{
 	"source.authorized_keys":    "Khoá được phép đăng nhập",
 	"source.browser_extensions": "Extension trình duyệt",
 	"source.editor_settings":    "Cấu hình VS Code, Cursor",
+	"source.backup":             "Sao lưu",
+	"source.browser_settings":   "Bảo vệ của trình duyệt",
 	"source.editor_extensions":  "Extension VS Code, Cursor",
 	"source.dev_files":          "File bí mật trong thư mục code",
 

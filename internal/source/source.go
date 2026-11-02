@@ -41,6 +41,7 @@ type Result struct {
 func All() []Collector {
 	return []Collector{
 		{"posture", posture},
+		{"backup", backup},
 		{"listening_ports", listeningPorts},
 		{"remote_services", remoteServices},
 		{"remote_tools", remoteTools},
@@ -65,6 +66,7 @@ func All() []Collector {
 		{"sharing", sharing},
 		{"authorized_keys", authorizedKeys},
 		{"browser_extensions", browserExtensions},
+		{"browser_settings", browserSettings},
 		{"editor_settings", editorSettings},
 		{"editor_extensions", editorExtensions},
 		{"dev_files", devFiles},

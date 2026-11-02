@@ -1,0 +1,21 @@
+id: browser-safe-browsing-off
+severity: high
+platforms: [macos, windows, linux]
+source: browser_settings
+match: "item.safe_browsing_off"
+title:
+  en: "{browser} Safe Browsing is off ({profile})"
+  vi: "{browser} đang tắt Duyệt web an toàn ({profile})"
+check:
+  en: "Browsers warn about phishing and malware sites"
+  vi: "Trình duyệt cảnh báo trang lừa đảo và mã độc"
+explain:
+  en: "Profile {profile} has Safe Browsing turned off, so {browser} no longer warns before fake login pages, malware downloads or harmful extensions."
+  vi: "Hồ sơ {profile} đã tắt Duyệt web an toàn, nên {browser} không còn cảnh báo trước trang đăng nhập giả, file tải về có mã độc hay extension độc hại."
+fix:
+  en: "In {browser}: Settings › Privacy and security › Security › Standard protection (or Enhanced)."
+  vi: "Trong {browser}: Cài đặt › Quyền riêng tư và bảo mật › Bảo mật › Bảo vệ tiêu chuẩn (hoặc Nâng cao)."
+author: the-last-devops
+tests:
+  - {"item": {"browser": "Chrome", "profile": "Default", "safe_browsing_off": true, "developer_mode": false}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "safe_browsing_off": false, "developer_mode": false}, "expect": false}

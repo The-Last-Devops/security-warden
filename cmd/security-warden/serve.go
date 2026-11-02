@@ -76,6 +76,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	if background {
 		// Running as a service: no secret in the log; watch and notify.
 		fmt.Printf("%s  %s %s\n", time.Now().Format("2006-01-02 15:04:05"), t("serve.background"), addr)
+		srv.Watching = true
 		go watchInBackground(ctx, srv, lang, popup)
 		go autoUpdate(ctx, lang, stop)
 		if err := srv.Run(ctx, ln); err != nil {

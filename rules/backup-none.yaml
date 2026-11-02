@@ -1,0 +1,21 @@
+id: backup-none
+severity: medium
+platforms: [macos]
+source: backup
+match: "!item.configured"
+title:
+  en: "Time Machine is not backing up this Mac"
+  vi: "Time Machine chưa sao lưu máy Mac này"
+check:
+  en: "This Mac has a backup"
+  vi: "Máy có bản sao lưu"
+explain:
+  en: "Without a backup, ransomware, a stolen laptop or a dead disk means losing everything that is not already in the cloud. Using another backup tool? Snooze this check."
+  vi: "Không có bản sao lưu thì gặp mã độc tống tiền, mất máy hay hỏng ổ là mất hết những gì chưa nằm trên mây. Đang dùng công cụ sao lưu khác? Hãy bỏ qua mục này."
+fix:
+  en: "System Settings › General › Time Machine › Add Backup Disk, and tick Encrypt Backup."
+  vi: "Cài đặt hệ thống › Cài đặt chung › Time Machine › Thêm ổ sao lưu, và chọn Mã hoá bản sao lưu."
+author: the-last-devops
+tests:
+  - {"item": {"tool": "Time Machine", "configured": false, "encrypted": false}, "expect": true}
+  - {"item": {"tool": "Time Machine", "configured": true, "encrypted": true}, "expect": false}

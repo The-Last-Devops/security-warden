@@ -96,28 +96,7 @@ func authorizedKeys(ctx context.Context) ([]Item, error) {
 // browserExtensions lists enabled Chromium-family extensions with powerful
 // permissions. Safari is skipped: its data is privacy-protected.
 func browserExtensions(ctx context.Context) ([]Item, error) {
-	var roots []struct{ browser, dir string }
-	h := home()
-	switch runtime.GOOS {
-	case "darwin":
-		for _, b := range []struct{ name, rel string }{
-			{"Chrome", "Library/Application Support/Google/Chrome"},
-			{"Brave", "Library/Application Support/BraveSoftware/Brave-Browser"},
-			{"Edge", "Library/Application Support/Microsoft Edge"},
-			{"Arc", "Library/Application Support/Arc/User Data"},
-			{"Chromium", "Library/Application Support/Chromium"},
-			{"Vivaldi", "Library/Application Support/Vivaldi"},
-		} {
-			roots = append(roots, struct{ browser, dir string }{b.name, filepath.Join(h, b.rel)})
-		}
-	case "linux":
-		for _, b := range []struct{ name, rel string }{
-			{"Chrome", ".config/google-chrome"}, {"Chromium", ".config/chromium"},
-			{"Brave", ".config/BraveSoftware/Brave-Browser"}, {"Edge", ".config/microsoft-edge"},
-		} {
-			roots = append(roots, struct{ browser, dir string }{b.name, filepath.Join(h, b.rel)})
-		}
-	}
+	roots := chromiumRoots()
 	var items []Item
 	for _, r := range roots {
 		profiles, _ := filepath.Glob(filepath.Join(r.dir, "*", "Preferences"))
@@ -206,7 +185,7 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 					"unpacked": s.Location == 4, "from_webstore": s.FromWebstore,
 					// Put there by another program (external_extensions.json or the
 					// registry) rather than installed by you or your admin's policy.
-					"external": (s.Location == 2 || s.Location == 3 || s.Location == 6) && !googleDefaultExtension[id],
+					"external":             (s.Location == 2 || s.Location == 3 || s.Location == 6) && !googleDefaultExtension[id],
 					"all_urls":             allURLs,
 					"debugger":             perms["debugger"],
 					"proxy":                perms["proxy"],
@@ -366,4 +345,31 @@ func repoRoot(dir string) string {
 		}
 	}
 	return ""
+}
+
+// chromiumRoots lists the user data folders of Chromium-based browsers.
+func chromiumRoots() []struct{ browser, dir string } {
+	var roots []struct{ browser, dir string }
+	h := home()
+	switch runtime.GOOS {
+	case "darwin":
+		for _, b := range []struct{ name, rel string }{
+			{"Chrome", "Library/Application Support/Google/Chrome"},
+			{"Brave", "Library/Application Support/BraveSoftware/Brave-Browser"},
+			{"Edge", "Library/Application Support/Microsoft Edge"},
+			{"Arc", "Library/Application Support/Arc/User Data"},
+			{"Chromium", "Library/Application Support/Chromium"},
+			{"Vivaldi", "Library/Application Support/Vivaldi"},
+		} {
+			roots = append(roots, struct{ browser, dir string }{b.name, filepath.Join(h, b.rel)})
+		}
+	case "linux":
+		for _, b := range []struct{ name, rel string }{
+			{"Chrome", ".config/google-chrome"}, {"Chromium", ".config/chromium"},
+			{"Brave", ".config/BraveSoftware/Brave-Browser"}, {"Edge", ".config/microsoft-edge"},
+		} {
+			roots = append(roots, struct{ browser, dir string }{b.name, filepath.Join(h, b.rel)})
+		}
+	}
+	return roots
 }

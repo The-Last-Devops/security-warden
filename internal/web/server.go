@@ -37,12 +37,14 @@ type Scanner struct {
 
 // Server is the web UI.
 type Server struct {
-	Addr     string // validated ip:port
-	Kind     string // loopback, tailscale or lan
-	Version  string
-	Lang     string
-	UI       fs.FS
-	Scanner  Scanner
+	Addr    string // validated ip:port
+	Kind    string // loopback, tailscale or lan
+	Version string
+	Lang    string
+	UI      fs.FS
+	Scanner Scanner
+	// Watching: the background service rescans and notifies on its own.
+	Watching bool
 	auth     *auth
 	pk       *passkeys
 	mu       sync.Mutex
@@ -384,7 +386,7 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 		ign = append(ign, apiIgnored{id, f.RuleID, tilde(engine.Clean(f.Title)), f.Severity, report.Category(f.Source), until[id]})
 	}
 	sc.Ignored = nil
-	return map[string]any{"scan": sc, "findings": out, "ignored": ign, "passed": passed, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
+	return map[string]any{"scan": sc, "findings": out, "ignored": ign, "passed": passed, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339), "watching": s.Watching}
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
