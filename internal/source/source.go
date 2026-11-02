@@ -73,12 +73,14 @@ func All() []Collector {
 		{"editor_extensions", editorExtensions},
 		{"dev_files", devFiles},
 		{"git_remotes", gitRemotes},
+		{"git_history", gitHistory},
+		{"project_deps", projectDeps},
 	}
 }
 
 // Slow lists sources that are costly (file walks, package manager calls);
 // watch mode runs them less often.
-var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "git_remotes": true, "browser_extensions": true, "shell_history": true, "apps": true}
+var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "git_remotes": true, "git_history": true, "project_deps": true, "browser_extensions": true, "shell_history": true, "apps": true}
 
 // Run executes the collectors in parallel. done, if not nil, is called with
 // each collector's name as it finishes.

@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-![Rules](https://img.shields.io/badge/rules-134-0b6e52)
+![Rules](https://img.shields.io/badge/rules-138-0b6e52)
 
 </div>
 
@@ -15,7 +15,8 @@ Antivirus looks for malware. Security Warden looks for the mistakes we make ours
 listening on every network, a Docker port open to `0.0.0.0`, a tunnel left running, an SSH key without a
 passphrase, a token in plain text. It explains each problem and how to fix it, in English or Vietnamese.
 
-- **Local only.** Scanning only reads, and nothing is ever sent anywhere.
+- **Local only.** Scanning only reads, and nothing about your machine is ever sent anywhere. The only download is
+  public vulnerability data from [OSV](https://osv.dev), once a day ([details](#vulnerability-data)).
 - **You stay in control.** Nothing changes until you press Fix, and every fix can be undone.
 - **Always watching.** Runs in the background and tells you when something new appears.
 - **Lightweight.** One self-contained ~20 MB program with nothing else to install. About 15 MB of memory and no CPU while it waits; a full scan takes 2–3 seconds.
@@ -64,6 +65,7 @@ Other archives: `darwin-amd64`, `linux-amd64`, `linux-arm64` (`.tar.gz`) and `wi
 | `security-warden status` | Is it running? |
 | `security-warden stop` | Stop it and remove it from login items |
 | `security-warden update` | Update now (`on`/`off` for automatic updates) |
+| `security-warden vulndb` | Vulnerability data: status, `update` now, `on`/`off` for the daily refresh |
 | `security-warden` | Scan once and print a report in the terminal |
 | `security-warden fix` | Fix what can be fixed, asking first (`--dry-run`, `--yes`, `--undo`) |
 | `security-warden ignore list\|clear` | Snoozed findings |
@@ -110,21 +112,42 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-134 rules over 33 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+138 rules over 35 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
 | Area | Examples |
 |---|---|
-| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase or weak (DSA, short RSA), plain-text AWS/kube/npm/Git credentials, tokens in shell history, shell startup files and Git remote URLs (about 200 token formats from gitleaks) |
+| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase or weak (DSA, short RSA), plain-text AWS/kube/npm/Git credentials, tokens in shell history, shell startup files and Git remote URLs (about 200 token formats from gitleaks), secret files deleted but still in Git history |
 | 🚪 **Open doors** | Ports reachable from other machines, SSH/Screen Sharing/RDP, tunnels (ngrok, cloudflared, VS Code), remote desktop apps, file sharing |
 | 🐳 **Docker** | Ports on every network, privileged containers, `docker.sock` or home folder mounts, host network/UTS/user namespace, shared mount propagation, dangerous capabilities, no `no-new-privileges`, no memory or process limits, secrets in env, images older than 6 months or on `latest` |
 | 🔒 **System settings** | macOS out of security support, FileVault/LUKS, firewall and stealth mode, SIP, Gatekeeper, automatic updates, XProtect, screen lock, hot corners that block it, password hints, auto login, AirDrop, Bluetooth/media sharing, content caching |
 | 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs; running crypto miners or programs started from /tmp or Downloads; unsigned apps in /Applications |
 | 🤖 **AI agents** | Tokens written into MCP configs, MCP over plain HTTP, agents allowed to run commands without asking |
 | 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files or removed from the Marketplace (malware, impersonation); browser extensions Google flagged as malware or unwanted; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or client certificates |
-| 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker |
+| 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker; project dependencies with known vulnerabilities (CVE/GHSA, matched offline against OSV) |
 | 🌐 **Network & Tailscale** | System proxies, `/etc/hosts` redirects, Tailscale shields down, SSH, exit node, Funnel |
+
+### Vulnerability data
+
+Dependencies pinned in the lock files of your code folders (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`,
+`requirements*.txt`, `poetry.lock`, `uv.lock`, `Pipfile.lock`, `go.mod`, `Cargo.lock`, `Gemfile.lock`) are
+matched against a local copy of the [OSV](https://osv.dev) database for npm, PyPI, Go, crates.io and RubyGems.
+Findings are grouped per repository, name the worst package, its advisories and the release that fixes it,
+and give the upgrade command for that package manager.
+
+- **Nothing about your projects leaves the machine.** The background service downloads OSV's public files
+  (`https://osv-vulnerabilities.storage.googleapis.com/<ecosystem>/all.zip` once, then only the records that
+  changed, listed in `modified_id.csv`) over HTTPS with a plain GET, and only when your code folders have at
+  least one lock file. Every machine fetches the same files; no package names or versions are sent. A scan
+  never touches the network: with no data yet, these checks show as skipped.
+- **Small on disk.** Only what matching needs is kept (package, affected ranges, fixed versions, ids,
+  severity), gzipped in the data folder; malicious-package reports and withdrawn advisories are skipped.
+  The first download is about 270 MB in total (npm alone is 220 MB), read as a stream and deleted; daily
+  refreshes are a few KB to a few MB. `security-warden vulndb` shows the size of each index.
+- **Off switch:** `security-warden vulndb off` stops the daily refresh; `security-warden vulndb update`
+  refreshes now. A full archive is fetched again every 30 days.
+- **Not covered:** Homebrew (OSV has no Homebrew ecosystem), the host's own OS packages and Docker images.
 
 <details>
 <summary>How the score works</summary>
@@ -224,6 +247,13 @@ Ideas on what to check were informed by [bordercheck](https://github.com/ptrinh/
   [microsoft/vsmarketplace](https://github.com/microsoft/vsmarketplace) (MIT), regenerated weekly.
 - Flagged browser extensions are read from Chromium's own extension preferences (blocklist state).
 - Some macOS checks follow the [macOS Security Compliance Project](https://github.com/usnistgov/macos_security) (CC BY 4.0).
+- Vulnerability data comes from [OSV](https://osv.dev) ([data sources and licenses](https://google.github.io/osv.dev/data/)):
+  the [GitHub Advisory Database](https://github.com/github/advisory-database) (CC BY 4.0), the
+  [PyPI Advisory Database](https://github.com/pypa/advisory-database) (CC BY 4.0), the
+  [Python Software Foundation Database](https://github.com/psf/advisory-database) (CC BY 4.0), the
+  [Go Vulnerability Database](https://github.com/golang/vulndb) (CC BY 4.0) and the
+  [RustSec Advisory Database](https://github.com/rustsec/advisory-db) (CC0 1.0). It is downloaded at run time and
+  reduced to package names, version ranges, ids and severity; it is not shipped with Security Warden.
 
 ## License
 

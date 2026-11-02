@@ -1,5 +1,6 @@
 // Command security-warden checks a work machine for open doors and
-// secrets lying around. It only reads; it changes nothing and sends nothing.
+// secrets lying around. It only reads; it changes nothing and sends nothing
+// about the machine (the only download is public OSV vulnerability data).
 package main
 
 import (
@@ -119,6 +120,8 @@ func run(args []string) int {
 			return 0
 		}
 		return runUpdate(l)
+	case "vulndb":
+		return runVulnDB(l, subArgs)
 	case "start":
 		return runStart(l)
 	case "stop":
