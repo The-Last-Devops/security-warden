@@ -378,10 +378,10 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
           </article>
           <h2 v-if="nextGroup && sections.length" class="px-5 pt-5 text-[13px] font-bold tracking-[.1em] text-muted uppercase">{{ t.remaining }} · {{ listGroups.length }}</h2>
           <section v-for="sec in sections" :key="sec.sev">
-            <h2 class="mx-3 mt-4 flex items-center gap-2.5 rounded-lg px-3.5 py-2"
-              :class="{ critical: 'bg-rail-crit text-white', high: 'bg-rail-high text-white', medium: 'bg-rail-med text-[#1a1300]', low: 'bg-rail-low text-white', info: 'bg-rail-info text-white' }[sec.sev]">
-              <span class="text-[12.5px] font-extrabold tracking-[.1em] uppercase">{{ t.sev[sec.sev] }}</span>
-              <span class="num rounded-full bg-black/15 px-2 text-[12.5px] font-bold">{{ sec.groups.length }}</span>
+            <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
+              <span class="h-2.5 w-2.5 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[sec.sev]" />
+              <span class="caps !text-fg">{{ t.sev[sec.sev] }}</span>
+              <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
             </h2>
             <div class="grid gap-2 px-3 pt-2 pb-1">
               <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />

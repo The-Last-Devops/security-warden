@@ -10,8 +10,8 @@ const open = ref(false)
 const menu = ref(false)
 const f = computed(() => props.group.first)
 // Severity shows as a soft tint behind the whole row.
-// Rows stay neutral; colour lives in the section header above them.
-const tint = { critical: '', high: '', medium: '', low: '', info: '' }
+// Each card's header carries its severity colour; the opened body stays neutral.
+const tint = { critical: 'bg-crit-bg', high: 'bg-high-bg', medium: 'bg-med-bg', low: 'bg-low-bg', info: 'bg-info-bg' }
 const all = computed(() => [props.group.first, ...props.group.rest])
 // Short headline: the problem without the specific file or name ("X: detail").
 const parts = computed(() => {
@@ -24,8 +24,8 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
 </script>
 
 <template>
-  <div class="rise rounded-xl bg-panel2 ring-1 ring-line transition-shadow hover:ring-accent/50" :class="tint[f.severity]" :style="{ animationDelay: `${Math.min(index, 14) * 28}ms` }">
-    <div class="grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 pr-3 pl-4">
+  <div class="rise overflow-hidden rounded-xl bg-panel2 ring-1 ring-line transition-shadow hover:ring-accent/50" :style="{ animationDelay: `${Math.min(index, 14) * 28}ms` }">
+    <div class="grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 pr-3 pl-4" :class="tint[f.severity]">
       <button class="min-w-0 text-left" :aria-expanded="open" @click="open = !open">
         <span class="block text-[16px] leading-snug font-semibold break-words">{{ title }}</span>
         <span v-if="sub" class="mt-0.5 block truncate text-[13.5px] text-muted">{{ sub }}</span>
