@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
@@ -21,8 +23,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		fmt.Println(t("serve.root"))
 		return 2
 	}
-	fallback := listen == ""
-	if fallback {
+	if listen == "" {
 		listen = fmt.Sprintf("127.0.0.1:%d", web.DefaultPort)
 	}
 	addr, kind, err := web.ValidateListen(listen, allowLAN, web.LocalIPs())
@@ -34,7 +35,20 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		fmt.Println(t("serve.no_ui"))
 		return 2
 	}
-	ln, addr, err := web.Listen(addr, fallback)
+	ln, err := web.Listen(addr)
+	if errors.Is(err, web.ErrInUse) {
+		// Opened twice: show the one that is already running.
+		if kind == web.KindLoopback && web.RunningHere(web.DefaultPort) && strings.HasSuffix(addr, fmt.Sprintf(":%d", web.DefaultPort)) {
+			url := fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
+			fmt.Printf("  %s\n  %s\n", t("serve.already"), url)
+			if open {
+				_ = web.OpenApp(url)
+			}
+			return 0
+		}
+		fmt.Printf(t("serve.in_use")+"\n", addr)
+		return 2
+	}
 	if err != nil {
 		fmt.Println(err)
 		return 2

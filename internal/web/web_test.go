@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -171,22 +172,16 @@ func TestSessionsSurviveRestart(t *testing.T) {
 	}
 }
 
-func TestListenFallsBackWhenBusy(t *testing.T) {
+func TestListenFixedPort(t *testing.T) {
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Skip(err)
 	}
 	defer busy.Close()
-	addr := busy.Addr().String()
-	if _, _, err := Listen(addr, false); err == nil || !strings.Contains(err.Error(), "already used") {
-		t.Errorf("explicit busy port: %v", err)
+	if _, err := Listen(busy.Addr().String()); !errors.Is(err, ErrInUse) {
+		t.Errorf("busy port: %v, want ErrInUse", err)
 	}
-	ln, got, err := Listen(addr, true)
-	if err != nil {
-		t.Fatalf("fallback: %v", err)
-	}
-	ln.Close()
-	if got == addr {
-		t.Error("fallback returned the busy address")
+	if RunningHere(busy.Addr().(*net.TCPAddr).Port) {
+		t.Error("a plain TCP listener taken for Security Warden")
 	}
 }

@@ -1,12 +1,16 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"net/netip"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 // DefaultPort is where serve listens unless told otherwise. 7348 is not
@@ -86,32 +90,34 @@ func LocalIPs() []netip.Addr {
 	return out
 }
 
-// Listen opens addr. With fallback (the user did not pick a port), a busy
-// port moves on to the next ten; an explicit port that is busy is an error
-// that says so. It returns the address actually used.
-func Listen(addr string, fallback bool) (net.Listener, string, error) {
-	ap, err := netip.ParseAddrPort(addr)
+// ErrInUse means the port is taken.
+var ErrInUse = errors.New("port in use")
+
+// Listen opens exactly addr: the address stays the same every time, so
+// bookmarks and the app window keep working.
+func Listen(addr string) (net.Listener, error) {
+	ln, err := net.Listen("tcp", addr)
+	if errors.Is(err, syscall.EADDRINUSE) {
+		return nil, ErrInUse
+	}
+	return ln, err
+}
+
+// RunningHere reports whether a Security Warden server already answers on
+// the loopback port, so a second launch can open it instead of failing.
+func RunningHere(port int) bool {
+	c := http.Client{Timeout: 800 * time.Millisecond}
+	req, _ := http.NewRequest("GET", fmt.Sprintf("http://127.0.0.1:%d/api/passkey", port), nil)
+	req.Host = fmt.Sprintf("localhost:%d", port)
+	resp, err := c.Do(req)
 	if err != nil {
-		return nil, "", err
+		return false
 	}
-	tries := 1
-	if fallback {
-		tries = 11
+	defer resp.Body.Close()
+	var v map[string]any
+	if json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&v) != nil {
+		return false
 	}
-	var last error
-	for i := 0; i < tries; i++ {
-		a := netip.AddrPortFrom(ap.Addr(), ap.Port()+uint16(i)).String()
-		ln, err := net.Listen("tcp", a)
-		if err == nil {
-			return ln, a, nil
-		}
-		last = err
-		if !errors.Is(err, syscall.EADDRINUSE) {
-			break
-		}
-	}
-	if errors.Is(last, syscall.EADDRINUSE) {
-		return nil, "", fmt.Errorf("port %d is already used by another program; pick another with --listen %s:PORT", ap.Port(), ap.Addr())
-	}
-	return nil, "", last
+	_, ok := v["localhost"]
+	return ok
 }
