@@ -467,11 +467,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               :stroke-dasharray="`${(2 * Math.PI * 46 * progPct) / 100} ${2 * Math.PI * 46}`" transform="rotate(-90 56 56)" class="transition-all duration-300" />
             <text x="56" y="63" text-anchor="middle" font-size="24" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ progPct }}%</text>
           </svg>
-          <div>
-            <h2 class="text-[19px] font-bold">{{ t.scanning }}</h2>
-            <p class="mt-0.5 text-[14px] text-muted">{{ t.scanningNow(prog.done.length, prog.total || '…') }}</p>
-          </div>
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: progPct + '%' }" /></div>
+          <h2 class="text-[19px] font-bold">{{ t.scanning }}</h2>
           <div class="grid w-full gap-1.5 text-[14px]">
             <div v-if="prog.pending.length" class="flex items-center justify-center gap-2 font-semibold">
               <svg class="animate-spin text-accent" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
