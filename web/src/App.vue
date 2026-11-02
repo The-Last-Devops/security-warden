@@ -6,6 +6,7 @@ import Gauge from './components/Gauge.vue'
 import SevChip from './components/SevChip.vue'
 import Segmented from './components/Segmented.vue'
 import FindingCard from './components/FindingCard.vue'
+import { passkeySupported } from './passkey.js'
 
 // Per-viewer preferences: "auto" follows the browser / system.
 const pref = key => { try { return localStorage.getItem(key) } catch { return null } }
@@ -34,6 +35,22 @@ const toast = ref('')
 const signedOut = ref(false)
 const cat = ref('all')
 const sheet = ref(null)
+const pk = ref({ count: 0, available: false, localhost: '' })
+const canPasskey = computed(() => pk.value.available && passkeySupported())
+async function refreshPasskey() { try { pk.value = await api.passkeyStatus() } catch {} }
+async function signInPasskey() {
+  busy.value = true
+  try { await api.loginPasskey(); signedOut.value = false; meta.value = await api.meta(); load() }
+  catch (e) { if (e.name !== 'NotAllowedError') say(`${t.value.error}: ${e.message}`) }
+  finally { busy.value = false }
+}
+async function addPasskey() {
+  try { const r = await api.addPasskey(); pk.value.count = r.count; say(t.value.passkeyAdded) }
+  catch (e) { if (e.name !== 'NotAllowedError') say(`${t.value.error}: ${e.message}`) }
+}
+async function clearPasskeys() {
+  try { await api.clearPasskeys(); pk.value.count = 0; say(t.value.passkeysRemoved) } catch (e) { say(`${t.value.error}: ${e.message}`) }
+}
 
 const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
@@ -51,9 +68,12 @@ async function load(force = false) {
 }
 
 onMounted(async () => {
+  refreshPasskey()
   try { meta.value = await api.meta() } catch (e) { if (e.status === 401) { signedOut.value = true; return } }
   load()
 })
+const sources = computed(() => data.value?.sources || [])
+const stCls = { ok: 'bg-ok-bg text-ok', issues: 'bg-high-bg text-high', skipped: 'bg-info-bg text-info', error: 'bg-crit-bg text-crit' }
 
 const findings = computed(() => data.value?.findings || [])
 const counts = computed(() => {
@@ -112,10 +132,17 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
 </script>
 
 <template>
-  <div v-if="signedOut" class="mx-auto mt-[18vh] max-w-md px-4 text-center">
-    <svg class="mx-auto mb-4" width="34" height="38" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" class="fill-accent" /></svg>
-    <h1 class="font-display text-2xl font-bold">Security Warden</h1>
-    <p class="mt-2 text-muted">{{ t.signedOut }}</p>
+  <div v-if="signedOut" class="mx-auto mt-[16vh] max-w-md px-4">
+    <section class="rise grid gap-4 rounded-2xl border border-line bg-panel p-7 text-center shadow-sm">
+      <svg class="mx-auto" width="38" height="42" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" class="fill-accent" /><path d="m6.5 11 2.4 2.4L13.8 8.5" fill="none" stroke="var(--color-accent-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      <h1 class="font-display text-2xl font-bold tracking-tight">Security Warden</h1>
+      <button v-if="canPasskey && pk.count" class="mx-auto inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="signInPasskey">
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 21c0-3.9 3.1-7 7-7 1.5 0 2.9.5 4 1.3M17 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 6v5m0-2h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        {{ t.signInPasskey }}
+      </button>
+      <p v-else-if="pk.count && !pk.available" class="text-[13.5px] text-muted">{{ t.passkeyNeedsLocalhost }} <a class="font-mono text-accent underline" :href="pk.localhost">{{ pk.localhost }}</a></p>
+      <p class="text-[13.5px] text-muted">{{ pk.count ? t.signInHelp : t.signedOut }}</p>
+    </section>
   </div>
 
   <div v-else class="mx-auto max-w-[1200px] px-4 pt-5 pb-10 sm:px-6 sm:pt-7" @keydown="onKey">
@@ -133,6 +160,10 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
       <div class="ml-auto flex flex-wrap items-center gap-2">
         <Segmented v-model="themePref" :options="themeOptions" :label="t.theme" />
         <Segmented v-model="langPref" :options="langOptions" :label="t.language" />
+        <button v-if="canPasskey" class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" :title="t.passkeys(pk.count)" @click="addPasskey">
+          {{ t.addPasskey }}<span v-if="pk.count" class="num ml-1 text-[10.5px]">({{ pk.count }})</span>
+        </button>
+        <button v-if="pk.count" class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" @click="clearPasskeys">{{ t.removePasskeys }}</button>
         <button class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" @click="logout">{{ t.signOut }}</button>
       </div>
     </header>
@@ -171,6 +202,7 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
         <select v-model="cat" class="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm lg:hidden" :aria-label="t.groups">
           <option value="all">{{ t.all }} ({{ findings.length }})</option>
           <option v-for="c in categories" :key="c" :value="c">{{ t[c] }} ({{ counts[c] || 0 }})</option>
+          <option value="checked">{{ t.checkedView }} ({{ sources.length }})</option>
         </select>
         <div class="hidden gap-0.5 lg:grid">
           <button class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors"
@@ -183,13 +215,35 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
             {{ t[c] }}
             <span class="num text-[11.5px]" :class="counts[c] ? 'text-fg' : 'text-muted/60'">{{ counts[c] || 0 }}</span>
           </button>
+          <div class="my-2 border-t border-line" />
+          <button class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors"
+            :class="cat === 'checked' ? 'bg-panel font-semibold shadow-sm ring-1 ring-line' : 'text-muted hover:bg-panel/60 hover:text-fg'" @click="cat = 'checked'">
+            {{ t.checkedView }} <span class="num text-[11.5px] text-muted">{{ sources.length }}</span>
+          </button>
         </div>
       </nav>
 
       <!-- findings -->
       <main class="grid min-w-0 content-start gap-3">
-        <div v-if="data && !groups.length" class="rounded-xl border border-dashed border-line bg-panel/60 p-8 text-center text-muted">{{ t.noIssues }}</div>
-        <FindingCard v-for="(g, i) in groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" />
+        <template v-if="cat === 'checked'">
+          <h2 class="font-display text-lg font-bold">{{ t.checkedTitle }}</h2>
+          <div class="overflow-hidden rounded-xl border border-line bg-panel">
+            <div v-for="(s, i) in sources" :key="s.name" class="rise grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-0.5 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_9rem_auto]" :style="{ animationDelay: `${Math.min(i, 20) * 20}ms` }">
+              <div class="min-w-0">
+                <div class="text-[13.5px] font-medium">{{ s.label }}</div>
+                <div class="text-[12px] text-muted"><span>{{ t[s.category] || '' }}</span><span v-if="s.detail"> · {{ s.detail }}</span></div>
+              </div>
+              <div class="num hidden text-right text-[12px] text-muted sm:block">{{ s.state === 'skipped' ? '—' : t.items(s.items) }}</div>
+              <span class="rounded-md px-2 py-[3px] font-mono text-[10.5px] font-semibold uppercase tracking-[.08em]" :class="stCls[s.state]">
+                {{ s.state === 'ok' ? t.stOk : s.state === 'issues' ? t.stIssues(s.issues) : s.state === 'skipped' ? t.stSkipped : t.stError }}
+              </span>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div v-if="data && !groups.length" class="rounded-xl border border-dashed border-line bg-panel/60 p-8 text-center text-muted">{{ t.noIssues }}</div>
+          <FindingCard v-for="(g, i) in groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" />
+        </template>
         <p class="pt-3 text-[12px] text-muted">{{ t.local }}</p>
       </main>
     </div>

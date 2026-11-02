@@ -1,12 +1,11 @@
+import { createPasskey, getPasskey } from './passkey.js'
+
 let csrf = ''
 
 async function call(method, path, body) {
-  const res = await fetch(path, {
-    method,
-    credentials: 'same-origin',
-    headers: method === 'GET' ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const headers = method === 'GET' ? {} : { 'Content-Type': 'application/json' }
+  if (method !== 'GET' && csrf) headers['X-CSRF-Token'] = csrf
+  const res = await fetch(path, { method, credentials: 'same-origin', headers, body: body ? JSON.stringify(body) : undefined })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status })
   return data
@@ -19,4 +18,14 @@ export const api = {
   fix: (keys, lang) => call('POST', `/api/fix?lang=${lang}`, { keys }),
   undo: () => call('POST', '/api/undo'),
   logout: () => call('POST', '/api/logout'),
+  passkeyStatus: () => call('GET', '/api/passkey'),
+  async addPasskey() {
+    const opts = await call('POST', '/api/passkey/register/begin')
+    return call('POST', '/api/passkey/register/finish', await createPasskey(opts))
+  },
+  clearPasskeys: () => call('POST', '/api/passkey/clear'),
+  async loginPasskey() {
+    const opts = await call('POST', '/api/passkey/login/begin')
+    return call('POST', '/api/passkey/login/finish', await getPasskey(opts))
+  },
 }

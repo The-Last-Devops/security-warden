@@ -83,12 +83,24 @@ func (a *auth) login(ip, token string) (string, bool) {
 		a.fail(ip)
 		return "", false
 	}
+	return a.newSession(ip), true
+}
+
+// newSession starts a signed-in browser session.
+func (a *auth) newSession(ip string) string {
 	id := randomHex(32)
 	a.mu.Lock()
 	a.sessions[id] = &session{csrf: randomHex(16), expires: a.now().Add(sessionTTL)}
 	delete(a.failures, ip)
 	a.mu.Unlock()
-	return id, true
+	return id
+}
+
+func setSessionCookie(w http.ResponseWriter, id string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: cookieName, Value: id, Path: "/", HttpOnly: true,
+		SameSite: http.SameSiteStrictMode, MaxAge: int(sessionTTL / time.Second),
+	})
 }
 
 func (a *auth) session(r *http.Request) (string, *session) {

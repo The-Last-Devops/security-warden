@@ -21,6 +21,7 @@ import (
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/fix"
+	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
@@ -41,6 +42,7 @@ type Server struct {
 	UI       fs.FS
 	Scanner  Scanner
 	auth     *auth
+	pk       *passkeys
 	mu       sync.Mutex
 	results  []source.Result
 	scanned  time.Time
@@ -50,12 +52,19 @@ type Server struct {
 // Token is the login secret to print in the terminal.
 func (s *Server) Token() string { return s.auth.token }
 
-// LoginURL is the link that signs the browser in.
-func (s *Server) LoginURL() string { return "http://" + s.Addr + "/login?token=" + s.auth.token }
+// LoginURL is the link that signs the browser in. On loopback it uses
+// localhost, the one host name passkeys accept over plain HTTP.
+func (s *Server) LoginURL() string {
+	host := s.Addr
+	if s.Kind == KindLoopback {
+		host = "localhost:" + s.port()
+	}
+	return "http://" + host + "/login?token=" + s.auth.token
+}
 
 // New prepares a server; call Run to start it.
 func New(addr, kind, version, lang string, ui fs.FS, sc Scanner) *Server {
-	return &Server{Addr: addr, Kind: kind, Version: version, Lang: lang, UI: ui, Scanner: sc, auth: newAuth()}
+	return &Server{Addr: addr, Kind: kind, Version: version, Lang: lang, UI: ui, Scanner: sc, auth: newAuth(), pk: newPasskeys()}
 }
 
 // allowedHosts are the Host header values a request may carry. Anything
@@ -69,8 +78,6 @@ func (s *Server) allowedHosts() map[string]bool {
 	}
 	return h
 }
-
-func (s *Server) origin() string { return "http://" + s.Addr }
 
 func securityHeaders(w http.ResponseWriter) {
 	h := w.Header()
@@ -104,14 +111,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
 	mux.HandleFunc("POST /api/fix", s.withSession(s.handleFix))
 	mux.HandleFunc("POST /api/undo", s.withSession(s.handleUndo))
-	static := http.FileServerFS(s.UI)
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if _, sess := s.auth.session(r); sess == nil {
-			s.loginPage(w)
-			return
-		}
-		static.ServeHTTP(w, r)
-	})
+	mux.HandleFunc("GET /api/passkey", s.handlePasskeyStatus)
+	mux.HandleFunc("POST /api/passkey/register/begin", s.withSession(s.handleRegisterBegin))
+	mux.HandleFunc("POST /api/passkey/register/finish", s.withSession(s.handleRegisterFinish))
+	mux.HandleFunc("POST /api/passkey/clear", s.withSession(s.handlePasskeyClear))
+	mux.HandleFunc("POST /api/passkey/login/begin", s.handleLoginBegin)
+	mux.HandleFunc("POST /api/passkey/login/finish", s.handleLoginFinish)
+	// The app shell holds no data (every API call needs a session), so it
+	// is served to anyone; it shows the sign-in screen when signed out.
+	mux.Handle("GET /", http.FileServerFS(s.UI))
 
 	allowed := s.allowedHosts()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +131,7 @@ func (s *Server) Handler() http.Handler {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			// Same-origin only: browsers always send Origin on cross-site
 			// POSTs, so a page elsewhere cannot trigger a fix.
-			if r.Header.Get("Origin") != s.origin() || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+			if r.Header.Get("Origin") != "http://"+r.Host || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
 				errJSON(w, http.StatusForbidden, "cross-site request refused")
 				return
 			}
@@ -158,10 +166,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.loginPage(w)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: cookieName, Value: id, Path: "/", HttpOnly: true,
-		SameSite: http.SameSiteStrictMode, MaxAge: int(sessionTTL / time.Second),
-	})
+	setSessionCookie(w, id)
 	// Drop the token from the address bar and history.
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -245,7 +250,36 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 		af.Item = nil // raw items stay on the machine; the UI needs only text
 		out = append(out, af)
 	}
-	return map[string]any{"scan": sc, "findings": out, "scanned_at": s.scanned.Format(time.RFC3339)}
+	// What was checked, per source, for the "Checked" view.
+	hits := map[string]int{}
+	for _, f := range sc.Findings {
+		hits[f.Source]++
+	}
+	type apiSource struct {
+		Name     string `json:"name"`
+		Label    string `json:"label"`
+		Category string `json:"category"`
+		State    string `json:"state"` // ok, issues, skipped, error
+		Detail   string `json:"detail"`
+		Items    int    `json:"items"`
+		Issues   int    `json:"issues"`
+	}
+	var srcs []apiSource
+	for _, st := range sc.Sources {
+		a := apiSource{Name: st.Name, Label: i18n.T(lang, "source."+st.Name), Category: report.Category(st.Name), Items: st.Items, Issues: hits[st.Name]}
+		switch {
+		case st.Error != "":
+			a.State, a.Detail = "error", st.Error
+		case st.Skipped != "":
+			a.State, a.Detail = "skipped", i18n.T(lang, st.Skipped)
+		case a.Issues > 0:
+			a.State = "issues"
+		default:
+			a.State = "ok"
+		}
+		srcs = append(srcs, a)
+	}
+	return map[string]any{"scan": sc, "findings": out, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {

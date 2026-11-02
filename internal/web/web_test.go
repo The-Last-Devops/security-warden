@@ -67,8 +67,8 @@ func TestAuthFlow(t *testing.T) {
 	if w := do(h, "GET", "/api/meta", nil); w.Code != 401 {
 		t.Fatalf("meta without session = %d", w.Code)
 	}
-	if w := do(h, "GET", "/", nil); strings.Contains(w.Body.String(), "<title>ui</title>") {
-		t.Fatal("UI served without a session")
+	if w := do(h, "GET", "/api/scan", nil); w.Code != 401 {
+		t.Fatalf("scan without session = %d", w.Code)
 	}
 	if w := do(h, "GET", "/login?token="+s.Token(), map[string]string{"Host": "evil.example:7878"}); w.Code != http.StatusMisdirectedRequest {
 		t.Fatalf("rebinding host accepted: %d", w.Code)
@@ -109,5 +109,23 @@ func TestLoginLockout(t *testing.T) {
 	}
 	if w := do(h, "GET", "/login?token="+s.Token(), nil); w.Code == http.StatusSeeOther {
 		t.Fatal("correct token accepted during lockout")
+	}
+}
+
+func TestPasskeyNeedsName(t *testing.T) {
+	s := testServer()
+	h := s.Handler()
+	// IP host: WebAuthn cannot use it, the server says so.
+	w := do(h, "POST", "/api/passkey/login/begin", map[string]string{"Origin": "http://127.0.0.1:7878"})
+	if w.Code != 400 || !strings.Contains(w.Body.String(), "localhost") {
+		t.Errorf("passkey on IP = %d %s", w.Code, w.Body.String())
+	}
+	if !strings.HasPrefix(s.LoginURL(), "http://localhost:7878/login?token=") {
+		t.Errorf("login URL = %s", s.LoginURL())
+	}
+	// Registration needs a session.
+	w = do(h, "POST", "/api/passkey/register/begin", map[string]string{"Host": "localhost:7878", "Origin": "http://localhost:7878"})
+	if w.Code != 401 {
+		t.Errorf("register without session = %d", w.Code)
 	}
 }
