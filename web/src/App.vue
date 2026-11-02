@@ -93,16 +93,28 @@ async function addPasskey() {
   catch (e) { if (e.status === 401) signedOut.value = true; else if (e.name === 'NotAllowedError') say(t.value.passkeyCancelled); else say(`${t.value.error}: ${e.message}`, true) }
 }
 // First sign-in without a passkey: offer one right away (once per browser).
+// First sign-in: a passkey is required before the dashboard opens.
 const onboarding = ref(false)
-async function onbAdd() { onboarding.value = false; await addPasskey() }
-function onbLater() { onboarding.value = false; save('sw.pkLater', '1') }
+const onbFailed = ref(false)
+async function onbAdd() {
+  try {
+    const r = await api.addPasskey()
+    pk.value.count = r.count
+    onboarding.value = false
+    say(t.value.passkeyAdded)
+  } catch (e) {
+    if (e.status === 401) { onboarding.value = false; signedOut.value = true; return }
+    onbFailed.value = true
+    if (e.name !== 'NotAllowedError') say(`${t.value.error}: ${e.message}`, true)
+  }
+}
 
 async function clearPasskeys() { try { await api.clearPasskeys(); pk.value.count = 0; say(t.value.passkeysRemoved) } catch (e) { fail(e) } }
 
 onMounted(async () => {
   await refreshPasskey()
   try { meta.value = await api.meta() } catch (e) { if (e.status === 401) { signedOut.value = true; return } }
-  if (canPasskey.value && !pk.value.count && !pref('sw.pkLater')) onboarding.value = true
+  if (canPasskey.value && !pk.value.count) onboarding.value = true
   load()
 })
 
@@ -393,7 +405,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
     </div>
 
     <!-- first sign-in: offer a passkey -->
-    <div v-if="onboarding" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm">
+    <div v-if="onboarding" class="fixed inset-0 z-40 grid place-items-center bg-page/90 p-4 backdrop-blur-md">
       <section class="panel rise grid w-full max-w-md gap-4 p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="onb-title">
         <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-accent-soft text-accent">
           <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 21c0-3.9 3.1-7 7-7 1.5 0 2.9.5 4 1.3M17 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 6v5m0-2h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
@@ -401,8 +413,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <h2 id="onb-title" class="text-[20px] font-bold">{{ t.onbTitle }}</h2>
         <p class="text-[15px] text-muted">{{ t.onbText }}</p>
         <div class="grid gap-2 pt-1">
-          <button class="rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-ink hover:brightness-110" @click="onbAdd">{{ t.onbAdd }}</button>
-          <button class="rounded-xl px-4 py-2.5 text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="onbLater">{{ t.onbLater }}</button>
+          <button class="rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-ink hover:brightness-110" @click="onbAdd">{{ onbFailed ? t.onbRetry : t.onbAdd }}</button>
         </div>
         <p class="text-[12.5px] text-muted">{{ t.onbSafe }}</p>
       </section>

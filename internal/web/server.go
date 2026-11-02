@@ -121,6 +121,7 @@ func errJSON(w http.ResponseWriter, code int, msg string) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /login", s.handleLogin)
+	mux.HandleFunc("POST /api/ticket", s.handleTicket)
 	mux.HandleFunc("POST /api/logout", s.withSession(s.handleLogout))
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
@@ -158,7 +159,7 @@ func (s *Server) Handler() http.Handler {
 			http.Error(w, "unexpected Host header", http.StatusMisdirectedRequest)
 			return
 		}
-		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/ticket" {
 			// Same-origin only: browsers always send Origin on cross-site
 			// POSTs, so a page elsewhere cannot trigger a fix.
 			if r.Header.Get("Origin") != "http://"+r.Host || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
@@ -188,8 +189,30 @@ func (s *Server) withSession(h sessHandler) http.HandlerFunc {
 	}
 }
 
+// handleTicket gives the CLI on this machine a one-time sign-in ticket. It
+// needs the server secret (from the 0600 token file) and a loopback client.
+func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
+	ip := net.ParseIP(clientIP(r))
+	if ip == nil || !ip.IsLoopback() || !s.auth.bearerOK(r) {
+		s.auth.fail(clientIP(r))
+		errJSON(w, http.StatusUnauthorized, "not allowed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"ticket": s.auth.newTicket()})
+}
+
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ip := clientIP(r)
+	if tk := r.URL.Query().Get("ticket"); tk != "" {
+		id, ok := s.auth.useTicket(ip, tk)
+		if !ok {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		setSessionCookie(w, id)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 	id, ok := s.auth.login(ip, r.URL.Query().Get("token"))
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)

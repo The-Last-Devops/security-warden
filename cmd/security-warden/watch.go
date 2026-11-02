@@ -173,12 +173,8 @@ func runStart(lang string) int {
 			return 1
 		}
 	}
-	url := web.StoredLoginURL()
-	if url == "" {
-		url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
-	}
 	fmt.Printf(t("start.ok")+"\n", web.DefaultPort)
-	_ = web.OpenApp(url)
+	_ = web.OpenBrowser(web.SignedInURL(web.DefaultPort))
 	return 0
 }
 

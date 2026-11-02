@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -183,5 +184,39 @@ func TestListenFixedPort(t *testing.T) {
 	}
 	if RunningHere(busy.Addr().(*net.TCPAddr).Port) {
 		t.Error("a plain TCP listener taken for Security Warden")
+	}
+}
+
+func TestTicketSignIn(t *testing.T) {
+	s := testServer()
+	h := s.Handler()
+	// Without the secret: refused.
+	if w := do(h, "POST", "/api/ticket", nil); w.Code != 401 {
+		t.Fatalf("ticket without secret = %d", w.Code)
+	}
+	w := do(h, "POST", "/api/ticket", map[string]string{"Authorization": "Bearer " + s.Token()})
+	if w.Code != 200 {
+		t.Fatalf("ticket = %d", w.Code)
+	}
+	var v struct{ Ticket string }
+	json.Unmarshal(w.Body.Bytes(), &v)
+	w = do(h, "GET", "/login?ticket="+v.Ticket, nil)
+	if w.Code != http.StatusSeeOther || len(w.Result().Cookies()) == 0 {
+		t.Fatalf("ticket login = %d", w.Code)
+	}
+	// Used once only.
+	w = do(h, "GET", "/login?ticket="+v.Ticket, nil)
+	if len(w.Result().Cookies()) != 0 {
+		t.Fatal("ticket worked twice")
+	}
+	// Not from another machine, even with the secret.
+	r := httptest.NewRequest("POST", "/api/ticket", nil)
+	r.Host = "127.0.0.1:7348"
+	r.RemoteAddr = "100.64.1.2:5555"
+	r.Header.Set("Authorization", "Bearer "+s.Token())
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, r)
+	if rec.Code != 401 {
+		t.Fatalf("ticket from non-loopback = %d", rec.Code)
 	}
 }

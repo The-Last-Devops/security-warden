@@ -44,13 +44,9 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	if errors.Is(err, web.ErrInUse) {
 		// Opened twice: show the one that is already running.
 		if kind == web.KindLoopback && web.RunningHere(web.DefaultPort) && strings.HasSuffix(addr, fmt.Sprintf(":%d", web.DefaultPort)) {
-			url := web.StoredLoginURL()
-			if url == "" {
-				url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
-			}
 			fmt.Printf("  %s\n  http://localhost:%d/\n", t("serve.already"), web.DefaultPort)
 			if open || background {
-				_ = web.OpenApp(url)
+				_ = web.OpenBrowser(web.SignedInURL(web.DefaultPort))
 			}
 			return 0
 		}
@@ -72,8 +68,8 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := web.SaveLoginURL(srv.LoginURL()); err == nil {
-		defer web.ForgetLoginURL()
+	if err := web.SaveToken(srv.Token()); err == nil {
+		defer web.ForgetToken()
 	}
 	if background {
 		// Running as a service: no secret in the log; watch and notify.
@@ -93,8 +89,8 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	// Open the browser for the person at this machine; a Tailscale address is
 	// for another device, so only print the link then.
 	if open && kind == web.KindLoopback {
-		openFn := web.OpenApp
-		if tab {
+		openFn := web.OpenBrowser
+		if !tab {
 			openFn = web.OpenBrowser
 		}
 		if err := openFn(srv.LoginURL()); err == nil {
@@ -156,7 +152,7 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 			}
 		}
 		if serious && time.Since(lastPopup) >= time.Hour {
-			if url := web.StoredLoginURL(); url != "" && web.OpenApp(url) == nil {
+			if web.OpenBrowser(web.SignedInURL(web.DefaultPort)) == nil {
 				lastPopup = time.Now()
 			}
 		}
@@ -166,11 +162,7 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 // runOpen opens the running Security Warden, signed in; starts it if needed.
 func runOpen(lang string, rs []*engine.Rule) int {
 	if web.RunningHere(web.DefaultPort) {
-		url := web.StoredLoginURL()
-		if url == "" {
-			url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
-		}
-		if err := web.OpenApp(url); err != nil {
+		if err := web.OpenBrowser(web.SignedInURL(web.DefaultPort)); err != nil {
 			fmt.Println(err)
 			return 2
 		}

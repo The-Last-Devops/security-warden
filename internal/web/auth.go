@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -43,11 +44,12 @@ type auth struct {
 	sessions map[string]*session    // key: sha256 of the session id
 	failures map[string][]time.Time // per client IP
 	now      func() time.Time
-	store    string // file the sessions survive restarts in ("" = memory only)
+	store    string               // file the sessions survive restarts in ("" = memory only)
+	tickets  map[string]time.Time // sha256(ticket) -> expiry; one-time sign-in
 }
 
 func newAuth() *auth {
-	return &auth{token: randomHex(32), sessions: map[string]*session{}, failures: map[string][]time.Time{}, now: time.Now}
+	return &auth{token: randomHex(32), sessions: map[string]*session{}, failures: map[string][]time.Time{}, tickets: map[string]time.Time{}, now: time.Now}
 }
 
 // hashID: only hashes of session ids are kept, in memory and on disk, so
@@ -184,4 +186,44 @@ func (a *auth) logout(id string) {
 	delete(a.sessions, hashID(id))
 	a.saveLocked()
 	a.mu.Unlock()
+}
+
+// newTicket issues a one-time sign-in ticket valid for 60 seconds.
+func (a *auth) newTicket() string {
+	t := randomHex(24)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	now := a.now()
+	for k, exp := range a.tickets {
+		if now.After(exp) {
+			delete(a.tickets, k)
+		}
+	}
+	a.tickets[hashID(t)] = now.Add(60 * time.Second)
+	return t
+}
+
+// useTicket consumes a ticket; it works once.
+func (a *auth) useTicket(ip, t string) (string, bool) {
+	if t == "" || a.locked(ip) {
+		return "", false
+	}
+	a.mu.Lock()
+	exp, ok := a.tickets[hashID(t)]
+	delete(a.tickets, hashID(t))
+	a.mu.Unlock()
+	if !ok || a.now().After(exp) {
+		a.fail(ip)
+		return "", false
+	}
+	return a.newSession(ip), true
+}
+
+// bearerOK checks the server secret sent by the CLI on this machine.
+func (a *auth) bearerOK(r *http.Request) bool {
+	h := r.Header.Get("Authorization")
+	if !strings.HasPrefix(h, "Bearer ") {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(h, "Bearer ")), []byte(a.token)) == 1
 }
