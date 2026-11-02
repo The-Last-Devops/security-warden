@@ -20,9 +20,11 @@ func listeningPorts(ctx context.Context) ([]Item, error) {
 	return lsofOnce()
 }
 
-var lsofOnce = sync.OnceValues(func() ([]Item, error) {
+var lsofOnce = sync.OnceValues(load_lsofOnce)
+
+func load_lsofOnce() ([]Item, error) {
 	return readListeners(context.Background())
-})
+}
 
 func readListeners(ctx context.Context) ([]Item, error) {
 	if runtime.GOOS == "linux" {

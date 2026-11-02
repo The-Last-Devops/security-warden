@@ -69,6 +69,10 @@ func All() []Collector {
 	}
 }
 
+// Slow lists sources that are costly (file walks, package manager calls);
+// watch mode runs them less often.
+var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "browser_extensions": true, "shell_history": true}
+
 // Run executes the collectors in parallel. done, if not nil, is called with
 // each collector's name as it finishes.
 func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
@@ -114,8 +118,19 @@ func runCombined(ctx context.Context, name string, args ...string) (string, erro
 	return string(b), err
 }
 
+// ResetCaches drops the per-scan caches so the next scan sees fresh data.
+// One scan shares them across sources; watch mode resets between scans.
+func ResetCaches() {
+	processPaths = sync.OnceValue(load_processPaths)
+	lsofOnce = sync.OnceValues(load_lsofOnce)
+	dockerOnce = sync.OnceValues(load_dockerOnce)
+	outdatedOnce = sync.OnceValues(load_outdatedOnce)
+}
+
 // processPaths maps pid -> executable path for every process we can see.
-var processPaths = sync.OnceValue(func() map[int]string {
+var processPaths = sync.OnceValue(load_processPaths)
+
+func load_processPaths() map[int]string {
 	if runtime.GOOS == "linux" {
 		return procExePaths()
 	}
@@ -136,7 +151,7 @@ var processPaths = sync.OnceValue(func() map[int]string {
 		}
 	}
 	return m
-})
+}
 
 func atoi(s string) int {
 	n := 0

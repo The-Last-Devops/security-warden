@@ -59,6 +59,8 @@ var en = map[string]string{
 Usage:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
+  security-warden watch  [--interval 1m] [--full 30m]
+  security-warden agent  install|uninstall|status
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -73,6 +75,14 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"report.passed":     "Passed %d of %d checks",
 	"report.more":       "Details for every item: security-warden --verbose",
 	"report.progress":   "Checking",
+	"watch.start":       "Watching: %d issues now. Quick scan every %s, full scan every %s. New problems show as notifications.",
+	"watch.stop":        "Stopped.",
+	"watch.more_title":  "More new issues",
+	"watch.more":        "%d more new issues. Run security-warden to see them.",
+	"agent.installed":   "Installed: %s\nsecurity-warden now watches this machine in the background and starts at login.\nLog: %s\nRemove it with: security-warden agent uninstall",
+	"agent.removed":     "Background agent removed.",
+	"agent.on":          "Background agent is installed: %s\nLog: %s",
+	"agent.off":         "Background agent is not installed. Start it with: security-warden agent install",
 	"report.same_issue": "Same issue in %d more places:",
 	"report.and_more":   "… and %d more (security-warden --verbose)",
 	"fix.none":          "Nothing here can be fixed automatically. Follow the → lines in the report.",
@@ -150,6 +160,8 @@ var vi = map[string]string{
 Cách dùng:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
+  security-warden watch  [--interval 1m] [--full 30m]
+  security-warden agent  install|uninstall|status
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -164,6 +176,14 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"report.passed":     "Đạt %d trên %d kiểm tra",
 	"report.more":       "Xem chi tiết từng mục: security-warden --verbose",
 	"report.progress":   "Đang kiểm",
+	"watch.start":       "Đang canh: hiện có %d vấn đề. Quét nhanh mỗi %s, quét đầy đủ mỗi %s. Có vấn đề mới sẽ hiện thông báo.",
+	"watch.stop":        "Đã dừng.",
+	"watch.more_title":  "Thêm vấn đề mới",
+	"watch.more":        "Còn %d vấn đề mới nữa. Chạy security-warden để xem.",
+	"agent.installed":   "Đã cài: %s\nsecurity-warden giờ canh máy này ở chế độ nền và tự chạy khi đăng nhập.\nNhật ký: %s\nGỡ bằng: security-warden agent uninstall",
+	"agent.removed":     "Đã gỡ chế độ chạy nền.",
+	"agent.on":          "Chế độ chạy nền đang được cài: %s\nNhật ký: %s",
+	"agent.off":         "Chưa cài chế độ chạy nền. Bật bằng: security-warden agent install",
 	"report.same_issue": "Cùng lỗi này ở %d chỗ khác:",
 	"report.and_more":   "… và %d chỗ nữa (security-warden --verbose)",
 	"fix.none":          "Không có mục nào sửa tự động được. Làm theo các dòng → trong báo cáo.",

@@ -47,9 +47,19 @@ func run(args []string) int {
 	yes := fs.Bool("yes", false, "fix: apply every fix without asking")
 	dryRun := fs.Bool("dry-run", false, "fix: only show what would change")
 	undo := fs.Bool("undo", false, "fix: revert the last batch of fixes")
+	interval := fs.Duration("interval", time.Minute, "watch: time between quick scans")
+	full := fs.Duration("full", 30*time.Minute, "watch: time between full scans")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
+	}
+	// Flags may also follow a subcommand argument: "agent status --lang vi".
+	var subArgs []string
+	if fs.NArg() > 0 {
+		subArgs = []string{fs.Arg(0)}
+		if err := fs.Parse(fs.Args()[1:]); err != nil {
+			return 2
+		}
 	}
 	l := i18n.Detect(*lang)
 
@@ -74,6 +84,13 @@ func run(args []string) int {
 		}
 		return 0
 	case "scan", "fix":
+	case "watch":
+		if *interval < 10*time.Second {
+			*interval = 10 * time.Second
+		}
+		return runWatch(l, rs, *interval, *full)
+	case "agent":
+		return runAgent(l, subArgs)
 	case "help":
 		fs.Usage()
 		return 0

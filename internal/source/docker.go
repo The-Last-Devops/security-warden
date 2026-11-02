@@ -30,7 +30,9 @@ type dockerContainer struct {
 	}
 }
 
-var dockerOnce = sync.OnceValues(func() ([]dockerContainer, error) {
+var dockerOnce = sync.OnceValues(load_dockerOnce)
+
+func load_dockerOnce() ([]dockerContainer, error) {
 	ctx := context.Background()
 	if _, err := run(ctx, "docker", "version", "--format", "{{.Server.Version}}"); err != nil {
 		return nil, Skip{"skip.docker"}
@@ -52,7 +54,7 @@ var dockerOnce = sync.OnceValues(func() ([]dockerContainer, error) {
 		return nil, err
 	}
 	return cs, nil
-})
+}
 
 func dockerContainers(ctx context.Context) ([]Item, error) {
 	cs, err := dockerOnce()

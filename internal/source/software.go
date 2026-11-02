@@ -128,7 +128,9 @@ func brewBinary() string {
 
 // outdatedOnce asks Homebrew which packages have newer versions. It uses
 // Homebrew's local cache (no auto-update), so it sends nothing new out.
-var outdatedOnce = sync.OnceValues(func() (*brewOutdated, error) {
+var outdatedOnce = sync.OnceValues(load_outdatedOnce)
+
+func load_outdatedOnce() (*brewOutdated, error) {
 	bin := brewBinary()
 	if bin == "" {
 		return nil, Skip{"skip.homebrew"}
@@ -144,7 +146,7 @@ var outdatedOnce = sync.OnceValues(func() (*brewOutdated, error) {
 		return nil, err
 	}
 	return &o, nil
-})
+}
 
 // services lists known server programs that are running, how they were
 // installed, which ports they listen on, and whether they are out of date.

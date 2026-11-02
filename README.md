@@ -35,6 +35,17 @@ security-warden version
 
 `sudo security-warden` also sees ports held by other users' processes.
 
+### Watch
+
+```sh
+security-warden watch                  # quick scan every minute, full scan every 30 minutes
+security-warden agent install          # run watch in the background at login (no admin rights)
+security-warden agent uninstall
+```
+
+When something new appears (a port opens, a tunnel starts, a login item is added, a key loses its
+passphrase…) you get a desktop notification. Fixed problems are logged as resolved.
+
 ### Fix
 
 ```sh
@@ -55,21 +66,28 @@ The language comes from `--lang`, then `SW_LANG`, then your system language. Sup
 
 ## What it checks
 
-| Source | What | Platforms |
-|---|---|---|
-| Security settings | FileVault, firewall, SIP, Gatekeeper, automatic security updates, screen lock, guest account | macOS |
-| Security settings | LUKS disk encryption, ufw/firewalld/nftables, unattended upgrades, AppArmor/SELinux, sshd root login and password auth, screen lock | Linux |
-| Listening ports | Processes reachable from other machines (not only localhost) | macOS, Linux |
-| Servers on the host | PostgreSQL, MySQL, Redis, MongoDB, Elasticsearch, RabbitMQ, Kafka, Ollama… reachable from other machines, or better run in Docker | all |
-| Out-of-date software | Running Homebrew programs with a newer version (worse when they listen on the network), total outdated packages | macOS, Linux |
-| Remote access | SSH, Screen Sharing, Apple Remote Desktop, RDP turned on | all |
-| Tunnels and remote desktop | ngrok, cloudflared, VS Code tunnel, frp, AnyDesk, TeamViewer, RustDesk… running | all |
-| Docker | Ports published on every network, privileged containers, `docker.sock` mounted | all |
-| Tailscale | Incoming connections allowed (shields down), Tailscale SSH, exit node / subnet routes, Funnel | all |
-| SSH keys | Private keys without a passphrase, keys readable by other users | all |
-| Credential files | `~/.aws`, kubeconfig, Docker, npm, `.netrc`, `.git-credentials`, PyPI, GitHub CLI, Terraform: plain-text secrets, loose permissions, long-lived AWS keys | all |
+90 rules over 25 sources, all read-only. Nothing needs root, nothing opens a permission prompt, and
+protected folders (Documents, Desktop, Downloads, Mail, Safari…) are never read.
 
-Secret values are never printed, stored or sent: findings only name the file and the kind of secret.
+| Area | What | Platforms |
+|---|---|---|
+| Security settings | FileVault, firewall, SIP, Gatekeeper, quarantine, library validation, automatic and security-data updates, XProtect age, screen lock, auto login, guest account, AirDrop, DYLD injection | macOS |
+| Security settings | LUKS, ufw/firewalld/nftables, unattended upgrades, AppArmor/SELinux, sshd root login and passwords, screen lock | Linux |
+| Open doors | Ports reachable from other machines, SSH/Screen Sharing/ARD/RDP/Remote Apple Events, tunnels (ngrok, cloudflared, VS Code tunnel…), remote desktop apps, File/Internet/printer sharing, guest SMB shares | all |
+| Docker | Ports on every network, privileged containers, `docker.sock` mounts, daemon on TCP without TLS, insecure registries | all |
+| Tailscale | Shields down, Tailscale SSH, exit node and subnet routes, Funnel | all |
+| Servers on the host | PostgreSQL, MySQL, Redis, MongoDB, Elasticsearch, Kafka, Ollama… reachable from other machines, or better run in Docker | all |
+| Out-of-date software | Running Homebrew programs with a newer version (worse when they listen on the network), total outdated packages | macOS, Linux |
+| Persistence | Cron jobs that fetch or run code, launchd items that root runs from user-writable files, run from temp folders, are unsigned or point to missing programs; systemd user units | macOS, Linux |
+| Network settings | System proxies, PAC over HTTP, `/etc/hosts` redirecting important domains or blocking Apple updates | all |
+| Privilege | `sudo` without a password, hijackable folders in `PATH` | macOS, Linux |
+| Secrets | SSH keys without passphrase or with loose permissions, plain-text credentials (AWS, kube, Docker, npm, netrc, Git, PyPI, gh, Terraform), long-lived AWS and service-account keys, secrets in shell history and startup files, `.env` and private keys committed to Git or missing from `.gitignore` | all |
+| Developer tools | SSH client (agent forwarding everywhere, host key checking off), Git (plain-text credential store, TLS off, `safe.directory *`), npm/pip/conda TLS and indexes, kubeconfig TLS skip and production context | all |
+| AI agents | Tokens written into MCP configs (Claude, Cursor, Windsurf, VS Code, Gemini), MCP over plain HTTP, unpinned `npx` servers, agents allowed to run commands without asking | all |
+| Browser | Chromium-family extensions that can debug or proxy every site, unpacked extensions | macOS, Linux |
+
+Secret values are never printed, stored or sent: findings name the file, the variable or the kind of
+secret, and history findings are counts only.
 
 ## Rules
 
@@ -118,9 +136,8 @@ Releases: push a `v*` tag. GitHub Actions builds every platform, then signs, not
 ## Roadmap
 
 
-- Live alerts: a background agent that notifies you when a new port, tunnel, container or login item
-  appears (polling plus file events), then real-time process and network events through Endpoint
-  Security on macOS and ETW on Windows.
+- Real-time events: process and network events through Endpoint Security on macOS and ETW on Windows,
+  on top of today's polling watch.
 - More checks:
   - AI agent configs (tokens in MCP files, agents without a sandbox);
   - login items and LaunchAgents;
