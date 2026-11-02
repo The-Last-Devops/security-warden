@@ -46,7 +46,11 @@ async function signInPasskey() {
 }
 async function addPasskey() {
   try { const r = await api.addPasskey(); pk.value.count = r.count; say(t.value.passkeyAdded) }
-  catch (e) { if (e.name !== 'NotAllowedError') say(`${t.value.error}: ${e.message}`) }
+  catch (e) {
+    if (e.status === 401) signedOut.value = true
+    else if (e.name === 'NotAllowedError') say(t.value.passkeyCancelled)
+    else say(`${t.value.error}: ${e.message}`)
+  }
 }
 async function clearPasskeys() {
   try { await api.clearPasskeys(); pk.value.count = 0; say(t.value.passkeysRemoved) } catch (e) { say(`${t.value.error}: ${e.message}`) }
@@ -81,6 +85,15 @@ const counts = computed(() => {
   for (const f of findings.value) c[f.category] = (c[f.category] || 0) + 1
   return c
 })
+// Worst severity per group, to colour the sidebar counts.
+const worst = computed(() => {
+  const w = {}
+  for (const f of findings.value) {
+    if (w[f.category] === undefined || sevOrder.indexOf(f.severity) < sevOrder.indexOf(w[f.category])) w[f.category] = f.severity
+  }
+  return w
+})
+const countCls = { critical: 'bg-crit text-white', high: 'bg-high text-white', medium: 'bg-med-bg text-med', low: 'bg-low-bg text-low', info: 'bg-info-bg text-info' }
 const sevCounts = computed(() => {
   const c = {}
   for (const f of findings.value) c[f.severity] = (c[f.severity] || 0) + 1
@@ -150,7 +163,7 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
     <header class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3">
       <div class="flex items-center gap-2.5">
         <svg width="22" height="24" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" class="fill-accent" /><path d="m6.5 11 2.4 2.4L13.8 8.5" fill="none" stroke="var(--color-accent-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        <span class="font-display text-[19px] font-bold tracking-tight">Security Warden</span>
+        <span class="font-display text-[21px] font-extrabold tracking-tight">Security Warden</span>
         <span class="num rounded bg-panel px-1.5 py-0.5 text-[10.5px] text-muted ring-1 ring-line">{{ meta?.version }}</span>
       </div>
       <span class="hidden items-center gap-2 text-[12px] text-muted md:flex">
@@ -160,11 +173,11 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
       <div class="ml-auto flex flex-wrap items-center gap-2">
         <Segmented v-model="themePref" :options="themeOptions" :label="t.theme" />
         <Segmented v-model="langPref" :options="langOptions" :label="t.language" />
-        <button v-if="canPasskey" class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" :title="t.passkeys(pk.count)" @click="addPasskey">
+        <button v-if="canPasskey" class="rounded-lg px-3 py-1.5 text-[13.5px] font-semibold text-fg/75 hover:bg-panel hover:text-fg" :title="t.passkeys(pk.count)" @click="addPasskey">
           {{ t.addPasskey }}<span v-if="pk.count" class="num ml-1 text-[10.5px]">({{ pk.count }})</span>
         </button>
-        <button v-if="pk.count" class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" @click="clearPasskeys">{{ t.removePasskeys }}</button>
-        <button class="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-muted hover:bg-panel hover:text-fg" @click="logout">{{ t.signOut }}</button>
+        <button v-if="pk.count" class="rounded-lg px-3 py-1.5 text-[13.5px] font-semibold text-fg/75 hover:bg-panel hover:text-fg" @click="clearPasskeys">{{ t.removePasskeys }}</button>
+        <button class="rounded-lg px-3 py-1.5 text-[13.5px] font-semibold text-fg/75 hover:bg-panel hover:text-fg" @click="logout">{{ t.signOut }}</button>
       </div>
     </header>
 
@@ -172,13 +185,13 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
     <section class="mb-5 grid gap-5 rounded-2xl border border-line bg-panel p-5 sm:p-6 lg:grid-cols-[auto_1fr_auto] lg:items-end">
       <Gauge :score="data?.scan.score ?? 0" :label="t.score" />
       <div class="min-w-0">
-        <h1 class="font-display text-[26px] leading-tight font-bold tracking-tight text-balance">
+        <h1 class="font-display text-[30px] leading-tight font-extrabold tracking-tight text-balance">
           {{ data ? (findings.length ? t.verdict(data.scan.score) : t.noIssues) : t.scanning }}
         </h1>
-        <p class="mt-1 text-[13.5px] text-muted">
+        <p class="mt-1.5 text-[15px] text-fg/75">
           <template v-if="data">
-            <span class="num text-fg">{{ findings.length }}</span> {{ t.found.toLowerCase() }} ·
-            {{ t.passed }} <span class="num text-fg">{{ passedN }}/{{ data.scan.checked }}</span> {{ t.checks }} ·
+            <span class="num font-bold text-fg">{{ findings.length }}</span> {{ t.found.toLowerCase() }} ·
+            {{ t.passed }} <span class="num font-bold text-fg">{{ passedN }}/{{ data.scan.checked }}</span> {{ t.checks }} ·
             {{ t.lastScan(scannedAt) }}
           </template>
         </p>
@@ -187,12 +200,12 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
         </div>
       </div>
       <div class="flex flex-wrap gap-2 lg:justify-end">
-        <button class="rounded-lg border border-line px-3 py-2 text-[12.5px] font-semibold hover:bg-side disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undo }}</button>
-        <button class="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-[12.5px] font-semibold hover:bg-side disabled:opacity-50" :disabled="busy" @click="load(true)">
+        <button class="rounded-lg border border-line bg-panel px-3.5 py-2 text-[14px] font-semibold hover:bg-side disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undo }}</button>
+        <button class="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-3.5 py-2 text-[14px] font-semibold hover:bg-side disabled:opacity-50" :disabled="busy" @click="load(true)">
           <svg :class="busy ? 'animate-spin' : ''" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
           {{ busy ? t.scanning : t.rescan }}
         </button>
-        <button v-if="safeFixes.length" class="rounded-lg bg-accent px-3.5 py-2 text-[12.5px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ t.fixSafe(safeFixes.length) }}</button>
+        <button v-if="safeFixes.length" class="rounded-lg bg-accent px-4 py-2 text-[14px] font-semibold text-accent-ink shadow-sm hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ t.fixSafe(safeFixes.length) }}</button>
       </div>
     </section>
 
@@ -205,19 +218,19 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
           <option value="checked">{{ t.checkedView }} ({{ sources.length }})</option>
         </select>
         <div class="hidden gap-0.5 lg:grid">
-          <button class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors"
-            :class="cat === 'all' ? 'bg-panel font-semibold shadow-sm ring-1 ring-line' : 'text-muted hover:bg-panel/60 hover:text-fg'" @click="cat = 'all'">
+          <button class="flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14.5px] font-medium transition-colors"
+            :class="cat === 'all' ? 'bg-panel font-semibold text-fg shadow-sm ring-1 ring-line' : 'text-fg/75 hover:bg-panel hover:text-fg'" @click="cat = 'all'">
             {{ t.all }} <span class="num text-[11.5px] text-muted">{{ findings.length }}</span>
           </button>
           <div class="eyebrow px-3 pt-4 pb-1.5">{{ t.groups }}</div>
-          <button v-for="c in categories" :key="c" class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors"
-            :class="cat === c ? 'bg-panel font-semibold shadow-sm ring-1 ring-line' : 'text-muted hover:bg-panel/60 hover:text-fg'" @click="cat = c">
+          <button v-for="c in categories" :key="c" class="flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14.5px] font-medium transition-colors"
+            :class="cat === c ? 'bg-panel font-semibold text-fg shadow-sm ring-1 ring-line' : 'text-fg/75 hover:bg-panel hover:text-fg'" @click="cat = c">
             {{ t[c] }}
-            <span class="num text-[11.5px]" :class="counts[c] ? 'text-fg' : 'text-muted/60'">{{ counts[c] || 0 }}</span>
+            <span class="num min-w-[1.75rem] rounded-md px-1.5 py-0.5 text-center text-[12px] font-bold" :class="counts[c] ? countCls[worst[c]] : 'text-muted/60'">{{ counts[c] || 0 }}</span>
           </button>
           <div class="my-2 border-t border-line" />
-          <button class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors"
-            :class="cat === 'checked' ? 'bg-panel font-semibold shadow-sm ring-1 ring-line' : 'text-muted hover:bg-panel/60 hover:text-fg'" @click="cat = 'checked'">
+          <button class="flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14.5px] font-medium transition-colors"
+            :class="cat === 'checked' ? 'bg-panel font-semibold text-fg shadow-sm ring-1 ring-line' : 'text-fg/75 hover:bg-panel hover:text-fg'" @click="cat = 'checked'">
             {{ t.checkedView }} <span class="num text-[11.5px] text-muted">{{ sources.length }}</span>
           </button>
         </div>
@@ -244,7 +257,7 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
           <div v-if="data && !groups.length" class="rounded-xl border border-dashed border-line bg-panel/60 p-8 text-center text-muted">{{ t.noIssues }}</div>
           <FindingCard v-for="(g, i) in groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" />
         </template>
-        <p class="pt-3 text-[12px] text-muted">{{ t.local }}</p>
+        <p class="pt-3 text-[13px] text-muted">{{ t.local }}</p>
       </main>
     </div>
 

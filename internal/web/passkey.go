@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -195,7 +196,8 @@ func (s *Server) handleRegisterFinish(w http.ResponseWriter, r *http.Request, _ 
 	}
 	cred, err := wa.FinishRegistration(u, *data, r)
 	if err != nil {
-		errJSON(w, http.StatusBadRequest, "passkey was not accepted")
+		log.Printf("passkey registration: %s", webauthnErr(err))
+		errJSON(w, http.StatusBadRequest, "passkey was not accepted: "+webauthnErr(err))
 		return
 	}
 	u.Creds = append(u.Creds, *cred)
@@ -264,6 +266,7 @@ func (s *Server) handleLoginFinish(w http.ResponseWriter, r *http.Request) {
 	}
 	cred, err := wa.FinishLogin(u, *data, r)
 	if err != nil {
+		log.Printf("passkey sign-in: %s", webauthnErr(err))
 		s.auth.fail(ip)
 		errJSON(w, http.StatusUnauthorized, "passkey was not accepted")
 		return
@@ -278,6 +281,16 @@ func (s *Server) handleLoginFinish(w http.ResponseWriter, r *http.Request) {
 	id := s.auth.newSession(ip)
 	setSessionCookie(w, id)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// webauthnErr gives the library's detail (no secrets: it describes which
+// check failed).
+func webauthnErr(err error) string {
+	var pe *protocol.Error
+	if errors.As(err, &pe) && pe.DevInfo != "" {
+		return pe.Details + ": " + pe.DevInfo
+	}
+	return err.Error()
 }
 
 func setCeremony(w http.ResponseWriter, id string) {
