@@ -326,34 +326,43 @@ var weight = map[string]int{"critical": 10, "high": 6, "medium": 3, "low": 1, "i
 // critical problem remains the score stays below 70, so a leaked key never
 // reads as "good". Gain is how many points fixing each failing rule earns.
 func Score(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (score int, gain map[string]int) {
-	failing := map[string]bool{}
-	critical := false
+	failing := map[string]string{} // rule -> severity
 	for _, f := range findings {
-		failing[f.RuleID] = true
-		critical = critical || f.Severity == "critical"
+		failing[f.RuleID] = f.Severity
 	}
-	total, passed := 0, 0
+	var applicable []*Rule
 	for _, r := range rules {
-		if r.Tier == "experimental" || !contains(r.Platforms, platform) || !ran[r.Source] {
-			continue
-		}
-		w := weight[r.Severity]
-		total += w
-		if !failing[r.ID] {
-			passed += w
+		if r.Tier != "experimental" && contains(r.Platforms, platform) && ran[r.Source] {
+			applicable = append(applicable, r)
 		}
 	}
+	// scoreWithout computes the score if the rule "skip" were fixed.
+	scoreWithout := func(skip string) int {
+		total, passed, critical := 0, 0, false
+		for _, r := range applicable {
+			w := weight[r.Severity]
+			total += w
+			sev, bad := failing[r.ID]
+			if !bad || r.ID == skip {
+				passed += w
+			} else if sev == "critical" {
+				critical = true
+			}
+		}
+		if total == 0 {
+			return 100
+		}
+		s := (passed*100 + total/2) / total
+		if critical && s > 69 {
+			s = 69
+		}
+		return s
+	}
+	score = scoreWithout("")
 	gain = map[string]int{}
-	if total == 0 {
-		return 100, gain
-	}
-	score = (passed*100 + total/2) / total
-	if critical && score > 69 {
-		score = 69
-	}
-	for _, r := range rules {
-		if failing[r.ID] {
-			gain[r.ID] = (weight[r.Severity]*100 + total/2) / total
+	for id := range failing {
+		if g := scoreWithout(id) - score; g > 0 {
+			gain[id] = g
 		}
 	}
 	return score, gain
