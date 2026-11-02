@@ -1,0 +1,19 @@
+id: service-run-in-docker
+severity: info
+platforms: [macos, windows]
+source: services
+match: "!item.in_container && item.installed_by != \"system\" && item.kind != \"web\""
+title:
+  en: "{product} runs directly on this machine"
+  vi: "{product} đang chạy thẳng trên máy"
+explain:
+  en: "{product} ({installed_by}) shares your user account, files and network. In a container it is isolated, easy to remove, and can be bound to 127.0.0.1."
+  vi: "{product} ({installed_by}) dùng chung tài khoản, file và mạng với bạn. Chạy trong container thì nó bị cô lập, gỡ dễ, và bind được về 127.0.0.1."
+fix:
+  en: "Run it in Docker instead: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
+  vi: "Chuyển sang Docker: docker run -d -p 127.0.0.1:{port}:{port} {docker_image}"
+author: the-last-devops
+tests:
+  - {item: {product: PostgreSQL, kind: database, installed_by: homebrew, in_container: false, port: 5432, docker_image: "postgres:17"}, expect: true}
+  - {item: {product: nginx, kind: web, installed_by: homebrew, in_container: false, port: 80, docker_image: "nginx:stable"}, expect: false, note: web servers are often the app itself}
+  - {item: {product: PostgreSQL, kind: database, installed_by: system, in_container: false, port: 5432, docker_image: "postgres:17"}, expect: false}

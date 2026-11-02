@@ -1,0 +1,18 @@
+id: software-outdated-running
+severity: medium
+platforms: [macos, linux]
+source: outdated_software
+match: item.kind == "running" && !item.reachable
+title:
+  en: "Out-of-date {name} {version} is running"
+  vi: "{name} {version} đã cũ vẫn đang chạy"
+explain:
+  en: "A newer version ({latest}) is available and may fix security bugs."
+  vi: "Đã có bản mới ({latest}), có thể đã vá lỗi bảo mật."
+fix:
+  en: "brew upgrade {name}, then restart it."
+  vi: "brew upgrade {name}, rồi khởi động lại nó."
+author: the-last-devops
+tests:
+  - {item: {kind: running, name: node, version: "22.1.0", latest: "22.11.0", reachable: false}, expect: true}
+  - {item: {kind: running, name: node, version: "22.1.0", latest: "22.11.0", reachable: true}, expect: false, note: software-outdated-exposed covers it}

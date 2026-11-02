@@ -43,6 +43,8 @@ func All() []Collector {
 		{"listening_ports", listeningPorts},
 		{"remote_services", remoteServices},
 		{"remote_tools", remoteTools},
+		{"services", services},
+		{"outdated_software", outdatedSoftware},
 		{"docker_containers", dockerContainers},
 		{"docker_ports", dockerPorts},
 		{"tailscale", tailscale},

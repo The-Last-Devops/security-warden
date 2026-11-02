@@ -7,13 +7,23 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 // listeningPorts lists TCP ports that processes listen on. Without root only
 // the current user's processes are visible; remoteServices covers the
-// system-owned remote access ports.
+// system-owned remote access ports. Several sources need the list, so lsof
+// runs once.
 func listeningPorts(ctx context.Context) ([]Item, error) {
+	return lsofOnce()
+}
+
+var lsofOnce = sync.OnceValues(func() ([]Item, error) {
+	return readListeners(context.Background())
+})
+
+func readListeners(ctx context.Context) ([]Item, error) {
 	out, err := run(ctx, "lsof", "-nP", "+c", "0", "-iTCP", "-sTCP:LISTEN", "-F", "pcLn")
 	if err != nil && out == "" {
 		// lsof exits 1 when nothing listens; only a missing lsof is a skip.
@@ -51,7 +61,12 @@ func listeningPorts(ctx context.Context) ([]Item, error) {
 			}
 			seen[key] = true
 			path := paths[pid]
+			service := ""
+			if s, ok := identify(path); ok {
+				service = s.product
+			}
 			items = append(items, Item{
+				"service":        service,
 				"process":        cmd,
 				"pid":            pid,
 				"user":           user,

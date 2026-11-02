@@ -171,10 +171,12 @@ func Text(w io.Writer, s Scan, o Options) {
 		}
 		fmt.Fprintf(w, "  %s %s  %s\n", rail, pill, c.bold(tilde(f.Title)))
 		short := f.Severity == "low" || f.Severity == "info"
+		indent := strings.Repeat(" ", width+4)
 		if short && !o.Verbose {
+			// One line of advice is enough for minor findings.
+			fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
 			continue
 		}
-		indent := strings.Repeat(" ", width+4)
 		fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(tilde(f.Explain)))
 		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
 		if o.Verbose {

@@ -27,6 +27,8 @@ var en = map[string]string{
 	"source.tailscale":         "Tailscale",
 	"source.ssh_keys":          "SSH keys",
 	"source.credential_files":  "Credential files",
+	"source.services":          "Servers running on this machine",
+	"source.outdated_software": "Out-of-date software",
 
 	"skip.platform":          "not supported on this OS yet",
 	"skip.lsof":              "lsof not available",
@@ -34,6 +36,7 @@ var en = map[string]string{
 	"skip.tailscale":         "Tailscale not installed",
 	"skip.tailscale_stopped": "Tailscale not connected",
 	"skip.no_ssh_dir":        "no ~/.ssh folder",
+	"skip.homebrew":          "Homebrew not installed",
 
 	"cli.usage": `security-warden: what doors does your machine leave open, and which secrets are lying around?
 
@@ -82,6 +85,8 @@ var vi = map[string]string{
 	"source.tailscale":         "Tailscale",
 	"source.ssh_keys":          "Khoá SSH",
 	"source.credential_files":  "File chứa thông tin đăng nhập",
+	"source.services":          "Server chạy trên máy",
+	"source.outdated_software": "Phần mềm cũ",
 
 	"skip.platform":          "chưa hỗ trợ hệ điều hành này",
 	"skip.lsof":              "không có lsof",
@@ -89,6 +94,7 @@ var vi = map[string]string{
 	"skip.tailscale":         "chưa cài Tailscale",
 	"skip.tailscale_stopped": "Tailscale chưa kết nối",
 	"skip.no_ssh_dir":        "không có thư mục ~/.ssh",
+	"skip.homebrew":          "chưa cài Homebrew",
 
 	"cli.usage": `security-warden: máy bạn đang mở những cửa nào, và secret nào đang nằm lộ ra?
 
