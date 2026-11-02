@@ -19,7 +19,7 @@ passphrase, a token in plain text. It explains each problem and how to fix it, i
   public vulnerability data from [OSV](https://osv.dev), once a day ([details](#vulnerability-data)).
 - **You stay in control.** Nothing changes until you press Fix, and every fix can be undone.
 - **Always watching.** Runs in the background and tells you when something new appears.
-- **Lightweight.** One self-contained ~20 MB program with nothing else to install. About 15 MB of memory and no CPU while it waits; a full scan takes 2–3 seconds.
+- **Lightweight.** One self-contained ~20 MB program with nothing else to install. About 25 MB of memory and no CPU while it waits; a full scan takes 3–6 seconds. The vulnerability data is a one-time ~270 MB download (then a few MB a day) that keeps a 3 MB index.
 
 ## Quick start
 
