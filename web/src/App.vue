@@ -166,7 +166,9 @@ async function ignoreFindings(list, days) {
 }
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
-function onKey(e) { if (e.key === 'Escape') sheet.value = null }
+const menuOpen = ref(false)
+function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false } }
+onMounted(() => document.addEventListener('click', () => { menuOpen.value = false }))
 </script>
 
 <template>
@@ -196,14 +198,24 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
           <i class="h-2 w-2 rounded-full bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]" />
           {{ t.watching }} · {{ data?.scan.host || '' }} · {{ t.lastScan(fmtTime(data?.scanned_at)) }}
         </span>
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-          <Segmented v-model="themePref" :options="themeOptions" :label="t.theme" />
-          <Segmented v-model="langPref" :options="langOptions" :label="t.language" />
-          <button v-if="canPasskey" class="rounded-[10px] px-2.5 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="addPasskey">
-            {{ t.addPasskey }}<span v-if="pk.count" class="num ml-1">({{ pk.count }})</span>
+        <div class="relative ml-auto">
+          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="t.settings" :aria-expanded="menuOpen" @click.stop="menuOpen = !menuOpen">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="2" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </button>
-          <button v-if="pk.count" class="rounded-[10px] px-2.5 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="clearPasskeys">{{ t.removePasskeys }}</button>
-          <button class="rounded-[10px] px-2.5 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="logout">{{ t.signOut }}</button>
+          <div v-if="menuOpen" class="rise absolute right-0 z-30 mt-2 grid w-72 gap-4 rounded-2xl border border-line bg-panel p-4 shadow-2xl" role="menu" @click.stop>
+            <div class="grid gap-2"><span class="caps">{{ t.theme }}</span><Segmented v-model="themePref" :options="themeOptions" :label="t.theme" /></div>
+            <div class="grid gap-2"><span class="caps">{{ t.language }}</span><Segmented v-model="langPref" :options="langOptions" :label="t.language" /></div>
+            <div v-if="canPasskey || pk.count" class="grid gap-2">
+              <span class="caps">{{ t.passkeysSection }} · <span class="num">{{ pk.count }}</span></span>
+              <div class="flex gap-2">
+                <button v-if="canPasskey" class="flex-1 rounded-[10px] bg-accent px-3 py-2 text-[13px] font-semibold text-accent-ink hover:brightness-110" @click="menuOpen = false; addPasskey()">{{ t.addPasskey }}</button>
+                <button v-if="pk.count" class="rounded-[10px] border border-line px-3 py-2 text-[13px] font-semibold text-muted hover:text-crit" @click="menuOpen = false; clearPasskeys()">{{ t.removePasskeys }}</button>
+              </div>
+            </div>
+            <div class="border-t border-line pt-3">
+              <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="menuOpen = false; logout()">{{ t.signOut }}</button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
