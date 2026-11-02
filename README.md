@@ -6,7 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
-![Rules](https://img.shields.io/badge/rules-96-0b6e52)
+![Rules](https://img.shields.io/badge/rules-103-0b6e52)
 
 </div>
 
@@ -105,7 +105,7 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-96 rules over 26 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+103 rules over 28 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
@@ -117,7 +117,7 @@ sent: findings name only the file, the variable or the kind of secret.
 | 🔒 **System settings** | FileVault/LUKS, firewall, SIP, Gatekeeper, automatic updates, XProtect, screen lock, auto login, AirDrop |
 | 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs |
 | 🤖 **AI agents** | Tokens written into MCP configs, MCP over plain HTTP, agents allowed to run commands without asking |
-| 🧰 **Developer tools** | SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or production context |
+| 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip |
 | 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker |
 | 🌐 **Network & Tailscale** | System proxies, `/etc/hosts` redirects, Tailscale shields down, SSH, exit node, Funnel |
 

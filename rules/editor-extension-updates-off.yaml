@@ -1,0 +1,21 @@
+id: editor-extension-updates-off
+severity: low
+platforms: [macos, windows, linux]
+source: editor_settings
+match: "item.extension_updates_off"
+title:
+  en: "{editor} does not update extensions"
+  vi: "{editor} không tự cập nhật extension"
+check:
+  en: "Extensions update themselves"
+  vi: "Extension tự cập nhật"
+explain:
+  en: "extensions.autoUpdate is false in {file}, so security fixes in extensions never arrive."
+  vi: "extensions.autoUpdate đang false trong {file}, nên bản vá bảo mật của extension không bao giờ tới."
+fix:
+  en: "Remove \"extensions.autoUpdate\": false from settings.json."
+  vi: "Xoá dòng \"extensions.autoUpdate\": false trong settings.json."
+author: the-last-devops
+tests:
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": true, "has_secret": false}, "expect": true}
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": false}

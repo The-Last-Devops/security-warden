@@ -2,9 +2,9 @@
 export const dict = {
   en: {
     all: 'All', groups: 'Groups', other: 'Other',
-    secrets: 'Secrets & keys', exposure: 'Open doors', settings: 'System settings', persistence: 'Login items',
+    secrets: 'Secrets & keys', docker: 'Docker', exposure: 'Open doors', settings: 'System settings', persistence: 'Login items',
     ai: 'AI agents & MCP', devtools: 'Developer tools', software: 'Out-of-date software',
-    issues: n => `${n} issues on this machine`, noIssues: 'No problems found',
+    issues: n => `${n} issues on this machine`, noIssues: 'No problems found here', lookedAt: 'What was checked',
     checked: (c, p) => `Passed ${p} of ${c} checks`, local: 'Everything ran on this machine. Nothing was sent anywhere.',
     checkedView: 'Checked', checkedTitle: 'What Security Warden looked at', items: n => `${n} item${n === 1 ? '' : 's'}`,
     stOk: 'OK', stIssues: n => `${n} issue${n === 1 ? '' : 's'}`, stSkipped: 'Not applicable', stError: 'Error',
@@ -44,9 +44,9 @@ export const dict = {
   },
   vi: {
     all: 'Tất cả', groups: 'Nhóm', other: 'Khác',
-    secrets: 'Secret & khoá', exposure: 'Cửa mở ra ngoài', settings: 'Cài đặt hệ thống', persistence: 'Mục tự chạy',
+    secrets: 'Secret & khoá', docker: 'Docker', exposure: 'Cửa mở ra ngoài', settings: 'Cài đặt hệ thống', persistence: 'Mục tự chạy',
     ai: 'AI agent & MCP', devtools: 'Công cụ dev', software: 'Phần mềm cũ',
-    issues: n => `${n} vấn đề trên máy này`, noIssues: 'Không thấy vấn đề nào',
+    issues: n => `${n} vấn đề trên máy này`, noIssues: 'Nhóm này không có vấn đề nào', lookedAt: 'Đã kiểm',
     checked: (c, p) => `Đạt ${p} trên ${c} kiểm tra`, local: 'Mọi thứ chạy trên máy này. Không gửi gì ra ngoài.',
     checkedView: 'Đã kiểm', checkedTitle: 'Security Warden đã xem những gì', items: n => `${n} mục`,
     stOk: 'Ổn', stIssues: n => `${n} vấn đề`, stSkipped: 'Không áp dụng', stError: 'Lỗi',

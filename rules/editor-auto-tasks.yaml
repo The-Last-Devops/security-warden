@@ -1,0 +1,21 @@
+id: editor-auto-tasks
+severity: high
+platforms: [macos, windows, linux]
+source: editor_settings
+match: "item.auto_tasks_on"
+title:
+  en: "{editor} runs a folder's tasks automatically when it opens"
+  vi: "{editor} tự chạy task của thư mục khi mở"
+check:
+  en: "Folder tasks never run on their own"
+  vi: "Task của thư mục không tự chạy"
+explain:
+  en: "task.allowAutomaticTasks is on in {file}: a repo's .vscode/tasks.json with runOn folderOpen runs the moment you open it."
+  vi: "task.allowAutomaticTasks đang bật trong {file}: repo có .vscode/tasks.json với runOn folderOpen sẽ chạy ngay khi bạn mở."
+fix:
+  en: "Set \"task.allowAutomaticTasks\": \"off\" in settings.json."
+  vi: "Đặt \"task.allowAutomaticTasks\": \"off\" trong settings.json."
+author: the-last-devops
+tests:
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": true, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": true}
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": false}

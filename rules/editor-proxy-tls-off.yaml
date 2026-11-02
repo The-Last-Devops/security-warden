@@ -1,0 +1,21 @@
+id: editor-proxy-tls-off
+severity: medium
+platforms: [macos, windows, linux]
+source: editor_settings
+match: "item.proxy_strict_ssl_off"
+title:
+  en: "{editor} does not check proxy certificates"
+  vi: "{editor} không kiểm tra chứng chỉ qua proxy"
+check:
+  en: "VS Code and Cursor check certificates through proxies"
+  vi: "VS Code, Cursor kiểm tra chứng chỉ qua proxy"
+explain:
+  en: "http.proxyStrictSSL is false in {file}, so extensions and updates can be swapped by anyone on the network."
+  vi: "http.proxyStrictSSL đang false trong {file}, nên extension và bản cập nhật có thể bị kẻ trong mạng tráo."
+fix:
+  en: "Remove \"http.proxyStrictSSL\": false. Behind a company proxy, install its CA certificate instead."
+  vi: "Xoá dòng \"http.proxyStrictSSL\": false. Nếu sau proxy công ty, hãy cài chứng chỉ CA của nó thay vào."
+author: the-last-devops
+tests:
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": true, "extension_updates_off": false, "has_secret": false}, "expect": true}
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": false}

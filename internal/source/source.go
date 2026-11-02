@@ -65,6 +65,8 @@ func All() []Collector {
 		{"sharing", sharing},
 		{"authorized_keys", authorizedKeys},
 		{"browser_extensions", browserExtensions},
+		{"editor_settings", editorSettings},
+		{"editor_extensions", editorExtensions},
 		{"dev_files", devFiles},
 	}
 }

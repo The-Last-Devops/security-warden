@@ -36,7 +36,7 @@ function say(msg, isError = false) {
 }
 const fail = e => { if (e.status === 401) signedOut.value = true; else say(`${t.value.error}: ${e.message}`, true) }
 
-const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
+const categories = ['secrets', 'docker', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 
 async function load(force = false) {
@@ -133,6 +133,9 @@ const passedByCat = computed(() => {
   for (const p of passedList.value) (by[p.category] ||= []).push(p)
   return categories.filter(c => by[c]).map(c => ({ cat: c, items: by[c] }))
 })
+// In one group: what was looked at and what already passes there.
+const catPassed = computed(() => passedList.value.filter(p => p.category === cat.value))
+const catSources = computed(() => sources.value.filter(s => s.category === cat.value))
 const counts = computed(() => { const c = {}; for (const f of findings.value) c[f.category] = (c[f.category] || 0) + 1; return c })
 const sevCounts = computed(() => { const c = {}; for (const f of findings.value) c[f.severity] = (c[f.severity] || 0) + 1; return c })
 const worst = computed(() => {
@@ -378,7 +381,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
 
         <!-- issues -->
         <div v-else>
-          <p v-if="data && !groups.length && cat !== 'all'" class="px-5 py-10 text-center text-muted">{{ t.noIssues }}</p>
+          <p v-if="data && !groups.length && cat !== 'all'" class="mx-5 mt-5 rounded-xl bg-ok-bg px-5 py-3.5 text-[15px] font-semibold text-ok">{{ t.noIssues }}</p>
           <p v-if="data && !groups.length && cat === 'all'" class="mx-5 my-6 rounded-xl bg-ok-bg px-5 py-4 text-center text-[15px] font-semibold text-ok">{{ t.allClear }}</p>
           <article v-if="nextGroup" class="m-3 mb-1 overflow-hidden rounded-2xl bg-panel2 ring-1 ring-line">
             <div class="flex flex-wrap items-center gap-2 px-5 py-2.5"
@@ -414,6 +417,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <div class="grid gap-2 px-3 pt-2 pb-1">
               <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />
             </div>
+          </section>
+          <section v-if="data && cat !== 'all' && (catPassed.length || catSources.length)" class="px-5 pt-5 pb-4">
+            <h2 class="caps mb-2">{{ t.lookedAt }}</h2>
+            <p class="mb-3 text-[14px] text-muted">{{ catSources.map(s => s.label + (s.state === 'skipped' ? ' (' + t.stSkipped.toLowerCase() + ')' : '')).join(' · ') }}</p>
+            <ul v-if="catPassed.length" class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+              <li v-for="p in catPassed" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
+                <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
+                <span>{{ p.label }}</span>
+              </li>
+            </ul>
           </section>
         </div>
         <p class="border-t border-line px-5 py-3 text-[13px] text-muted">{{ t.local }}</p>

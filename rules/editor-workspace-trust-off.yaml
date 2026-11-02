@@ -1,0 +1,21 @@
+id: editor-workspace-trust-off
+severity: high
+platforms: [macos, windows, linux]
+source: editor_settings
+match: "item.workspace_trust_off"
+title:
+  en: "{editor} trusts every folder you open"
+  vi: "{editor} tin mọi thư mục bạn mở"
+check:
+  en: "VS Code and Cursor ask before trusting a folder"
+  vi: "VS Code, Cursor hỏi trước khi tin một thư mục"
+explain:
+  en: "Workspace Trust is off in {file}. Opening a cloned repo can then run its tasks, debug configs and extension code without asking: a common way malware reaches developers."
+  vi: "Workspace Trust đang tắt trong {file}. Khi đó mở một repo vừa clone là có thể chạy task, cấu hình debug và code extension của nó mà không hỏi: đường lây mã độc phổ biến nhắm vào dev."
+fix:
+  en: "Remove \"security.workspace.trust.enabled\": false from settings.json, or set it to true."
+  vi: "Xoá dòng \"security.workspace.trust.enabled\": false trong settings.json, hoặc đặt thành true."
+author: the-last-devops
+tests:
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": true, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": true}
+  - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": false}

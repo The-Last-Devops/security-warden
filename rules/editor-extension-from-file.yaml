@@ -1,0 +1,21 @@
+id: editor-extension-from-file
+severity: medium
+platforms: [macos, windows, linux]
+source: editor_extensions
+match: "item.from_file"
+title:
+  en: "{editor} extension installed from a file: {extension}"
+  vi: "Extension {editor} cài từ file: {extension}"
+check:
+  en: "Every VS Code and Cursor extension comes from the marketplace"
+  vi: "Mọi extension VS Code, Cursor đều cài từ marketplace"
+explain:
+  en: "{extension} {version} was installed from a .vsix file. Nobody reviewed it, it never updates, and it runs with your full permissions."
+  vi: "{extension} {version} được cài từ file .vsix. Không ai duyệt, không bao giờ tự cập nhật, và chạy với toàn quyền của bạn."
+fix:
+  en: "If you do not know where it came from, uninstall it (Extensions panel). Otherwise reinstall it from the marketplace."
+  vi: "Không rõ nguồn gốc thì gỡ nó (bảng Extensions). Còn không, cài lại từ marketplace."
+author: the-last-devops
+tests:
+  - {"item": {"editor": "VS Code", "extension": "acme.tool", "version": "1.0.0", "from_file": true}, "expect": true}
+  - {"item": {"editor": "VS Code", "extension": "acme.tool", "version": "1.0.0", "from_file": false}, "expect": false}

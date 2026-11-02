@@ -146,9 +146,6 @@ func aiAgents(ctx context.Context) ([]Item, error) {
 			if regexp.MustCompile(`"chat\.tools\.(global\.)?autoApprove"\s*:\s*true`).MatchString(s) {
 				add("VS Code", vs, "chat.tools.autoApprove")
 			}
-			if regexp.MustCompile(`"security\.workspace\.trust\.enabled"\s*:\s*false`).MatchString(s) {
-				add("VS Code", vs, "security.workspace.trust.enabled = false")
-			}
 		}
 	}
 	return items, nil

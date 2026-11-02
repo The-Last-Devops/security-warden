@@ -43,6 +43,8 @@ var en = map[string]string{
 	"source.sharing":            "File, printer and Internet sharing",
 	"source.authorized_keys":    "Keys allowed to log in",
 	"source.browser_extensions": "Browser extensions",
+	"source.editor_settings":    "VS Code and Cursor settings",
+	"source.editor_extensions":  "VS Code and Cursor extensions",
 	"source.dev_files":          "Secret files in code folders",
 
 	"skip.platform":          "not supported on this OS yet",
@@ -175,6 +177,8 @@ var vi = map[string]string{
 	"source.sharing":            "Chia sẻ file, máy in và Internet",
 	"source.authorized_keys":    "Khoá được phép đăng nhập",
 	"source.browser_extensions": "Extension trình duyệt",
+	"source.editor_settings":    "Cấu hình VS Code, Cursor",
+	"source.editor_extensions":  "Extension VS Code, Cursor",
 	"source.dev_files":          "File bí mật trong thư mục code",
 
 	"skip.platform":          "chưa hỗ trợ hệ điều hành này",
