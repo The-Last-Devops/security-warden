@@ -2,27 +2,27 @@ class SecurityWarden < Formula
   desc "Checks your machine for open doors and secrets lying around"
   homepage "https://github.com/The-Last-Devops/security-warden"
   license "Apache-2.0"
-  version "0.2.10"
+  version "0.2.12"
 
   on_macos do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.10/security-warden-darwin-arm64.tar.gz"
-      sha256 "7519619ed791b06e718bdadb93af2f5364cab203ab525a1200b7a799fe1b5886"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.12/security-warden-darwin-arm64.tar.gz"
+      sha256 "fc08a5a0cfb9775ab58bfd52eace3bb6cc87d09d9813094da1c008d42be3f09a"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.10/security-warden-darwin-amd64.tar.gz"
-      sha256 "e9317feb2f1ec03b14a48362eacebbd73d828f6a0988ad561fe84d7e3a5357f7"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.12/security-warden-darwin-amd64.tar.gz"
+      sha256 "f194b3ef93dbe31c49b98644604144067bc143d54b9ff27577368265280a6e6a"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.10/security-warden-linux-arm64.tar.gz"
-      sha256 "1e68a398f01e82c4fd97bcc48e6c98447b26858f237f15d9e7dc20f96591203d"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.12/security-warden-linux-arm64.tar.gz"
+      sha256 "34c2de6ba6b6002902eae6244651eeddf4ce5df46873732d06cd9acc03352def"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.10/security-warden-linux-amd64.tar.gz"
-      sha256 "e33319cfdffe4dd360c76a0c458d689da1843efddd1fd056a47f6066a733dc30"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v0.2.12/security-warden-linux-amd64.tar.gz"
+      sha256 "00a34e04a24cd327b3c7f4c9faceb3fe4a25504aa013b42253a99104da6829e4"
     end
   end
 
