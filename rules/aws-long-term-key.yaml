@@ -1,0 +1,18 @@
+id: aws-long-term-key
+severity: medium
+platforms: [macos, windows, linux]
+source: credential_files
+match: item.aws_long_term_key
+title:
+  en: Long-lived AWS access key on disk
+  vi: Khoá truy cập AWS dài hạn nằm trên ổ đĩa
+explain:
+  en: "{path} holds an IAM user key (AKIA...). It never expires, so a leaked copy keeps working until someone revokes it."
+  vi: "{path} chứa khoá IAM user (AKIA...). Khoá này không hết hạn, lộ một bản là dùng được mãi tới khi có người thu hồi."
+fix:
+  en: "Switch to AWS IAM Identity Center (aws configure sso) for short-lived credentials, then delete the key in IAM."
+  vi: "Chuyển sang AWS IAM Identity Center (aws configure sso) để dùng khoá ngắn hạn, rồi xoá khoá cũ trong IAM."
+author: the-last-devops
+tests:
+  - {item: {path: /h/.aws/credentials, aws_long_term_key: true}, expect: true}
+  - {item: {path: /h/.aws/credentials, aws_long_term_key: false}, expect: false}

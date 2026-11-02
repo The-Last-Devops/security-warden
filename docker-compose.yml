@@ -1,0 +1,47 @@
+# Day-to-day commands, all in Docker (no Go on the host):
+#
+#   docker compose run --rm tidy     # go mod tidy (updates go.mod / go.sum)
+#   docker compose run --rm test     # go vet + go test
+#   docker compose run --rm build    # ./dist/security-warden for this Mac
+#   ./dist/security-warden           # run the scan on the host
+#
+# Release build (every OS/arch + SHA256SUMS in ./dist):
+#   docker build --target export --build-arg VERSION=v0.1.0 --output dist .
+#
+# The source is mounted, so edits are picked up without rebuilding the image.
+
+x-go: &go
+  build:
+    context: .
+    target: dev
+  image: security-warden-dev
+  working_dir: /src
+  volumes:
+    - .:/src
+    - go-mod:/go/pkg/mod
+    - go-build:/root/.cache/go-build
+  environment:
+    CGO_ENABLED: "0"
+
+services:
+  tidy:
+    <<: *go
+    command: go mod tidy
+
+  test:
+    <<: *go
+    command: sh -c "go vet ./... && go test ./..."
+
+  build:
+    <<: *go
+    environment:
+      CGO_ENABLED: "0"
+      GOOS: ${GOOS:-darwin}
+      GOARCH: ${GOARCH:-arm64}
+    command: >
+      go build -trimpath -ldflags "-s -w -X main.version=${VERSION:-dev}"
+      -o dist/security-warden ./cmd/security-warden
+
+volumes:
+  go-mod:
+  go-build:

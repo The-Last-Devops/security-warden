@@ -1,0 +1,18 @@
+id: remote-desktop-running
+severity: medium
+platforms: [macos, windows, linux]
+source: remote_tools
+match: item.kind == "remote_desktop"
+title:
+  en: "Remote desktop app is running: {tool}"
+  vi: "Đang chạy app điều khiển từ xa: {tool}"
+explain:
+  en: "{tool} lets someone control this machine from outside. It is a common way scammers and attackers get in."
+  vi: "{tool} cho người khác điều khiển máy này từ bên ngoài. Đây là đường vào quen thuộc của kẻ lừa đảo và tấn công."
+fix:
+  en: "Quit {tool} and remove it from login items if you do not need it. Otherwise require a strong password and confirm each session."
+  vi: "Không cần thì thoát {tool} và bỏ khỏi mục mở khi đăng nhập. Nếu cần thì đặt mật khẩu mạnh và bắt xác nhận mỗi phiên."
+author: the-last-devops
+tests:
+  - {item: {tool: AnyDesk, kind: remote_desktop}, expect: true}
+  - {item: {tool: ngrok, kind: tunnel}, expect: false}

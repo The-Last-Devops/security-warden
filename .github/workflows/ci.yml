@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Same Dockerfile as on a laptop: vet, tests (every rule's samples), and
+  # cross-compiled binaries.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Test and build
+        run: |
+          docker buildx build --target export --output dist \
+            --build-arg VERSION=ci-${GITHUB_SHA::7} \
+            --cache-from type=gha --cache-to type=gha,mode=max .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # Run the real scan on a real Mac. It must finish and print valid JSON;
+  # findings on the runner are expected and do not fail the job.
+  smoke-macos:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - name: Scan
+        run: |
+          chmod +x security-warden-darwin-arm64
+          ./security-warden-darwin-arm64 version
+          ./security-warden-darwin-arm64 rules
+          ./security-warden-darwin-arm64 --lang vi
+          ./security-warden-darwin-arm64 --json > report.json
+          python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: report.json

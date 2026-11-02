@@ -1,0 +1,18 @@
+id: ssh-key-no-passphrase
+severity: medium
+platforms: [macos, windows, linux]
+source: ssh_keys
+match: "!item.encrypted"
+title:
+  en: "SSH key {name} has no passphrase"
+  vi: "Khoá SSH {name} không có passphrase"
+explain:
+  en: "Anything that can read {path} (malware, a leaked backup) can use the key right away to log in to your servers and Git."
+  vi: "Thứ gì đọc được {path} (mã độc, bản backup bị lộ) là dùng được khoá ngay để vào server và Git của bạn."
+fix:
+  en: "Add a passphrase: ssh-keygen -p -f {path}. macOS Keychain can remember it so you type it once."
+  vi: "Thêm passphrase: ssh-keygen -p -f {path}. Keychain của macOS nhớ giúp, bạn chỉ gõ một lần."
+author: the-last-devops
+tests:
+  - {item: {name: id_ed25519, path: /Users/a/.ssh/id_ed25519, encrypted: false}, expect: true}
+  - {item: {name: id_ed25519, path: /Users/a/.ssh/id_ed25519, encrypted: true}, expect: false}

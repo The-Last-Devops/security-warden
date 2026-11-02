@@ -1,0 +1,22 @@
+id: port-listening-all-interfaces
+severity: medium
+platforms: [macos, windows, linux]
+source: listening_ports
+# Tailscale's own listeners serve the tailnet; the tailscale-* rules cover them.
+match: item.reachable && !item.system_binary && !(item.process in ["IPNExtension", "tailscaled"])
+title:
+  en: "{process} accepts connections on port {port} from other machines"
+  vi: "{process} nhận kết nối vào port {port} từ máy khác"
+explain:
+  en: "Other machines on the same network (office, café Wi-Fi, VPN) can connect to port {port}. Dev servers rarely need that."
+  vi: "Máy khác cùng mạng (văn phòng, Wi-Fi quán, VPN) kết nối được vào port {port}. Server dev hiếm khi cần vậy."
+fix:
+  en: "Make {process} listen on 127.0.0.1 instead of 0.0.0.0. If others really need it, keep the firewall on."
+  vi: "Cho {process} lắng nghe ở 127.0.0.1 thay vì 0.0.0.0. Nếu người khác thật sự cần thì giữ tường lửa bật."
+author: the-last-devops
+tests:
+  - {item: {process: node, port: 3000, reachable: true, system_binary: false}, expect: true}
+  - {item: {process: node, port: 3000, reachable: true, system_binary: false, address: 192.168.1.5}, expect: true, note: bound to a LAN address}
+  - {item: {process: node, port: 3000, reachable: false, system_binary: false}, expect: false, note: loopback}
+  - {item: {process: rapportd, port: 55326, reachable: true, system_binary: true}, expect: false, note: part of macOS}
+  - {item: {process: IPNExtension, port: 63169, reachable: true, system_binary: false}, expect: false, note: Tailscale peer API}

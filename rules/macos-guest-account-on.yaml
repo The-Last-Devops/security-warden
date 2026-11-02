@@ -1,0 +1,18 @@
+id: macos-guest-account-on
+severity: low
+platforms: [macos]
+source: posture
+match: has(item.guest_account) && item.guest_account
+title:
+  en: Guest account is on
+  vi: Tài khoản khách đang bật
+explain:
+  en: Anyone can log in to this machine without a password and use its network.
+  vi: Ai cũng đăng nhập được máy này không cần mật khẩu và dùng mạng của nó.
+fix:
+  en: "System Settings > Users & Groups > Guest User > turn off."
+  vi: "Cài đặt hệ thống > Người dùng & Nhóm > Người dùng khách > tắt."
+author: the-last-devops
+tests:
+  - {item: {guest_account: true}, expect: true}
+  - {item: {guest_account: false}, expect: false}

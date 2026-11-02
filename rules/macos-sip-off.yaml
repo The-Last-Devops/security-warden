@@ -1,0 +1,18 @@
+id: macos-sip-off
+severity: high
+platforms: [macos]
+source: posture
+match: has(item.sip) && !item.sip
+title:
+  en: System Integrity Protection is off
+  vi: System Integrity Protection (SIP) đang tắt
+explain:
+  en: Malware running as admin can modify macOS itself and hide there.
+  vi: Mã độc có quyền admin sửa được chính macOS và ẩn mình trong đó.
+fix:
+  en: "Boot into Recovery, open Terminal, run: csrutil enable, then restart."
+  vi: "Khởi động vào Recovery, mở Terminal, chạy: csrutil enable, rồi khởi động lại."
+author: the-last-devops
+tests:
+  - {item: {sip: false}, expect: true}
+  - {item: {sip: true}, expect: false}

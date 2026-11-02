@@ -1,0 +1,18 @@
+id: macos-screen-lock-off
+severity: high
+platforms: [macos]
+source: posture
+match: has(item.screen_lock) && !item.screen_lock
+title:
+  en: Screen lock does not ask for a password
+  vi: Khoá màn hình không hỏi mật khẩu
+explain:
+  en: Anyone walking past an unattended machine can use it as you.
+  vi: Ai đi ngang máy đang bỏ không cũng dùng được nó dưới danh nghĩa bạn.
+fix:
+  en: "System Settings > Lock Screen > Require password after screen saver begins: Immediately."
+  vi: "Cài đặt hệ thống > Màn hình khoá > Yêu cầu mật khẩu sau khi trình bảo vệ màn hình bắt đầu: Ngay lập tức."
+author: the-last-devops
+tests:
+  - {item: {screen_lock: false}, expect: true}
+  - {item: {screen_lock: true}, expect: false}

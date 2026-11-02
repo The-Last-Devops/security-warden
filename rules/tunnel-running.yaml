@@ -1,0 +1,18 @@
+id: tunnel-running
+severity: high
+platforms: [macos, windows, linux]
+source: remote_tools
+match: item.kind == "tunnel"
+title:
+  en: "Tunnel is running: {tool}"
+  vi: "Đang chạy tunnel: {tool}"
+explain:
+  en: "{tool} can publish services on this machine to the internet, past the firewall and the office network."
+  vi: "{tool} có thể đưa dịch vụ trên máy này ra internet, vượt qua tường lửa và mạng công ty."
+fix:
+  en: "Stop {tool} when you are not using it, and check what it exposes and who can reach it."
+  vi: "Tắt {tool} khi không dùng, và kiểm tra nó đang mở cái gì, ai truy cập được."
+author: the-last-devops
+tests:
+  - {item: {tool: ngrok, kind: tunnel}, expect: true}
+  - {item: {tool: AnyDesk, kind: remote_desktop}, expect: false}

@@ -1,0 +1,94 @@
+name: release
+
+# Push a tag like v0.1.0 to publish binaries, a macOS .dmg, SHA256SUMS and
+# the Homebrew formula.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build every platform
+        run: |
+          docker buildx build --target export --output dist \
+            --build-arg VERSION=${GITHUB_REF_NAME} \
+            --cache-from type=gha .
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # hdiutil and lipo only exist on macOS.
+  dmg:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Build .dmg
+        env:
+          # Developer ID Application certificate (.p12, base64) and its
+          # password; App Store Connect API key (.p8, base64) for notarization.
+          # Without them the .dmg is unsigned and Gatekeeper blocks it.
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: scripts/make-dmg.sh "$GITHUB_REF_NAME" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: dist/*.dmg
+
+  publish:
+    needs: [build, dmg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum security-warden-* > SHA256SUMS && cat SHA256SUMS
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag
+      - name: Homebrew formula
+        run: scripts/brew-formula.sh "$GITHUB_REF_NAME" dist/SHA256SUMS > security-warden.rb
+
+      # Needs a token that can push to The-Last-Devops/homebrew-tap
+      # (fine-grained PAT, Contents: write on that repo only).
+      - name: Update tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN not set, formula not published"
+            cat security-warden.rb
+            exit 0
+          fi
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/The-Last-Devops/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp security-warden.rb tap/Formula/
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/security-warden.rb
+          git commit -m "security-warden ${GITHUB_REF_NAME}"
+          git push

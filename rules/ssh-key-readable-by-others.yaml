@@ -1,0 +1,18 @@
+id: ssh-key-readable-by-others
+severity: high
+platforms: [macos, linux]
+source: ssh_keys
+match: item.group_readable || item.world_readable
+title:
+  en: "SSH key {name} can be read by other users"
+  vi: "Người dùng khác đọc được khoá SSH {name}"
+explain:
+  en: "{path} has mode {mode}. Other accounts on this machine can copy the key."
+  vi: "{path} đang có quyền {mode}. Tài khoản khác trên máy này chép được khoá."
+fix:
+  en: "Run: chmod 600 {path}"
+  vi: "Chạy: chmod 600 {path}"
+author: the-last-devops
+tests:
+  - {item: {name: id_rsa, path: /h/.ssh/id_rsa, mode: "0644", group_readable: true, world_readable: true}, expect: true}
+  - {item: {name: id_rsa, path: /h/.ssh/id_rsa, mode: "0600", group_readable: false, world_readable: false}, expect: false}

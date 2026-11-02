@@ -1,0 +1,18 @@
+id: docker-port-all-interfaces
+severity: high
+platforms: [macos, windows, linux]
+source: docker_ports
+match: item.all_interfaces
+title:
+  en: "Docker container {container} publishes port {host_port} on every network"
+  vi: "Container Docker {container} publish port {host_port} cho mọi mạng"
+explain:
+  en: "Port {host_port} of {container} ({image}) can be reached from other machines. Docker's own firewall rules often bypass the system firewall."
+  vi: "Máy khác truy cập được port {host_port} của {container} ({image}). Docker thường tự mở luật mạng, vượt qua tường lửa hệ thống."
+fix:
+  en: "Bind to localhost: use \"127.0.0.1:{host_port}:...\" in ports of docker compose (or -p 127.0.0.1:{host_port}:...)."
+  vi: "Bind về localhost: dùng \"127.0.0.1:{host_port}:...\" trong ports của docker compose (hoặc -p 127.0.0.1:{host_port}:...)."
+author: the-last-devops
+tests:
+  - {item: {container: db, image: postgres, host_port: 5432, all_interfaces: true}, expect: true}
+  - {item: {container: db, image: postgres, host_port: 5432, all_interfaces: false}, expect: false}

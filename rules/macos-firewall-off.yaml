@@ -1,0 +1,18 @@
+id: macos-firewall-off
+severity: medium
+platforms: [macos]
+source: posture
+match: has(item.firewall) && !item.firewall
+title:
+  en: macOS firewall is off
+  vi: Tường lửa macOS đang tắt
+explain:
+  en: Any app can accept connections from the network you are on, such as café or hotel Wi-Fi.
+  vi: App nào cũng nhận được kết nối từ mạng bạn đang dùng, ví dụ Wi-Fi quán cà phê hay khách sạn.
+fix:
+  en: "System Settings > Network > Firewall > On."
+  vi: "Cài đặt hệ thống > Mạng > Tường lửa > Bật."
+author: the-last-devops
+tests:
+  - {item: {firewall: false}, expect: true}
+  - {item: {firewall: true}, expect: false}

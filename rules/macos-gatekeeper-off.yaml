@@ -1,0 +1,18 @@
+id: macos-gatekeeper-off
+severity: high
+platforms: [macos]
+source: posture
+match: has(item.gatekeeper) && !item.gatekeeper
+title:
+  en: Gatekeeper is off
+  vi: Gatekeeper đang tắt
+explain:
+  en: macOS no longer checks that downloaded apps are signed and notarized.
+  vi: macOS thôi kiểm tra app tải về có được ký và notarize hay không.
+fix:
+  en: "Run: sudo spctl --global-enable"
+  vi: "Chạy: sudo spctl --global-enable"
+author: the-last-devops
+tests:
+  - {item: {gatekeeper: false}, expect: true}
+  - {item: {gatekeeper: true}, expect: false}

@@ -1,0 +1,19 @@
+id: remote-service-open
+severity: medium
+platforms: [macos, windows, linux]
+source: remote_services
+match: item.open && item.service != "smb"
+title:
+  en: "Remote access is on: {service} (port {port})"
+  vi: "Đang bật truy cập từ xa: {service} (port {port})"
+explain:
+  en: "This machine accepts {service} logins from the network. If a password is weak or reused, someone can take over the machine."
+  vi: "Máy này nhận đăng nhập {service} từ mạng. Mật khẩu yếu hoặc dùng lại ở nơi khác là người ngoài chiếm được máy."
+fix:
+  en: "Turn it off if you do not use it: System Settings > General > Sharing (Remote Login, Screen Sharing, Remote Management)."
+  vi: "Không dùng thì tắt: Cài đặt hệ thống > Cài đặt chung > Chia sẻ (Đăng nhập từ xa, Chia sẻ màn hình, Quản lý từ xa)."
+author: the-last-devops
+tests:
+  - {item: {service: ssh, port: 22, open: true}, expect: true}
+  - {item: {service: ssh, port: 22, open: false}, expect: false}
+  - {item: {service: smb, port: 445, open: true}, expect: false, note: covered by its own rule later}

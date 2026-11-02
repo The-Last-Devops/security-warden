@@ -1,0 +1,19 @@
+id: macos-auto-updates-off
+severity: medium
+platforms: [macos]
+source: posture
+match: (has(item.auto_update_check) && !item.auto_update_check) || (has(item.auto_security_updates) && !item.auto_security_updates)
+title:
+  en: Automatic security updates are off
+  vi: Tự động cập nhật bảo mật đang tắt
+explain:
+  en: Security fixes for macOS are not installed until someone does it by hand.
+  vi: Bản vá bảo mật macOS không được cài cho tới khi có người cài tay.
+fix:
+  en: "System Settings > General > Software Update > Automatic Updates: turn on checking and security responses."
+  vi: "Cài đặt hệ thống > Cài đặt chung > Cập nhật phần mềm > Cập nhật tự động: bật kiểm tra và phản hồi bảo mật."
+author: the-last-devops
+tests:
+  - {item: {auto_update_check: true, auto_security_updates: false}, expect: true}
+  - {item: {auto_update_check: false, auto_security_updates: true}, expect: true}
+  - {item: {auto_update_check: true, auto_security_updates: true}, expect: false}

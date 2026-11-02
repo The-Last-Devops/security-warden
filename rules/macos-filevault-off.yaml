@@ -1,0 +1,19 @@
+id: macos-filevault-off
+severity: high
+platforms: [macos]
+source: posture
+match: has(item.filevault) && !item.filevault
+title:
+  en: FileVault disk encryption is off
+  vi: FileVault (mã hoá ổ đĩa) đang tắt
+explain:
+  en: Anyone who gets the laptop can read every file on the disk, including SSH keys and saved passwords.
+  vi: Ai cầm được máy là đọc được mọi file trên ổ, kể cả khoá SSH và mật khẩu đã lưu.
+fix:
+  en: "System Settings > Privacy & Security > FileVault > Turn On."
+  vi: "Cài đặt hệ thống > Quyền riêng tư & Bảo mật > FileVault > Bật."
+author: the-last-devops
+tests:
+  - {item: {filevault: false}, expect: true}
+  - {item: {filevault: true}, expect: false}
+  - {item: {}, expect: false, note: unknown state}

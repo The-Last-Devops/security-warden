@@ -1,0 +1,19 @@
+id: tailscale-ssh-on
+severity: medium
+platforms: [macos, windows, linux]
+source: tailscale
+match: has(item.ssh) && item.ssh
+title:
+  en: Tailscale SSH is on
+  vi: Tailscale SSH đang bật
+explain:
+  en: "Devices in tailnet {tailnet} that the ACL allows can open a shell on this machine without an SSH key."
+  vi: "Thiết bị trong tailnet {tailnet} được ACL cho phép có thể mở shell vào máy này mà không cần khoá SSH."
+fix:
+  en: "Run: tailscale set --ssh=false (or restrict the ssh section of the tailnet ACL)."
+  vi: "Chạy: tailscale set --ssh=false (hoặc siết phần ssh trong ACL của tailnet)."
+author: the-last-devops
+tests:
+  - {item: {tailnet: example.com, ssh: true}, expect: true}
+  - {item: {tailnet: example.com, ssh: false}, expect: false}
+  - {item: {tailnet: example.com}, expect: false, note: prefs unreadable}
