@@ -421,9 +421,14 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <p class="mt-0.5 text-[14px] text-muted">{{ t.scanningNow(prog.done.length, prog.total || '…') }}</p>
           </div>
           <div class="h-1.5 w-full overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: progPct + '%' }" /></div>
-          <div class="flex max-h-40 flex-wrap justify-center gap-1.5 overflow-hidden text-[12.5px]">
-            <span v-for="d in prog.done" :key="d.name" class="rounded-full bg-ok-bg px-2 py-0.5 font-semibold text-ok">✓ {{ d.label }}</span>
-            <span v-for="n in prog.pending" :key="n" class="rounded-full bg-panel2 px-2 py-0.5 text-muted ring-1 ring-line">{{ n }}</span>
+          <div class="grid w-full gap-1.5 text-[14px]">
+            <div v-if="prog.pending.length" class="flex items-center justify-center gap-2 font-semibold">
+              <svg class="animate-spin text-accent" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+              <span>{{ t.checkingNames }}: {{ prog.pending[0] }}</span>
+            </div>
+            <div v-if="prog.done.length" :key="prog.done.length" class="rise flex items-center justify-center gap-2 text-ok">
+              <span>✓</span><span>{{ prog.done[prog.done.length - 1].label }}</span>
+            </div>
           </div>
         </section>
       </div>
