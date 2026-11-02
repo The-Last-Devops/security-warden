@@ -134,6 +134,7 @@ const groups = computed(() => {
   }
   return [...by.values()].sort((a, b) => sevOrder.indexOf(a.first.severity) - sevOrder.indexOf(b.first.severity))
 })
+const sections = computed(() => sevOrder.map(sev => ({ sev, groups: groups.value.filter(g => g.first.severity === sev) })).filter(x => x.groups.length))
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
 // Points earned by fixing every safe item (each rule counts once).
 const safeGain = computed(() => { const seen = {}; for (const f of safeFixes.value) seen[f.rule_id] = f.gain || 0; return Object.values(seen).reduce((a, b) => a + b, 0) })
@@ -339,9 +340,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <!-- issues -->
         <div v-else>
           <p v-if="data && !groups.length" class="px-5 py-10 text-center text-muted">{{ t.noIssues }}</p>
-          <div class="pl-5">
-            <FindingRow v-for="(g, i) in groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />
-          </div>
+          <section v-for="sec in sections" :key="sec.sev">
+            <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
+              <span class="h-2.5 w-2.5 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[sec.sev]" />
+              <span class="caps !text-fg">{{ t.sev[sec.sev] }}</span>
+              <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
+            </h2>
+            <div class="grid gap-2 p-3">
+              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />
+            </div>
+          </section>
         </div>
         <p class="border-t border-line px-5 py-3 text-[13px] text-muted">{{ t.local }}</p>
       </main>
