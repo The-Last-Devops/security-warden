@@ -21,28 +21,28 @@ class SecurityWarden < Formula
 
   on_macos do
     on_arm do
-      url "${base}/security-warden-darwin-arm64"
-      sha256 "$(sha darwin-arm64)"
+      url "${base}/security-warden-darwin-arm64.tar.gz"
+      sha256 "$(sha darwin-arm64.tar.gz)"
     end
     on_intel do
-      url "${base}/security-warden-darwin-amd64"
-      sha256 "$(sha darwin-amd64)"
+      url "${base}/security-warden-darwin-amd64.tar.gz"
+      sha256 "$(sha darwin-amd64.tar.gz)"
     end
   end
 
   on_linux do
     on_arm do
-      url "${base}/security-warden-linux-arm64"
-      sha256 "$(sha linux-arm64)"
+      url "${base}/security-warden-linux-arm64.tar.gz"
+      sha256 "$(sha linux-arm64.tar.gz)"
     end
     on_intel do
-      url "${base}/security-warden-linux-amd64"
-      sha256 "$(sha linux-amd64)"
+      url "${base}/security-warden-linux-amd64.tar.gz"
+      sha256 "$(sha linux-amd64.tar.gz)"
     end
   end
 
   def install
-    bin.install Dir["security-warden-*"].first => "security-warden"
+    bin.install "security-warden"
   end
 
   # brew services start security-warden: web UI on localhost:7348, scans

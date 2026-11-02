@@ -6,6 +6,6 @@ import tailwindcss from '@tailwindcss/vite'
 // API calls go to a running `security-warden serve`.
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
-  build: { outDir: 'dist', emptyOutDir: false, assetsInlineLimit: 0, sourcemap: false },
+  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0, sourcemap: false },
   server: { proxy: { '/api': 'http://127.0.0.1:7349', '/login': 'http://127.0.0.1:7349' } },
 })

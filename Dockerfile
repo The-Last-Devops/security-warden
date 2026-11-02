@@ -47,6 +47,10 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
       os=${t%/*}; arch=${t#*/}; ext=; [ "$os" = windows ] && ext=.exe; \
       GOOS=$os GOARCH=$arch go build -ldflags "-s -w -X main.version=${VERSION}" \
         -o /out/security-warden-$os-$arch$ext ./cmd/security-warden; \
+      if [ "$os" != windows ]; then \
+        mkdir -p /tmp/pkg && cp /out/security-warden-$os-$arch /tmp/pkg/security-warden && \
+        tar -C /tmp/pkg -czf /out/security-warden-$os-$arch.tar.gz security-warden && rm -rf /tmp/pkg; \
+      fi; \
     done; \
     cd /out && sha256sum security-warden-* > SHA256SUMS
 
