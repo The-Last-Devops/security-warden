@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 func readSmallN(path string, n int64) ([]byte, error) {
@@ -41,13 +43,16 @@ func cloudConfig(ctx context.Context) ([]Item, error) {
 		if m := regexp.MustCompile(`(?m)^current-context:\s*"?([^"\n]+)`).FindStringSubmatch(s); m != nil {
 			cur = strings.TrimSpace(m[1])
 		}
+		certCtx := kubeClientCertContext(b)
 		items = append(items, Item{
 			"kind": "kubeconfig", "file": f,
-			"insecure_skip_tls": regexp.MustCompile(`(?m)^\s*insecure-skip-tls-verify:\s*true`).MatchString(s),
-			"static_token":      regexp.MustCompile(`(?m)^\s*token:\s*\S`).MatchString(s),
-			"current_context":   cur,
-			"current_is_prod":   regexp.MustCompile(`(?i)(^|[-_./])(prod|production|prd|live)([-_./]|$)`).MatchString(cur),
-			"sa_type":           "",
+			"insecure_skip_tls":   regexp.MustCompile(`(?m)^\s*insecure-skip-tls-verify:\s*true`).MatchString(s),
+			"static_token":        regexp.MustCompile(`(?m)^\s*token:\s*\S`).MatchString(s),
+			"current_context":     cur,
+			"current_is_prod":     regexp.MustCompile(`(?i)(^|[-_./])(prod|production|prd|live)([-_./]|$)`).MatchString(cur),
+			"sa_type":             "",
+			"client_cert":         certCtx != "",
+			"client_cert_context": certCtx,
 		})
 	}
 
@@ -58,7 +63,8 @@ func cloudConfig(ctx context.Context) ([]Item, error) {
 		}
 		_ = json.Unmarshal(b, &v)
 		items = append(items, Item{"kind": "gcloud_adc", "file": adc, "sa_type": v.Type,
-			"insecure_skip_tls": false, "static_token": false, "current_context": "", "current_is_prod": false})
+			"insecure_skip_tls": false, "static_token": false, "current_context": "", "current_is_prod": false,
+			"client_cert": false, "client_cert_context": ""})
 	}
 
 	// Long-lived service-account keys left in the usual places.
@@ -72,7 +78,8 @@ func cloudConfig(ctx context.Context) ([]Item, error) {
 			s := string(b)
 			if strings.Contains(s, `"type": "service_account"`) && strings.Contains(s, `"private_key"`) {
 				items = append(items, Item{"kind": "gcp_sa_key", "file": f, "sa_type": "service_account",
-					"insecure_skip_tls": false, "static_token": false, "current_context": "", "current_is_prod": false})
+					"insecure_skip_tls": false, "static_token": false, "current_context": "", "current_is_prod": false,
+					"client_cert": false, "client_cert_context": ""})
 			}
 		}
 	}
@@ -86,7 +93,8 @@ func cloudConfig(ctx context.Context) ([]Item, error) {
 		p := filepath.Join(h, f.rel)
 		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() && fi.Size() > 0 {
 			items = append(items, Item{"kind": f.kind, "file": p, "sa_type": "",
-				"insecure_skip_tls": false, "static_token": true, "current_context": "", "current_is_prod": false})
+				"insecure_skip_tls": false, "static_token": true, "current_context": "", "current_is_prod": false,
+				"client_cert": false, "client_cert_context": ""})
 		}
 	}
 	return items, nil
@@ -126,3 +134,55 @@ func shellHistory(ctx context.Context) ([]Item, error) {
 	}
 	return items, nil
 }
+
+// kubeClientCertContext returns the first context whose user logs in with a
+// client certificate to a cluster that is not on this machine (Docker
+// Desktop, kind and minikube use certificates for local clusters). Only
+// names are read; certificate data is never kept.
+func kubeClientCertContext(b []byte) string {
+	var kc struct {
+		Clusters []struct {
+			Name    string `yaml:"name"`
+			Cluster struct {
+				Server string `yaml:"server"`
+			} `yaml:"cluster"`
+		} `yaml:"clusters"`
+		Users []struct {
+			Name string `yaml:"name"`
+			User struct {
+				CertData string `yaml:"client-certificate-data"`
+				CertFile string `yaml:"client-certificate"`
+			} `yaml:"user"`
+		} `yaml:"users"`
+		Contexts []struct {
+			Name    string `yaml:"name"`
+			Context struct {
+				Cluster string `yaml:"cluster"`
+				User    string `yaml:"user"`
+			} `yaml:"context"`
+		} `yaml:"contexts"`
+	}
+	if yaml.Unmarshal(b, &kc) != nil {
+		return ""
+	}
+	server := map[string]string{}
+	for _, c := range kc.Clusters {
+		server[c.Name] = c.Cluster.Server
+	}
+	cert := map[string]bool{}
+	for _, u := range kc.Users {
+		cert[u.Name] = u.User.CertData != "" || u.User.CertFile != ""
+	}
+	for _, c := range kc.Contexts {
+		if cert[c.Context.User] && !localServer(server[c.Context.Cluster]) {
+			return c.Name
+		}
+	}
+	return ""
+}
+
+var localHosts = regexp.MustCompile(`^(?i)https?://(127\.[0-9.]+|localhost|\[::1\]|kubernetes\.docker\.internal|host\.docker\.internal|192\.168\.(49|59|64|99)\.[0-9]+)(:[0-9]+)?(/|$)`)
+
+// localServer: an API server on this machine (or a local VM such as
+// minikube), where a client certificate is the normal setup.
+func localServer(s string) bool { return s == "" || localHosts.MatchString(s) }

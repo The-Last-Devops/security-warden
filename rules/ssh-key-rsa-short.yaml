@@ -1,0 +1,22 @@
+id: ssh-key-rsa-short
+severity: medium
+platforms: [macos, windows, linux]
+source: ssh_keys
+match: "item.key_type == \"rsa\" && item.bits > 0 && item.bits < 3072"
+title:
+  en: "SSH key {name} is a {bits}-bit RSA key"
+  vi: "Khoá SSH {name} là khoá RSA {bits} bit"
+check:
+  en: "RSA SSH keys are at least 3072 bits"
+  vi: "Khoá SSH RSA dài từ 3072 bit trở lên"
+explain:
+  en: "{path} is shorter than the 3072 bits NIST recommends for use after 2030, and a 1024-bit key is within reach of a well-funded attacker today."
+  vi: "{path} ngắn hơn mức 3072 bit NIST khuyến nghị cho sau năm 2030, còn khoá 1024 bit thì kẻ tấn công có tiền đã bẻ được ngay bây giờ."
+fix:
+  en: "Create a new key (ssh-keygen -t ed25519), add it to your servers and Git hosts, remove the old public key from them, then delete {path}."
+  vi: "Tạo khoá mới (ssh-keygen -t ed25519), thêm vào server và các dịch vụ Git, gỡ khoá công khai cũ ở đó, rồi xoá {path}."
+author: the-last-devops
+tests:
+  - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "encrypted": true, "key_type": "rsa", "bits": 2048}, "expect": true}
+  - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "encrypted": true, "key_type": "rsa", "bits": 4096}, "expect": false}
+  - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "encrypted": true, "key_type": "", "bits": 0}, "expect": false, "note": "no .pub, size unknown"}

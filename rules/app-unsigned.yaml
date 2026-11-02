@@ -1,0 +1,22 @@
+id: app-unsigned
+severity: medium
+platforms: [macos]
+source: apps
+match: "item.unsigned || item.adhoc"
+title:
+  en: "{app} has no developer signature"
+  vi: "{app} không có chữ ký của nhà phát triển"
+check:
+  en: "Apps in /Applications are signed by their developer"
+  vi: "App trong /Applications có chữ ký của nhà phát triển"
+explain:
+  en: "{path} is unsigned or only ad-hoc signed, so nothing ties it to a known developer and macOS cannot tell if it was changed after it was built. Cracked and repackaged apps, a common malware carrier, look like this."
+  vi: "{path} không có chữ ký hoặc chỉ ký ad-hoc, nên không gắn với nhà phát triển nào và macOS không biết được nó có bị sửa sau khi build hay không. App crack và app bị đóng gói lại, nơi mã độc hay nấp, trông đúng như vậy."
+fix:
+  en: "Download {app} again from its developer's site or the App Store and replace this copy. If you built it yourself, you can snooze this check."
+  vi: "Tải lại {app} từ trang của nhà phát triển hoặc App Store rồi thay bản này. Nếu do bạn tự build, có thể bỏ qua mục này."
+author: the-last-devops
+tests:
+  - {"item": {"app": "Tool", "path": "/Applications/Tool.app", "unsigned": true, "adhoc": false}, "expect": true}
+  - {"item": {"app": "Tool", "path": "/Applications/Tool.app", "unsigned": false, "adhoc": true}, "expect": true}
+  - {"item": {"app": "Tool", "path": "/Applications/Tool.app", "unsigned": false, "adhoc": false}, "expect": false}

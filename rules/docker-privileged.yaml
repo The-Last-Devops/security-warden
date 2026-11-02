@@ -5,7 +5,7 @@ source: docker_containers
 match: item.privileged || item.mounts_docker_sock
 title:
   en: "Container {container} has full control of Docker"
-  vi: "Container {container} có toàn quyền với Docker"
+  vi: "Container {container} có toàn quyền trên máy (privileged)"
 check:
   en: "No privileged containers or docker.sock mounts"
   vi: "Không container privileged hay mount docker.sock"

@@ -220,6 +220,12 @@ func checkAndUpdate(ctx context.Context, lang string) bool {
 			_ = update.Save(st)
 			return false
 		}
+		// Restarting is only worth it if a newer binary is really in place.
+		if got := update.InstalledVersion(ctx); !update.Newer(got, version) {
+			st.LastError = "brew installed " + got + ", still not " + latest
+			_ = update.Save(st)
+			return false
+		}
 		st.Applied = latest
 		_ = update.Save(st)
 		fmt.Printf("%s  %s %s\n", time.Now().Format("2006-01-02 15:04:05"), t("update.applied"), latest)
@@ -254,6 +260,10 @@ func runUpdate(lang string) int {
 	if err := update.ApplyBrew(context.Background()); err != nil {
 		fmt.Printf(t("fix.failed")+"\n", err)
 		return 2
+	}
+	if got := update.InstalledVersion(context.Background()); update.Newer(latest, got) {
+		fmt.Printf(t("update.notYet")+"\n", got, latest)
+		return 1
 	}
 	if web.RunningHere(web.DefaultPort) && agent.Installed() {
 		// Restart the background service on the new version.

@@ -1,0 +1,21 @@
+id: kube-client-certificate
+severity: medium
+platforms: [macos, windows, linux]
+source: cloud_config
+match: "item.kind == \"kubeconfig\" && item.client_cert"
+title:
+  en: "kubectl logs in to {client_cert_context} with a client certificate"
+  vi: "kubectl đăng nhập {client_cert_context} bằng chứng chỉ client"
+check:
+  en: "kubectl logs in to remote clusters without long-lived certificates"
+  vi: "kubectl đăng nhập cluster từ xa mà không dùng chứng chỉ dài hạn"
+explain:
+  en: "{file} holds a client certificate for context {client_cert_context}. Kubernetes cannot revoke a client certificate: if the file leaks, it works until it expires, often a year or more, and the only way out is rotating the cluster CA."
+  vi: "{file} chứa chứng chỉ client cho context {client_cert_context}. Kubernetes không thu hồi được chứng chỉ client: lộ file là nó dùng được tới khi hết hạn, thường từ một năm trở lên, và cách duy nhất là thay CA của cluster."
+fix:
+  en: "Log in through your provider's exec plugin (aws eks get-token, gke-gcloud-auth-plugin, kubelogin) or OIDC, so access is short-lived and can be revoked. Keep admin certificates offline."
+  vi: "Đăng nhập qua exec plugin của nhà cung cấp (aws eks get-token, gke-gcloud-auth-plugin, kubelogin) hoặc OIDC để quyền truy cập ngắn hạn và thu hồi được. Cất chứng chỉ admin ra khỏi máy."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": "", "client_cert": true, "client_cert_context": "prod-admin"}, "expect": true}
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": "", "client_cert": false, "client_cert_context": ""}, "expect": false}

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -245,13 +246,25 @@ var skipDirs = map[string]bool{"node_modules": true, ".git": true, "vendor": tru
 var envName = regexp.MustCompile(`^(\.env(\..+)?|.+\.env|.+\.tfstate|.+\.tfvars|.+\.pem|.+\.key|.+\.p12|.+\.pfx|id_rsa|id_ed25519|id_ecdsa|service-account.*\.json|.+-sa-key\.json)$`)
 var envTemplate = regexp.MustCompile(`\.(example|sample|template|dist|defaults|schema|test)$|\.example\.|\.sample\.`)
 
-// devFiles walks the usual code folders (never Documents, Desktop or other
-// protected folders) for secret files inside Git repos, and asks Git whether
-// each one is committed or ignored. Bounded in depth, entries and time.
-func devFiles(ctx context.Context) ([]Item, error) {
-	if !gitAvailable() {
-		return nil, Skip{"skip.git"}
-	}
+// codeCand is a secret-looking file found in a Git repo.
+type codeCand struct{ path, rel, kind string }
+
+// codeWalkResult is what one walk of the code folders found: secret-looking
+// files grouped by repo, and every Git repo seen on the way.
+type codeWalkResult struct {
+	byRepo    map[string][]codeCand
+	repos     []string
+	truncated bool
+}
+
+// codeWalk is shared by dev_files and git_remotes so a scan walks the code
+// folders once.
+var codeWalk = sync.OnceValue(load_codeWalk)
+
+// load_codeWalk walks the usual code folders (never Documents, Desktop or
+// other protected folders). Bounded in depth, entries and time.
+func load_codeWalk() codeWalkResult {
+	res := codeWalkResult{byRepo: map[string][]codeCand{}}
 	var roots []string
 	if extra := os.Getenv("SW_CODE_DIRS"); extra != "" {
 		roots = append(roots, filepath.SplitList(extra)...)
@@ -260,11 +273,9 @@ func devFiles(ctx context.Context) ([]Item, error) {
 		roots = append(roots, filepath.Join(home(), r))
 	}
 	seenRoot := map[string]bool{}
+	seenRepo := map[string]bool{}
 	deadline := time.Now().Add(8 * time.Second)
 	entries := 0
-	truncated := false
-	type cand struct{ path, rel, kind string }
-	byRepo := map[string][]cand{}
 	for _, root := range roots {
 		// Walk the real folder (a symlinked ~/Code is still scanned), once,
 		// and never inside folders macOS protects with a privacy prompt.
@@ -280,10 +291,16 @@ func devFiles(ctx context.Context) ([]Item, error) {
 			}
 			entries++
 			if entries > 200000 || time.Now().After(deadline) {
-				truncated = true
+				res.truncated = true
 				return filepath.SkipAll
 			}
 			if d.IsDir() {
+				if d.Name() == ".git" {
+					if repo := filepath.Dir(path); !seenRepo[repo] {
+						seenRepo[repo] = true
+						res.repos = append(res.repos, repo)
+					}
+				}
 				if skipDirs[d.Name()] || strings.Count(path, string(filepath.Separator))-baseDepth > 6 {
 					return filepath.SkipDir
 				}
@@ -313,12 +330,22 @@ func devFiles(ctx context.Context) ([]Item, error) {
 				return nil
 			}
 			rel, _ := filepath.Rel(repo, path)
-			byRepo[repo] = append(byRepo[repo], cand{path, rel, kind})
+			res.byRepo[repo] = append(res.byRepo[repo], codeCand{path, rel, kind})
 			return nil
 		})
 	}
+	return res
+}
+
+// devFiles reports secret files inside Git repos found by codeWalk, and
+// asks Git whether each one is committed or ignored.
+func devFiles(ctx context.Context) ([]Item, error) {
+	if !gitAvailable() {
+		return nil, Skip{"skip.git"}
+	}
+	w := codeWalk()
 	var items []Item
-	for repo, cs := range byRepo {
+	for repo, cs := range w.byRepo {
 		var rels []string
 		for _, c := range cs {
 			rels = append(rels, c.rel)
@@ -329,7 +356,7 @@ func devFiles(ctx context.Context) ([]Item, error) {
 				"kind": c.kind, "tracked": tracked[c.rel], "ignored": ignored[c.rel]})
 		}
 	}
-	if truncated {
+	if w.truncated {
 		items = append(items, Item{"path": "", "repo": "", "repo_name": "", "file": "", "kind": "truncated", "tracked": false, "ignored": true})
 	}
 	return items, nil

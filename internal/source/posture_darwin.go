@@ -49,6 +49,13 @@ func posture(ctx context.Context) ([]Item, error) {
 			it["screen_lock"] = true
 		}
 	}
+	if out, err := run(ctx, "sw_vers", "-productVersion"); err == nil {
+		major, _, _ := strings.Cut(strings.TrimSpace(out), ".")
+		if n := atoi(major); n > 0 {
+			it["os_major"] = n
+			it["os_version"] = strings.TrimSpace(out)
+		}
+	}
 	macExtra(ctx, it)
 	return []Item{it}, nil
 }

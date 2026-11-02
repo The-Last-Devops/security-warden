@@ -10,10 +10,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type dockerContainer struct {
 	Name   string
+	Image  string // image ID the container runs
 	Config struct {
 		Image string
 		User  string
@@ -34,6 +36,7 @@ type dockerContainer struct {
 		Destination string
 		RW          bool
 	}
+	created         time.Time
 	NetworkSettings struct {
 		Ports map[string][]struct {
 			HostIp   string
@@ -80,7 +83,60 @@ func load_dockerOnce() ([]dockerContainer, error) {
 	if err := json.Unmarshal([]byte(out), &cs); err != nil {
 		return nil, err
 	}
+	imageCreated(ctx, bin, cs)
 	return cs, nil
+}
+
+// imageCreated fills each container's image build time with one
+// "docker image inspect" call over the distinct image IDs.
+func imageCreated(ctx context.Context, bin string, cs []dockerContainer) {
+	seen := map[string]bool{}
+	var ids []string
+	for _, c := range cs {
+		if c.Image != "" && !seen[c.Image] {
+			seen[c.Image] = true
+			ids = append(ids, c.Image)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	out, _ := run(ctx, bin, append([]string{"image", "inspect", "--format", "{{.Id}} {{.Created}}", "--"}, ids...)...)
+	created := map[string]time.Time{}
+	for _, line := range strings.Split(out, "\n") {
+		id, ts, ok := strings.Cut(strings.TrimSpace(line), " ")
+		if !ok {
+			continue
+		}
+		if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
+			created[id] = t
+		}
+	}
+	for i := range cs {
+		cs[i].created = created[cs[i].Image]
+	}
+}
+
+// imageAgeDays is how old the image build is, or -1 when unknown.
+func imageAgeDays(t time.Time) int {
+	if t.IsZero() || t.Year() < 2000 { // reproducible builds use the epoch
+		return -1
+	}
+	return int(time.Since(t).Hours() / 24)
+}
+
+var hexID = regexp.MustCompile(`^[0-9a-f]{12,64}$`)
+
+// latestTag reports an image reference with no tag or the "latest" tag,
+// which can change under you. Digest-pinned references and image IDs never
+// count.
+func latestTag(ref string) bool {
+	if ref == "" || strings.Contains(ref, "@") || strings.HasPrefix(ref, "sha256:") || hexID.MatchString(ref) {
+		return false
+	}
+	last := ref[strings.LastIndex(ref, "/")+1:]
+	_, tag, ok := strings.Cut(last, ":")
+	return !ok || tag == "latest"
 }
 
 // dangerousCaps give a container power over the host kernel or network.
@@ -166,6 +222,8 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 			"secret_env":          strings.Join(secretKeys, ", "),
 			"user":                user,
 			"runs_as_root":        user == "" || user == "root" || user == "0" || strings.HasPrefix(user, "0:"),
+			"image_age_days":      imageAgeDays(c.created),
+			"latest_tag":          latestTag(c.Config.Image),
 		})
 	}
 	return items, nil

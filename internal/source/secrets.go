@@ -60,6 +60,7 @@ func sshKeys(ctx context.Context) ([]Item, error) {
 			continue
 		}
 		it := Item{"name": e.Name(), "path": path, "format": kind, "encrypted": encrypted}
+		it["key_type"], it["bits"] = sshKeyStrength(path, b)
 		modeFields(it, fi)
 		items = append(items, it)
 	}

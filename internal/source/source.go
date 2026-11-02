@@ -53,6 +53,8 @@ func All() []Collector {
 		{"ssh_keys", sshKeys},
 		{"credential_files", credentialFiles},
 		{"persistence", persistence},
+		{"processes", processes},
+		{"apps", apps},
 		{"network_config", networkConfig},
 		{"privilege", privilege},
 		{"shell_rc", shellRC},
@@ -70,12 +72,13 @@ func All() []Collector {
 		{"editor_settings", editorSettings},
 		{"editor_extensions", editorExtensions},
 		{"dev_files", devFiles},
+		{"git_remotes", gitRemotes},
 	}
 }
 
 // Slow lists sources that are costly (file walks, package manager calls);
 // watch mode runs them less often.
-var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "browser_extensions": true, "shell_history": true}
+var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "git_remotes": true, "browser_extensions": true, "shell_history": true, "apps": true}
 
 // Run executes the collectors in parallel. done, if not nil, is called with
 // each collector's name as it finishes.
@@ -151,6 +154,7 @@ func ResetCaches() {
 	lsofOnce = sync.OnceValues(load_lsofOnce)
 	dockerOnce = sync.OnceValues(load_dockerOnce)
 	outdatedOnce = sync.OnceValues(load_outdatedOnce)
+	codeWalk = sync.OnceValue(load_codeWalk)
 }
 
 // processPaths maps pid -> executable path for every process we can see.
@@ -161,7 +165,7 @@ func load_processPaths() map[int]string {
 		return procExePaths()
 	}
 	m := map[int]string{}
-	out, err := run(context.Background(), "ps", "-axo", "pid=,comm=")
+	out, err := run(context.Background(), "ps", "-axww", "-o", "pid=,comm=")
 	if err != nil {
 		return m
 	}

@@ -19,3 +19,10 @@ func privacyProtected(p string) bool {
 	}
 	return false
 }
+
+// underDownloads tells whether p lies inside ~/Downloads by comparing the
+// path string only; nothing in that folder is ever opened.
+func underDownloads(p string) bool {
+	d := filepath.Join(home(), "Downloads")
+	return strings.HasPrefix(p, d+string(filepath.Separator))
+}

@@ -120,13 +120,31 @@ func ApplyBrew(ctx context.Context) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, b, "upgrade", "security-warden")
-	cmd.Env = append(os.Environ(), "HOMEBREW_NO_ENV_HINTS=1", "HOMEBREW_NO_ANALYTICS=1")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("brew upgrade: %v: %s", err, lastLine(string(out)))
+	env := append(os.Environ(), "HOMEBREW_NO_ENV_HINTS=1", "HOMEBREW_NO_ANALYTICS=1", "HOMEBREW_NO_AUTO_UPDATE=1")
+	// Refresh the tap first: without it brew still knows only the old
+	// formula and "upgrade" quietly does nothing.
+	for _, args := range [][]string{{"update", "--quiet"}, {"upgrade", "security-warden"}} {
+		cmd := exec.CommandContext(ctx, b, args...)
+		cmd.Env = env
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("brew %s: %v: %s", args[0], err, lastLine(string(out)))
+		}
 	}
 	return nil
+}
+
+// InstalledVersion asks the binary Homebrew links (the one the service
+// runs) for its version, e.g. "v0.2.5".
+func InstalledVersion(ctx context.Context) string {
+	exe, err := StableExecutable()
+	if err != nil {
+		return ""
+	}
+	out, err := exec.CommandContext(ctx, exe, "version").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func lastLine(s string) string {

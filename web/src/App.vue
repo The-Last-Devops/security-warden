@@ -36,7 +36,7 @@ function say(msg, isError = false) {
 }
 const fail = e => { if (e.status === 401) signedOut.value = true; else say(`${t.value.error}: ${e.message}`, true) }
 
-const categories = ['secrets', 'docker', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
+const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 
 async function load(force = false) {
@@ -57,7 +57,8 @@ const prog = ref(null)
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 async function rescan(first = false) {
   if (prog.value) return
-  const before = new Set(findings.value.map(f => f.key))
+  // Compared per kind of problem, like the list: a file moving does not count.
+  const before = new Set(findings.value.map(f => f.rule_id))
   busy.value = true
   prog.value = { done: [], pending: [], total: 0 }
   // Show progress for at least 3 seconds: a scan that flashes by looks
@@ -75,7 +76,7 @@ async function rescan(first = false) {
       if (!p.running && p.done.length >= p.total && elapsed >= MIN_MS) break
     }
     data.value = await api.scan(lang.value)
-    const after = new Set(findings.value.map(f => f.key))
+    const after = new Set(findings.value.map(f => f.rule_id))
     let added = 0, gone = 0
     for (const k of after) if (!before.has(k)) added++
     for (const k of before) if (!after.has(k)) gone++
@@ -143,6 +144,12 @@ const worst = computed(() => {
   for (const f of findings.value) if (w[f.category] === undefined || sevOrder.indexOf(f.severity) < sevOrder.indexOf(w[f.category])) w[f.category] = f.severity
   return w
 })
+// Groups with problems first (worst severity, then most problems); clean ones last.
+const sortedCategories = computed(() => [...categories].sort((a, b) => {
+  const ra = worst.value[a] ? sevOrder.indexOf(worst.value[a]) : 99
+  const rb = worst.value[b] ? sevOrder.indexOf(worst.value[b]) : 99
+  return ra - rb || (counts.value[b] || 0) - (counts.value[a] || 0) || categories.indexOf(a) - categories.indexOf(b)
+}))
 const worstText = { critical: 'text-crit', high: 'text-high', medium: 'text-med', low: 'text-low', info: 'text-info' }
 const groups = computed(() => {
   const by = new Map()
@@ -285,6 +292,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               </div>
             </div>
             <div class="border-t border-line pt-3">
+              <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg disabled:opacity-50" :disabled="busy" @click="menuOpen = false; undo()">{{ t.undo }}</button>
               <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="menuOpen = false; logout()">{{ t.signOut }}</button>
             </div>
           </div>
@@ -324,7 +332,6 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               <svg :class="busy ? 'animate-spin' : ''" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
               {{ busy ? t.scanning : t.rescan }}
             </button>
-            <button class="rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-muted hover:text-accent disabled:opacity-50" :disabled="busy" @click="undo">{{ t.undoShort }}</button>
           </div>
         </section>
 
@@ -333,7 +340,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             :class="cat === 'all' ? 'bg-accent-soft text-accent' : 'hover:bg-panel2'" @click="cat = 'all'">
             {{ t.all }} <span class="num">{{ groupsAll }}</span>
           </button>
-          <button v-for="c in categories" :key="c" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
+          <button v-for="c in sortedCategories" :key="c" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
             :class="cat === c ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = c">
             {{ t[c] }}
             <span class="num font-bold" :class="counts[c] ? worstText[worst[c]] : 'text-muted/50'">{{ counts[c] || 0 }}</span>

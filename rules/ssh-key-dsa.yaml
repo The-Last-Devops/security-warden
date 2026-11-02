@@ -1,0 +1,21 @@
+id: ssh-key-dsa
+severity: high
+platforms: [macos, windows, linux]
+source: ssh_keys
+match: "item.key_type == \"dsa\""
+title:
+  en: "SSH key {name} uses DSA"
+  vi: "Khoá SSH {name} dùng DSA"
+check:
+  en: "No SSH keys use DSA"
+  vi: "Không khoá SSH nào dùng DSA"
+explain:
+  en: "DSA keys are 1024-bit and considered broken; OpenSSH has disabled them by default since 2015 and removed them in 2024. {path} should not be trusted anywhere."
+  vi: "Khoá DSA chỉ 1024 bit và bị coi là đã vỡ; OpenSSH tắt mặc định từ 2015 và gỡ hẳn từ 2024. Không nên để {path} được tin ở đâu cả."
+fix:
+  en: "Create a new key (ssh-keygen -t ed25519), add it to your servers and Git hosts, remove the old public key from them, then delete {path}."
+  vi: "Tạo khoá mới (ssh-keygen -t ed25519), thêm vào server và các dịch vụ Git, gỡ khoá công khai cũ ở đó, rồi xoá {path}."
+author: the-last-devops
+tests:
+  - {"item": {"name": "id_dsa", "path": "/Users/a/.ssh/id_dsa", "encrypted": true, "key_type": "dsa", "bits": 1024}, "expect": true}
+  - {"item": {"name": "id_ed25519", "path": "/Users/a/.ssh/id_ed25519", "encrypted": true, "key_type": "ed25519", "bits": 256}, "expect": false}

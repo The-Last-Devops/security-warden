@@ -1,0 +1,22 @@
+id: macos-unsupported
+severity: high
+platforms: [macos]
+source: posture
+match: "has(item.os_major) && item.os_major < 14"
+title:
+  en: "macOS {os_version} no longer gets security updates"
+  vi: "macOS {os_version} không còn được cập nhật bảo mật"
+check:
+  en: "macOS still gets security updates"
+  vi: "macOS vẫn được cập nhật bảo mật"
+explain:
+  en: "Apple patches only the three newest major versions of macOS (as of November 2026: 26 Tahoe, 15 Sequoia and 14 Sonoma). Holes found in older versions stay open, and attackers know which ones."
+  vi: "Apple chỉ vá ba phiên bản macOS mới nhất (tính đến tháng 11/2026: 26 Tahoe, 15 Sequoia và 14 Sonoma). Lỗ hổng tìm thấy ở bản cũ hơn sẽ để ngỏ mãi, và kẻ tấn công biết rõ đó là lỗ nào."
+fix:
+  en: "System Settings › General › Software Update, and upgrade to the newest macOS this Mac supports. If it supports none of the three, plan to replace it and keep it off untrusted networks meanwhile."
+  vi: "Cài đặt hệ thống › Cài đặt chung › Cập nhật phần mềm, và nâng lên bản macOS mới nhất máy hỗ trợ. Nếu máy không chạy được bản nào trong ba bản đó, hãy tính chuyện thay máy và tạm tránh mạng lạ."
+author: the-last-devops
+tests:
+  - {"item": {"os_major": 13, "os_version": "13.7.8"}, "expect": true}
+  - {"item": {"os_major": 26, "os_version": "26.1"}, "expect": false}
+  - {"item": {"os": "macos"}, "expect": false, "note": "version unknown"}

@@ -1,0 +1,21 @@
+id: git-remote-has-token
+severity: high
+platforms: [macos, windows, linux]
+source: git_remotes
+match: "item.has_credentials"
+title:
+  en: "Git remote {remote} in {repo_name} has a token in its URL"
+  vi: "Remote {remote} của {repo_name} có token nằm trong URL"
+check:
+  en: "Git remote URLs carry no passwords or tokens"
+  vi: "URL remote của Git không chứa mật khẩu hay token"
+explain:
+  en: "The URL of {remote} in {repo}/.git/config holds a password or token for {host} in plain text. Anything that reads the repo folder (a backup, a zip you share, malware) gets it, and Git prints the URL in error messages and logs."
+  vi: "URL của {remote} trong {repo}/.git/config chứa mật khẩu hoặc token của {host} dạng chữ thường. Thứ gì đọc được thư mục repo (bản sao lưu, file zip bạn gửi đi, mã độc) là lấy được, và Git còn in URL đó ra thông báo lỗi và log."
+fix:
+  en: "Revoke the token on {host} and create a new one. Remove it from the URL: git -C {repo} remote set-url {remote} https://{host}/OWNER/REPO.git, and let a credential helper keep it (osxkeychain on macOS, manager on Windows, libsecret on Linux), or use SSH."
+  vi: "Thu hồi token trên {host} và tạo token mới. Bỏ nó khỏi URL: git -C {repo} remote set-url {remote} https://{host}/OWNER/REPO.git, rồi để credential helper giữ (osxkeychain trên macOS, manager trên Windows, libsecret trên Linux), hoặc dùng SSH."
+author: the-last-devops
+tests:
+  - {"item": {"repo": "/Users/a/Code/app", "repo_name": "app", "remote": "origin", "host": "github.com", "has_credentials": true}, "expect": true}
+  - {"item": {"repo": "/Users/a/Code/app", "repo_name": "app", "remote": "origin", "host": "github.com", "has_credentials": false}, "expect": false}

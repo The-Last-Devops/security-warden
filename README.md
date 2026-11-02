@@ -6,7 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
-![Rules](https://img.shields.io/badge/rules-108-0b6e52)
+![Rules](https://img.shields.io/badge/rules-119-0b6e52)
 
 </div>
 
@@ -106,19 +106,19 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-108 rules over 30 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+119 rules over 33 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
 | Area | Examples |
 |---|---|
-| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase, plain-text AWS/kube/npm/Git credentials, tokens in shell history |
+| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase or weak (DSA, short RSA), plain-text AWS/kube/npm/Git credentials, tokens in shell history and in Git remote URLs |
 | 🚪 **Open doors** | Ports reachable from other machines, SSH/Screen Sharing/RDP, tunnels (ngrok, cloudflared, VS Code), remote desktop apps, file sharing |
-| 🐳 **Docker** | Ports on every network, privileged containers, `docker.sock` or home folder mounts, host network, dangerous capabilities, secrets in env |
-| 🔒 **System settings** | FileVault/LUKS, firewall, SIP, Gatekeeper, automatic updates, XProtect, screen lock, auto login, AirDrop |
-| 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs |
+| 🐳 **Docker** | Ports on every network, privileged containers, `docker.sock` or home folder mounts, host network, dangerous capabilities, secrets in env, images older than 6 months or on `latest` |
+| 🔒 **System settings** | macOS out of security support, FileVault/LUKS, firewall, SIP, Gatekeeper, automatic updates, XProtect, screen lock, auto login, AirDrop |
+| 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs; running crypto miners or programs started from /tmp or Downloads; unsigned apps in /Applications |
 | 🤖 **AI agents** | Tokens written into MCP configs, MCP over plain HTTP, agents allowed to run commands without asking |
-| 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip |
+| 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or client certificates |
 | 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker |
 | 🌐 **Network & Tailscale** | System proxies, `/etc/hosts` redirects, Tailscale shields down, SSH, exit node, Funnel |
 
