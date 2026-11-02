@@ -35,6 +35,33 @@ chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 start
 
 **From source** (needs only Docker): `docker build --target export --output dist .`
 
+### Update
+
+```sh
+brew update && brew upgrade security-warden   # Homebrew
+security-warden stop && security-warden start # restart the background service on the new version
+```
+
+With the disk image, download the new `.dmg` and run `Install.command` again. Your passkeys, snoozed
+findings and settings are kept.
+
+### Uninstall
+
+```sh
+security-warden stop                           # stop it and remove it from login items
+brew uninstall security-warden                 # Homebrew (or: sudo rm /usr/local/bin/security-warden)
+brew untap the-last-devops/security-warden     # optional
+```
+
+To also delete its data (passkeys, sessions, snoozed findings, fix journal, logs):
+
+```sh
+rm -rf ~/Library/Application\ Support/security-warden ~/Library/Logs/security-warden.log   # macOS
+rm -rf ~/.config/security-warden ~/.local/state/security-warden                             # Linux
+```
+
+Run `stop` before uninstalling, otherwise the login item stays behind pointing to a missing program.
+
 ## Use
 
 ```sh
