@@ -55,13 +55,19 @@ async function rescan() {
   const before = new Set(findings.value.map(f => f.key))
   busy.value = true
   prog.value = { done: [], pending: [], total: 0 }
+  // Show progress for at least 3 seconds: a scan that flashes by looks
+  // like it failed. The bar never runs ahead of the real scan.
+  const MIN_MS = 3000
+  const started = performance.now()
   try {
     await api.startScan()
     for (;;) {
-      await sleep(250)
+      await sleep(120)
       const p = await api.progress(lang.value)
-      prog.value = p
-      if (!p.running && p.done.length >= p.total) break
+      const elapsed = performance.now() - started
+      const shown = Math.min(p.done.length, Math.floor((p.total * elapsed) / MIN_MS))
+      prog.value = { ...p, done: p.done.slice(0, shown), pending: [...p.done.slice(shown).map(d => d.label), ...p.pending] }
+      if (!p.running && p.done.length >= p.total && elapsed >= MIN_MS) break
     }
     data.value = await api.scan(lang.value)
     const after = new Set(findings.value.map(f => f.key))
