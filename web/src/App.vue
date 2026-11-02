@@ -30,9 +30,10 @@ const cat = ref('all')
 const sheet = ref(null)
 const toast = ref('')
 const toastErr = ref(false)
-function say(msg, isError = false) {
-  toast.value = msg; toastErr.value = isError
-  if (!isError) setTimeout(() => { if (toast.value === msg) toast.value = '' }, 5000)
+const toastAction = ref(null) // { label, run } shown as a button in the toast
+function say(msg, isError = false, action = null) {
+  toast.value = msg; toastErr.value = isError; toastAction.value = action
+  if (!isError) setTimeout(() => { if (toast.value === msg) { toast.value = ''; toastAction.value = null } }, action ? 8000 : 5000)
 }
 const fail = e => { if (e.status === 401) signedOut.value = true; else say(`${t.value.error}: ${e.message}`, true) }
 
@@ -203,7 +204,12 @@ async function undo() {
   } catch (e) { fail(e) }
 }
 async function ignoreFindings(list, days) {
-  try { const r = await api.ignore(list.map(f => f.key), days); say(t.value.ignoredDone(r.ignored)); await load() } catch (e) { fail(e) }
+  const keys = list.map(f => f.key)
+  try {
+    const r = await api.ignore(keys, days)
+    say(t.value.ignoredDone(r.ignored), false, { label: t.value.restore, run: () => restore(keys) })
+    await load()
+  } catch (e) { fail(e) }
 }
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
@@ -507,6 +513,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
     <div v-if="toast" class="rise fixed right-4 bottom-4 left-4 z-30 mx-auto flex max-w-md items-start gap-3 rounded-xl px-4 py-3 text-[14px] shadow-2xl sm:left-auto"
       :class="toastErr ? 'bg-crit text-white' : 'bg-fg text-page'" :role="toastErr ? 'alert' : 'status'">
       <span class="flex-1 break-words">{{ toast }}</span>
+      <button v-if="toastAction" class="-my-0.5 shrink-0 rounded-lg bg-page/15 px-2.5 py-0.5 font-semibold hover:bg-page/25" @click="toastAction.run(); toast = ''; toastAction = null">{{ toastAction.label }}</button>
       <button class="-mr-1 rounded px-1.5 font-bold opacity-80 hover:opacity-100" :aria-label="t.close" @click="toast = ''">✕</button>
     </div>
   </div>
