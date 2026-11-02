@@ -6,6 +6,9 @@ match: item.kind == "tunnel"
 title:
   en: "Tunnel is running: {tool}"
   vi: "Đang chạy tunnel: {tool}"
+check:
+  en: "No tunnels to the internet running"
+  vi: "Không có tunnel ra internet đang chạy"
 explain:
   en: "{tool} can publish services on this machine to the internet, past the firewall and the office network."
   vi: "{tool} có thể đưa dịch vụ trên máy này ra internet, vượt qua tường lửa và mạng công ty."

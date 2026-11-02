@@ -29,6 +29,7 @@ import (
 // Scanner runs a scan and evaluates it in a language; the CLI provides it
 // so the web shows exactly what the terminal shows.
 type Scanner struct {
+	Rules    []*engine.Rule
 	Collect  func(ctx context.Context, done func(name string)) []source.Result
 	Evaluate func(results []source.Result, lang string) report.Scan
 }
@@ -255,16 +256,29 @@ type apiFinding struct {
 	Category  string   `json:"category"`
 	Plan      []string `json:"plan,omitempty"`
 	CanFix    bool     `json:"can_fix"`
+	Gain      int      `json:"gain"`
 	NeedsRoot bool     `json:"needs_root"`
 	Undoable  bool     `json:"undoable"`
 }
 
 func (s *Server) render(results []source.Result, lang string) map[string]any {
 	sc := s.Scanner.Evaluate(results, lang)
+	type apiPassed struct {
+		RuleID   string `json:"rule_id"`
+		Label    string `json:"label"`
+		Category string `json:"category"`
+		Severity string `json:"severity"`
+	}
+	passed := []apiPassed{}
+	for _, id := range sc.Passed {
+		if r := s.rule(id); r != nil {
+			passed = append(passed, apiPassed{id, r.Check.Get(lang), report.Category(r.Source), r.Severity})
+		}
+	}
 	out := make([]apiFinding, 0, len(sc.Findings))
 	for _, f := range sc.Findings {
 		f.Title, f.Explain, f.Fix = tilde(engine.Clean(f.Title)), tilde(engine.Clean(f.Explain)), tilde(engine.Clean(f.Fix))
-		af := apiFinding{Finding: f, Key: engine.FindingID(f), Category: report.Category(f.Source)}
+		af := apiFinding{Finding: f, Key: engine.FindingID(f), Category: report.Category(f.Source), Gain: sc.Gain[f.RuleID]}
 		if f.Remedy != nil {
 			if a, ok := fix.Get(f.Remedy.Action); ok {
 				for _, p := range a.Plan(f.Remedy.Params) {
@@ -331,7 +345,7 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 		ign = append(ign, apiIgnored{id, f.RuleID, tilde(engine.Clean(f.Title)), f.Severity, report.Category(f.Source), until[id]})
 	}
 	sc.Ignored = nil
-	return map[string]any{"scan": sc, "findings": out, "ignored": ign, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
+	return map[string]any{"scan": sc, "findings": out, "ignored": ign, "passed": passed, "sources": srcs, "scanned_at": s.scanned.Format(time.RFC3339)}
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
@@ -493,6 +507,16 @@ func tilde(s string) string {
 		return strings.ReplaceAll(s, h, "~")
 	}
 	return s
+}
+
+// rule finds a loaded rule by id.
+func (s *Server) rule(id string) *engine.Rule {
+	for _, r := range s.Scanner.Rules {
+		if r.ID == id {
+			return r
+		}
+	}
+	return nil
 }
 
 // Run serves on ln until ctx ends.

@@ -6,6 +6,9 @@ match: has(item.ssh) && item.ssh
 title:
   en: Tailscale SSH is on
   vi: Tailscale SSH đang bật
+check:
+  en: "Tailscale SSH is off"
+  vi: "Tailscale SSH đang tắt"
 explain:
   en: "Devices in tailnet {tailnet} that the ACL allows can open a shell on this machine without an SSH key."
   vi: "Thiết bị trong tailnet {tailnet} được ACL cho phép có thể mở shell vào máy này mà không cần khoá SSH."

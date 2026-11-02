@@ -6,6 +6,9 @@ match: item.lsm in ["none", "selinux-permissive"] && !item.container
 title:
   en: "No mandatory access control is enforced ({lsm})"
   vi: "Không có kiểm soát truy cập bắt buộc ({lsm})"
+check:
+  en: "AppArmor or SELinux is enforced"
+  vi: "AppArmor hoặc SELinux đang bật"
 explain:
   en: AppArmor or SELinux limit what a compromised service can touch. Without them a bug in one program reaches all your files.
   vi: AppArmor hoặc SELinux giới hạn những gì một dịch vụ bị chiếm có thể đụng tới. Không có chúng thì lỗi ở một chương trình là lan tới mọi file của bạn.

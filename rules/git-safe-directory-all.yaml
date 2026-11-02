@@ -6,6 +6,9 @@ match: "item.safe_directory_all"
 title:
   en: "Git trusts every repository owner (safe.directory *)"
   vi: "Git tin mọi chủ sở hữu repo (safe.directory *)"
+check:
+  en: "Git does not trust every repository"
+  vi: "Git không tin mọi repo"
 explain:
   en: "A repository planted in a shared folder can run its hooks and config as you."
   vi: "Repo bị đặt sẵn trong thư mục dùng chung có thể chạy hook và config dưới tên bạn."

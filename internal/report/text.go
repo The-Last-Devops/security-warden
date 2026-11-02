@@ -22,6 +22,7 @@ type Scan struct {
 	Host     string           `json:"host"`
 	Time     string           `json:"time"`
 	Score    int              `json:"score"`
+	Gain     map[string]int   `json:"gain"`
 	Checked  int              `json:"checked"`
 	Passed   []string         `json:"passed"`
 	Sources  []SourceStatus   `json:"sources"`

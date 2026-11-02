@@ -6,6 +6,9 @@ match: "item.kind == \"launchd\" && item.scope != \"user\" && !item.apple && ite
 title:
   en: "Unsigned program starts for every user: {label}"
   vi: "Chương trình không có chữ ký tự chạy cho mọi người dùng: {label}"
+check:
+  en: "System-wide login items are signed"
+  vi: "Mục tự chạy toàn hệ thống đều có chữ ký"
 explain:
   en: "{program} is not code-signed. Real vendors sign what they install system-wide, so this deserves a look."
   vi: "{program} không được ký số. Hãng phần mềm thật đều ký những gì họ cài cho toàn hệ thống, nên mục này đáng xem lại."

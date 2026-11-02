@@ -6,6 +6,9 @@ match: item.open && item.service != "smb"
 title:
   en: "Remote access is on: {service} (port {port})"
   vi: "Đang bật truy cập từ xa: {service} (port {port})"
+check:
+  en: "Remote login services are off"
+  vi: "Dịch vụ đăng nhập từ xa đang tắt"
 explain:
   en: "This machine accepts {service} logins from the network. If a password is weak or reused, someone can take over the machine."
   vi: "Máy này nhận đăng nhập {service} từ mạng. Mật khẩu yếu hoặc dùng lại ở nơi khác là người ngoài chiếm được máy."

@@ -6,6 +6,9 @@ match: "item.kind == \"pipe_to_shell\""
 title:
   en: "{file} runs code from the internet on every shell"
   vi: "{file} chạy code từ internet mỗi lần mở shell"
+check:
+  en: "Shell files do not run code from the internet"
+  vi: "File shell không chạy code từ internet"
 explain:
   en: "Line {line_no} downloads a script and runs it each time a terminal opens. If that server is compromised, so is your machine."
   vi: "Dòng {line_no} tải script về và chạy mỗi lần mở terminal. Máy chủ đó bị chiếm là máy bạn bị chiếm theo."

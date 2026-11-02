@@ -6,6 +6,9 @@ match: "item.kind == \"path\" && (item.relative || item.world_writable || (item.
 title:
   en: "A folder in PATH can be used to hijack commands: {dir}"
   vi: "Một thư mục trong PATH có thể bị dùng để đánh tráo lệnh: {dir}"
+check:
+  en: "No folder in PATH can be hijacked"
+  vi: "Không thư mục nào trong PATH bị đánh tráo được"
 explain:
   en: "{dir} is relative, writable by others, or missing where others could create it, and searched before /usr/bin. Someone can drop a fake git or ssh there."
   vi: "{dir} là đường dẫn tương đối, người khác ghi được, hoặc chưa tồn tại mà người khác tạo được, và được tìm trước /usr/bin. Kẻ khác có thể đặt git hay ssh giả vào đó."

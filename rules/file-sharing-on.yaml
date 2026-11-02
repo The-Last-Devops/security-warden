@@ -6,6 +6,9 @@ match: "item.kind == \"smb_share\" && item.service_on && item.shared && !item.gu
 title:
   en: "File Sharing shares {name}"
   vi: "Đang chia sẻ thư mục {name}"
+check:
+  en: "File Sharing is off"
+  vi: "Chia sẻ file đang tắt"
 explain:
   en: "{path} is shared over SMB. Anyone with an account on this Mac can reach it from the network."
   vi: "{path} đang được chia sẻ qua SMB. Ai có tài khoản trên máy này đều vào được từ mạng."

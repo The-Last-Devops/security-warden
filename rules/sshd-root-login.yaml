@@ -6,6 +6,9 @@ match: item.sshd_installed && item.sshd_permit_root_login == "yes"
 title:
   en: SSH allows root to log in with a password
   vi: SSH cho phép đăng nhập root bằng mật khẩu
+check:
+  en: "SSH server refuses root password logins"
+  vi: "SSH server không cho root đăng nhập bằng mật khẩu"
 explain:
   en: "PermitRootLogin yes in sshd_config lets anyone who guesses the root password take the whole machine."
   vi: "PermitRootLogin yes trong sshd_config cho phép ai đoán được mật khẩu root là chiếm cả máy."

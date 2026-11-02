@@ -6,6 +6,9 @@ match: "item.kind == \"key\" && item.tracked"
 title:
   en: "Private key committed to Git: {repo_name}/{file}"
   vi: "Khoá riêng đã bị commit vào Git: {repo_name}/{file}"
+check:
+  en: "No private keys committed to Git"
+  vi: "Không khoá riêng nào bị commit vào Git"
 explain:
   en: "{file} holds a private key and is tracked in {repo}. Anyone who has ever cloned the repository can use it to log in or decrypt."
   vi: "{file} chứa khoá riêng và đang được Git theo dõi trong {repo}. Ai từng clone repo đều dùng được nó để đăng nhập hoặc giải mã."

@@ -6,6 +6,9 @@ match: "has(item.dyld_insert) && item.dyld_insert"
 title:
   en: "A library is injected into every app (DYLD_INSERT_LIBRARIES)"
   vi: "Có thư viện bị chèn vào mọi app (DYLD_INSERT_LIBRARIES)"
+check:
+  en: "No library injected into every app"
+  vi: "Không có thư viện chèn vào mọi app"
 explain:
   en: "launchd passes DYLD_INSERT_LIBRARIES to every app you open. Malware uses this to read what apps do."
   vi: "launchd truyền DYLD_INSERT_LIBRARIES cho mọi app bạn mở. Mã độc dùng cách này để đọc hoạt động của app."

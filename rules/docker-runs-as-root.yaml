@@ -6,6 +6,9 @@ match: "item.runs_as_root && !item.privileged"
 title:
   en: "Container {container} runs as root"
   vi: "Container {container} chạy bằng root"
+check:
+  en: "Containers run as normal users"
+  vi: "Container chạy bằng user thường"
 explain:
   en: "If {image} has a bug, the attacker is root inside the container, one step from the host."
   vi: "Nếu {image} có lỗi, kẻ tấn công là root trong container, chỉ cách máy chủ một bước."

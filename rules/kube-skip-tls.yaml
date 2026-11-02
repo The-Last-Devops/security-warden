@@ -6,6 +6,9 @@ match: "item.kind == \"kubeconfig\" && item.insecure_skip_tls"
 title:
   en: "kubectl skips TLS checks for a cluster"
   vi: "kubectl bỏ qua kiểm tra TLS với một cluster"
+check:
+  en: "kubectl verifies cluster certificates"
+  vi: "kubectl xác minh chứng chỉ cluster"
 explain:
   en: "insecure-skip-tls-verify in {file} lets anyone in the middle impersonate the cluster and capture your credentials."
   vi: "insecure-skip-tls-verify trong {file} cho phép kẻ đứng giữa giả làm cluster và lấy thông tin đăng nhập của bạn."

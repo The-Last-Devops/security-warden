@@ -6,6 +6,9 @@ match: "item.key == \"stricthostkeychecking\" && item.value in [\"no\", \"off\"]
 title:
   en: "SSH does not verify servers"
   vi: "SSH không xác minh server"
+check:
+  en: "SSH verifies servers"
+  vi: "SSH xác minh server"
 explain:
   en: "StrictHostKeyChecking no under Host * means a fake server can pose as yours and capture what you type."
   vi: "StrictHostKeyChecking no dưới Host * nghĩa là server giả có thể đóng vai server của bạn và lấy những gì bạn gõ."

@@ -6,6 +6,9 @@ match: has(item.disk_encrypted) && !item.disk_encrypted && !item.container
 title:
   en: Disk is not encrypted
   vi: Ổ đĩa không được mã hoá
+check:
+  en: "Disk is encrypted"
+  vi: "Ổ đĩa đã được mã hoá"
 explain:
   en: No LUKS-encrypted volume was found. Anyone who gets the laptop can read every file, including SSH keys and tokens.
   vi: Không thấy phân vùng nào mã hoá LUKS. Ai cầm được máy là đọc được mọi file, kể cả khoá SSH và token.

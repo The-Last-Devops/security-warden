@@ -6,6 +6,9 @@ match: "item.count > 0 && !item.ssh_on"
 title:
   en: "{count} SSH keys are allowed to log in if Remote Login is turned on"
   vi: "{count} khoá SSH sẽ đăng nhập được nếu bật Đăng nhập từ xa"
+check:
+  en: "No dormant SSH login keys"
+  vi: "Không có khoá SSH đăng nhập để sẵn"
 explain:
   en: "{path} is unused while Remote Login is off, but it becomes a way in the moment SSH is enabled."
   vi: "{path} chưa dùng tới khi Đăng nhập từ xa tắt, nhưng thành lối vào ngay khi bật SSH."

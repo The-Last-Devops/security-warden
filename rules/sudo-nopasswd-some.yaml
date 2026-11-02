@@ -6,6 +6,9 @@ match: "item.kind == \"sudo\" && item.nopasswd_any && !item.nopasswd_all"
 title:
   en: "Some commands run as root without a password"
   vi: "Một số lệnh chạy bằng root không cần mật khẩu"
+check:
+  en: "No passwordless sudo commands"
+  vi: "Không lệnh sudo nào bỏ qua mật khẩu"
 explain:
   en: "Commands allowed with NOPASSWD can often be abused to get a full root shell."
   vi: "Lệnh được phép NOPASSWD thường bị lợi dụng để mở shell root đầy đủ."

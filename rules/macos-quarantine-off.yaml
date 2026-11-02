@@ -6,6 +6,9 @@ match: "has(item.quarantine) && !item.quarantine"
 title:
   en: "Download quarantine is turned off"
   vi: "Đã tắt cách ly file tải về (quarantine)"
+check:
+  en: "Download quarantine is on"
+  vi: "Cách ly file tải về đang bật"
 explain:
   en: "Files you download are not marked, so Gatekeeper never checks them before they run."
   vi: "File tải về không được đánh dấu, nên Gatekeeper không kiểm tra chúng trước khi chạy."

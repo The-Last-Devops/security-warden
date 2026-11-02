@@ -6,6 +6,9 @@ match: "item.kind == \"sudo\" && item.nopasswd_all"
 title:
   en: "sudo gives root without a password"
   vi: "sudo cho quyền root không cần mật khẩu"
+check:
+  en: "sudo always asks for a password"
+  vi: "sudo luôn hỏi mật khẩu"
 explain:
   en: "Any program running as you (an npm install script, a browser exploit) can become root silently."
   vi: "Chương trình nào chạy dưới tên bạn (script cài npm, lỗi trình duyệt) cũng lên root được mà không ai hay."

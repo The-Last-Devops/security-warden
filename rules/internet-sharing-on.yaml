@@ -6,6 +6,9 @@ match: "item.kind == \"internet_sharing\" && item.service_on"
 title:
   en: "Internet Sharing is on"
   vi: "Đang bật Chia sẻ Internet"
+check:
+  en: "Internet Sharing is off"
+  vi: "Chia sẻ Internet đang tắt"
 explain:
   en: "This Mac acts as a router for other devices, often over an open or weakly protected Wi-Fi network."
   vi: "Máy đang làm router cho thiết bị khác, thường qua mạng Wi-Fi mở hoặc mật khẩu yếu."

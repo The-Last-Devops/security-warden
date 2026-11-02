@@ -6,6 +6,9 @@ match: has(item.gatekeeper) && !item.gatekeeper
 title:
   en: Gatekeeper is off
   vi: Gatekeeper đang tắt
+check:
+  en: "Gatekeeper is on"
+  vi: "Gatekeeper đang bật"
 explain:
   en: macOS no longer checks that downloaded apps are signed and notarized.
   vi: macOS thôi kiểm tra app tải về có được ký và notarize hay không.

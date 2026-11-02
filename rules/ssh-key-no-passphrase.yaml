@@ -6,6 +6,9 @@ match: "!item.encrypted"
 title:
   en: "SSH key {name} has no passphrase"
   vi: "Khoá SSH {name} không có passphrase"
+check:
+  en: "SSH keys have passphrases"
+  vi: "Khoá SSH có passphrase"
 explain:
   en: "Anything that can read {path} (malware, a leaked backup) can use the key right away to log in to your servers and Git."
   vi: "Thứ gì đọc được {path} (mã độc, bản backup bị lộ) là dùng được khoá ngay để vào server và Git của bạn."

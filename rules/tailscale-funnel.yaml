@@ -6,6 +6,9 @@ match: item.funnel
 title:
   en: Tailscale Funnel publishes this machine to the internet
   vi: Tailscale Funnel đang đưa máy này ra internet
+check:
+  en: "Tailscale Funnel is off"
+  vi: "Tailscale Funnel đang tắt"
 explain:
   en: Anyone on the internet can reach the service shared with Funnel, not only your tailnet.
   vi: Bất kỳ ai trên internet cũng vào được dịch vụ chia sẻ bằng Funnel, không chỉ người trong tailnet.

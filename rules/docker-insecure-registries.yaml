@@ -6,6 +6,9 @@ match: "item.insecure_registries > 0"
 title:
   en: "Docker pulls images from {insecure_registries} insecure registries"
   vi: "Docker kéo image từ {insecure_registries} registry không an toàn"
+check:
+  en: "Docker pulls only over TLS"
+  vi: "Docker chỉ kéo image qua TLS"
 explain:
   en: "Images from insecure-registries travel without TLS and can be replaced."
   vi: "Image từ insecure-registries đi không qua TLS và có thể bị thay."

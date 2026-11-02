@@ -110,6 +110,12 @@ onMounted(async () => {
 const findings = computed(() => data.value?.findings || [])
 const ignored = computed(() => data.value?.ignored || [])
 const sources = computed(() => data.value?.sources || [])
+const passedList = computed(() => data.value?.passed || [])
+const passedByCat = computed(() => {
+  const by = {}
+  for (const p of passedList.value) (by[p.category] ||= []).push(p)
+  return categories.filter(c => by[c]).map(c => ({ cat: c, items: by[c] }))
+})
 const counts = computed(() => { const c = {}; for (const f of findings.value) c[f.category] = (c[f.category] || 0) + 1; return c })
 const sevCounts = computed(() => { const c = {}; for (const f of findings.value) c[f.severity] = (c[f.severity] || 0) + 1; return c })
 const worst = computed(() => {
@@ -129,11 +135,13 @@ const groups = computed(() => {
   return [...by.values()].sort((a, b) => sevOrder.indexOf(a.first.severity) - sevOrder.indexOf(b.first.severity))
 })
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
+// Points earned by fixing every safe item (each rule counts once).
+const safeGain = computed(() => { const seen = {}; for (const f of safeFixes.value) seen[f.rule_id] = f.gain || 0; return Object.values(seen).reduce((a, b) => a + b, 0) })
 const passedN = computed(() => (data.value?.scan.passed || []).length)
 const window = globalThis.window
 const fmtTime = iso => (iso ? new Date(iso).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) : '')
 const fmtDate = iso => new Date(iso).toLocaleDateString(lang.value, { day: 'numeric', month: 'short', year: 'numeric' })
-const listTitle = computed(() => (cat.value === 'all' ? t.value.issuesTitle : cat.value === 'checked' ? t.value.checkedTitle : cat.value === 'ignored' ? t.value.ignoredTitle : t.value[cat.value]))
+const listTitle = computed(() => (cat.value === 'all' ? t.value.issuesTitle : cat.value === 'checked' ? t.value.checkedTitle : cat.value === 'ignored' ? t.value.ignoredTitle : cat.value === 'safe' ? t.value.safeTitle : t.value[cat.value]))
 
 const themeOptions = computed(() => [{ value: 'auto', label: t.value.auto }, { value: 'light', label: t.value.light }, { value: 'dark', label: t.value.dark }])
 const langOptions = computed(() => [{ value: 'auto', label: t.value.auto }, { value: 'en', label: 'EN' }, { value: 'vi', label: 'VI' }])
@@ -225,7 +233,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
       <aside class="grid content-start gap-5">
         <section class="panel p-5">
           <Dial :score="data?.scan.score ?? 0" :label="t.score" />
-          <p class="mt-3 text-center text-[15px] font-semibold">{{ data ? t.verdict(data.scan.score) : t.scanning }}</p>
+          <p class="mt-3 text-center text-[15px] font-semibold">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
           <div class="mt-4 grid grid-cols-2 gap-2.5">
             <div class="rounded-xl border border-line bg-crit-bg px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-crit">{{ sevCounts.critical || 0 }}</b><span class="caps">{{ t.statsCritical }}</span></div>
             <div class="rounded-xl border border-line bg-high-bg px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-high">{{ sevCounts.high || 0 }}</b><span class="caps">{{ t.statsHigh }}</span></div>
@@ -233,7 +241,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <div class="rounded-xl border border-line px-3 py-2.5"><b class="num block text-[24px] leading-tight font-extrabold text-ok">{{ passedN }}<span class="text-[14px] font-semibold text-muted">/{{ data?.scan.checked || 0 }}</span></b><span class="caps">{{ t.statsPassed }}</span></div>
           </div>
           <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ t.fixSafe(safeFixes.length) }}</button>
+            <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
             <div class="grid grid-cols-2 gap-2">
               <button class="inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2.5 text-[13.5px] font-semibold hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
                 <svg :class="busy ? 'animate-spin' : ''" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -255,6 +263,10 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <span class="num font-bold" :class="counts[c] ? worstText[worst[c]] : 'text-muted/50'">{{ counts[c] || 0 }}</span>
           </button>
           <div class="my-1.5 border-t border-line" />
+          <button class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
+            :class="cat === 'safe' ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = 'safe'">
+            <span class="flex items-center gap-2"><span class="text-ok">✓</span>{{ t.safeView }}</span> <span class="num font-bold text-ok">{{ passedList.length }}</span>
+          </button>
           <button class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
             :class="cat === 'checked' ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = 'checked'">
             {{ t.checkedView }} <span class="num text-muted">{{ sources.length }}</span>
@@ -283,7 +295,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         </div>
         <div class="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
           <h1 class="text-[19px] font-bold">{{ listTitle }}</h1>
-          <span v-if="cat !== 'checked' && cat !== 'ignored'" class="num rounded-full bg-panel2 px-2.5 py-0.5 text-[13px] font-bold text-muted ring-1 ring-line">{{ groups.length }}</span>
+          <span v-if="!['checked', 'ignored', 'safe'].includes(cat)" class="num rounded-full bg-panel2 px-2.5 py-0.5 text-[13px] font-bold text-muted ring-1 ring-line">{{ groups.length }}</span>
           <span v-if="ignored.length && cat !== 'ignored'" class="ml-auto text-[13px] text-muted">{{ t.ignoredNote(ignored.length) }}</span>
         </div>
 
@@ -296,6 +308,20 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               {{ s.state === 'ok' ? t.stOk : s.state === 'issues' ? t.stIssues(s.issues) : s.state === 'skipped' ? t.stSkipped : t.stError }}
             </span>
           </div>
+        </div>
+
+        <!-- safe: what already passes -->
+        <div v-else-if="cat === 'safe'">
+          <p class="border-b border-line bg-ok-bg px-5 py-3 text-[14.5px] font-semibold text-ok">{{ t.safeNote(passedList.length) }}</p>
+          <section v-for="g in passedByCat" :key="g.cat" class="border-b border-line px-5 py-4 last:border-b-0">
+            <h2 class="caps mb-2.5">{{ t[g.cat] }} · <span class="num">{{ g.items.length }}</span></h2>
+            <ul class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+              <li v-for="p in g.items" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
+                <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
+                <span>{{ p.label }}</span>
+              </li>
+            </ul>
+          </section>
         </div>
 
         <!-- ignored -->

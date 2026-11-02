@@ -6,6 +6,9 @@ match: "item.kind == \"hosts\" && item.blocks && item.name.endsWith(\"apple.com\
 title:
   en: "/etc/hosts blocks {name}"
   vi: "/etc/hosts chặn {name}"
+check:
+  en: "/etc/hosts does not block Apple updates"
+  vi: "/etc/hosts không chặn cập nhật của Apple"
 explain:
   en: "Blocking Apple hosts can stop security updates and XProtect from downloading."
   vi: "Chặn máy chủ của Apple có thể làm bản vá bảo mật và XProtect không tải về được."

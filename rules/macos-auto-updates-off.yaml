@@ -6,6 +6,9 @@ match: (has(item.auto_update_check) && !item.auto_update_check) || (has(item.aut
 title:
   en: Automatic security updates are off
   vi: Tự động cập nhật bảo mật đang tắt
+check:
+  en: "Automatic security updates are on"
+  vi: "Tự động cập nhật bảo mật đang bật"
 explain:
   en: Security fixes for macOS are not installed until someone does it by hand.
   vi: Bản vá bảo mật macOS không được cài cho tới khi có người cài tay.

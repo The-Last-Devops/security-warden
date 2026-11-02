@@ -6,6 +6,9 @@ match: "item.group_readable || item.world_readable"
 title:
   en: "authorized_keys can be read by other users"
   vi: "Người dùng khác đọc được authorized_keys"
+check:
+  en: "authorized_keys is private"
+  vi: "authorized_keys được giữ kín"
 explain:
   en: "{path} has mode {mode}. sshd may refuse it, and others learn who can log in."
   vi: "{path} đang có quyền {mode}. sshd có thể từ chối file, và người khác biết được ai đăng nhập được."

@@ -6,6 +6,9 @@ match: has(item.sip) && !item.sip
 title:
   en: System Integrity Protection is off
   vi: System Integrity Protection (SIP) đang tắt
+check:
+  en: "System Integrity Protection is on"
+  vi: "System Integrity Protection đang bật"
 explain:
   en: Malware running as admin can modify macOS itself and hide there.
   vi: Mã độc có quyền admin sửa được chính macOS và ẩn mình trong đó.

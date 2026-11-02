@@ -6,6 +6,9 @@ match: has(item.firewall) && !item.firewall && !item.container
 title:
   en: No firewall is active
   vi: Không có tường lửa nào đang bật
+check:
+  en: "A firewall is active"
+  vi: "Tường lửa đang bật"
 explain:
   en: Neither ufw, firewalld nor nftables is active, so every listening port is open to the network you are on.
   vi: ufw, firewalld và nftables đều không chạy, nên port nào đang mở cũng lộ ra mạng bạn đang dùng.

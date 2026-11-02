@@ -6,6 +6,9 @@ match: item.all_interfaces
 title:
   en: "Docker container {container} publishes port {host_port} on every network"
   vi: "Container Docker {container} publish port {host_port} cho mọi mạng"
+check:
+  en: "No container port is open to every network"
+  vi: "Không port container nào mở ra mọi mạng"
 explain:
   en: "Port {host_port} of {container} ({image}) can be reached from other machines. Docker's own firewall rules often bypass the system firewall."
   vi: "Máy khác truy cập được port {host_port} của {container} ({image}). Docker thường tự mở luật mạng, vượt qua tường lửa hệ thống."

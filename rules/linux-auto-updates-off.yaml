@@ -6,6 +6,9 @@ match: has(item.auto_updates) && !item.auto_updates && !item.container
 title:
   en: Automatic security updates are off
   vi: Tự động cập nhật bảo mật đang tắt
+check:
+  en: "Automatic security updates are on"
+  vi: "Tự động cập nhật bảo mật đang bật"
 explain:
   en: Security fixes are only installed when someone remembers to run the package manager.
   vi: Bản vá bảo mật chỉ được cài khi có người nhớ chạy trình quản lý gói.

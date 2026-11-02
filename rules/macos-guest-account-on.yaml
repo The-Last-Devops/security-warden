@@ -6,6 +6,9 @@ match: has(item.guest_account) && item.guest_account
 title:
   en: Guest account is on
   vi: Tài khoản khách đang bật
+check:
+  en: "Guest account is off"
+  vi: "Tài khoản khách đang tắt"
 explain:
   en: Anyone can log in to this machine without a password and use its network.
   vi: Ai cũng đăng nhập được máy này không cần mật khẩu và dùng mạng của nó.

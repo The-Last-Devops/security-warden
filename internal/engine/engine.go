@@ -53,6 +53,7 @@ type Rule struct {
 	Source     string   `yaml:"source"`
 	Match      string   `yaml:"match"`
 	Title      Text     `yaml:"title"`
+	Check      Text     `yaml:"check"` // the check stated positively, for the passed list
 	Explain    Text     `yaml:"explain"`
 	Fix        Text     `yaml:"fix"`
 	References []string `yaml:"references"`
@@ -172,7 +173,7 @@ func validate(r *Rule, known map[string]bool) error {
 	if len(r.Platforms) == 0 {
 		return fmt.Errorf("platforms is required")
 	}
-	for name, t := range map[string]Text{"title": r.Title, "explain": r.Explain, "fix": r.Fix} {
+	for name, t := range map[string]Text{"title": r.Title, "check": r.Check, "explain": r.Explain, "fix": r.Fix} {
 		for _, lang := range i18n.Supported {
 			if strings.TrimSpace(t[lang]) == "" {
 				return fmt.Errorf("%s: missing %q translation", name, lang)
@@ -317,22 +318,45 @@ func renderRemedy(r *Remedy, it Item) *Remedy {
 	return out
 }
 
-// Score is 100 minus a penalty per rule that fired, never below 0. A rule
-// that matches many items (ten outdated packages) costs a little more than
-// one match, but not ten times as much.
-func Score(fs []Finding) int {
-	hits := map[string]int{}
-	sev := map[string]string{}
-	for _, f := range fs {
-		hits[f.RuleID]++
-		sev[f.RuleID] = f.Severity
+// Weights per severity: how much a check counts toward the score.
+var weight = map[string]int{"critical": 10, "high": 6, "medium": 3, "low": 1, "info": 0}
+
+// Score is the share of applicable checks that pass, weighted by
+// severity: a rule counts once however many places it fires. While a
+// critical problem remains the score stays below 70, so a leaked key never
+// reads as "good". Gain is how many points fixing each failing rule earns.
+func Score(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (score int, gain map[string]int) {
+	failing := map[string]bool{}
+	critical := false
+	for _, f := range findings {
+		failing[f.RuleID] = true
+		critical = critical || f.Severity == "critical"
 	}
-	s := 100
-	for id, n := range hits {
-		p := penalty[sev[id]]
-		s -= p + min(n-1, 2)*p/4
+	total, passed := 0, 0
+	for _, r := range rules {
+		if r.Tier == "experimental" || !contains(r.Platforms, platform) || !ran[r.Source] {
+			continue
+		}
+		w := weight[r.Severity]
+		total += w
+		if !failing[r.ID] {
+			passed += w
+		}
 	}
-	return max(s, 0)
+	gain = map[string]int{}
+	if total == 0 {
+		return 100, gain
+	}
+	score = (passed*100 + total/2) / total
+	if critical && score > 69 {
+		score = 69
+	}
+	for _, r := range rules {
+		if failing[r.ID] {
+			gain[r.ID] = (weight[r.Severity]*100 + total/2) / total
+		}
+	}
+	return score, gain
 }
 
 func contains(xs []string, x string) bool {

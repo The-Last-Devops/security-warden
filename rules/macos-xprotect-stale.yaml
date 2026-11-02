@@ -6,6 +6,9 @@ match: "has(item.xprotect_age_days) && item.xprotect_age_days > 45"
 title:
   en: "Malware definitions are {xprotect_age_days} days old"
   vi: "Dữ liệu nhận diện mã độc đã cũ {xprotect_age_days} ngày"
+check:
+  en: "Malware definitions are recent"
+  vi: "Dữ liệu nhận diện mã độc còn mới"
 explain:
   en: "Apple usually updates XProtect every one to three weeks. Old definitions miss recent malware."
   vi: "Apple thường cập nhật XProtect mỗi 1–3 tuần. Dữ liệu cũ bỏ sót mã độc mới."

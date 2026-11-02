@@ -6,6 +6,9 @@ match: "item.dangerous_caps != \"\""
 title:
   en: "Container {container} has dangerous capabilities: {dangerous_caps}"
   vi: "Container {container} có quyền nguy hiểm: {dangerous_caps}"
+check:
+  en: "No container has dangerous capabilities"
+  vi: "Không container nào có quyền nguy hiểm"
 explain:
   en: "These Linux capabilities let a container change the kernel, the network or other processes, which is close to running privileged."
   vi: "Các quyền Linux này cho container sửa kernel, mạng hoặc tiến trình khác, gần như chạy privileged."

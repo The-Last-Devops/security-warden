@@ -6,6 +6,9 @@ match: "item.kind == \"launchd\" && item.scope == \"system-daemon\" && (item.pro
 title:
   en: "A root service runs a file that non-root users can change: {label}"
   vi: "Dịch vụ chạy bằng root dùng file mà người thường sửa được: {label}"
+check:
+  en: "Root services run only protected files"
+  vi: "Dịch vụ root chỉ chạy file được bảo vệ"
 explain:
   en: "{program} runs as root at boot, but it (or its plist) can be replaced without admin rights. Anything running as you can become root."
   vi: "{program} chạy bằng root khi khởi động, nhưng nó (hoặc file plist) thay được mà không cần quyền admin. Thứ gì chạy dưới tên bạn cũng leo lên root được."

@@ -6,6 +6,9 @@ match: "item.kind == \"smb_share\" && item.service_on && item.shared && item.gue
 title:
   en: "Guests can open the shared folder {name} without a password"
   vi: "Khách mở được thư mục chia sẻ {name} không cần mật khẩu"
+check:
+  en: "No guest access to shared folders"
+  vi: "Không cho khách vào thư mục chia sẻ"
 explain:
   en: "File Sharing is on and {path} allows guest access. Anyone on the same network can read it."
   vi: "File Sharing đang bật và {path} cho khách truy cập. Ai cùng mạng cũng đọc được thư mục này."

@@ -6,6 +6,9 @@ match: "item.extra_index"
 title:
   en: "pip mixes a private and a public index"
   vi: "pip trộn index riêng và index công khai"
+check:
+  en: "pip uses a single package index"
+  vi: "pip dùng một nguồn gói duy nhất"
 explain:
   en: "extra-index-url lets a public package with the same name as your private one win (dependency confusion)."
   vi: "extra-index-url khiến gói công khai trùng tên gói nội bộ có thể được cài thay (dependency confusion)."

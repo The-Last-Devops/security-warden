@@ -6,6 +6,9 @@ match: has(item.shields_up) && !item.shields_up
 title:
   en: Tailscale accepts incoming connections
   vi: Tailscale đang nhận kết nối vào máy
+check:
+  en: "Tailscale blocks incoming connections"
+  vi: "Tailscale chặn kết nối vào"
 explain:
   en: "Any device in tailnet {tailnet} that the ACL allows can reach services on this machine. If one of those devices is hacked, it can reach you too."
   vi: "Thiết bị nào trong tailnet {tailnet} được ACL cho phép cũng truy cập được dịch vụ trên máy này. Một thiết bị trong đó bị hack là nó vào được máy bạn."

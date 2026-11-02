@@ -6,6 +6,9 @@ match: "item.kind == \"cron\" && item.fetches_network && !item.pipes_to_shell"
 title:
   en: "A cron job reaches out to {url_host}"
   vi: "Một cron job gọi ra {url_host}"
+check:
+  en: "No cron jobs calling the network"
+  vi: "Không cron job nào gọi ra mạng"
 explain:
   en: "Line {line_no} of your crontab runs {command} against {url_host}. Cron jobs are easy to forget and a common foothold for miners and malware."
   vi: "Dòng {line_no} trong crontab chạy {command} ra mạng ({url_host}). Cron job rất dễ bị quên, và hay bị mã độc, máy đào coin dùng để bám trụ."

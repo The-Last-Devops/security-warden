@@ -6,6 +6,9 @@ match: "item.seccomp_unconfined || item.apparmor_unconfined"
 title:
   en: "Container {container} runs without its security profile"
   vi: "Container {container} chạy không có lớp bảo vệ"
+check:
+  en: "Containers keep seccomp and AppArmor"
+  vi: "Container giữ seccomp và AppArmor"
 explain:
   en: "seccomp or AppArmor is set to unconfined, which removes the filter that blocks dangerous system calls."
   vi: "seccomp hoặc AppArmor bị đặt unconfined, tức là gỡ bộ lọc chặn các lời gọi hệ thống nguy hiểm."

@@ -6,6 +6,9 @@ match: "has(item.library_validation_disabled) && item.library_validation_disable
 title:
   en: "Library validation is turned off"
   vi: "Đã tắt kiểm tra thư viện (library validation)"
+check:
+  en: "Library validation is on"
+  vi: "Kiểm tra thư viện đang bật"
 explain:
   en: "Any library can be loaded into other apps, a common way to inject code."
   vi: "Thư viện bất kỳ đều nạp được vào app khác, đây là cách chèn code phổ biến."

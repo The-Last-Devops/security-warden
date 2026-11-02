@@ -6,6 +6,9 @@ match: "item.kind == \"agent_skip_permissions\""
 title:
   en: "AI agent permission prompts are skipped in {file}"
   vi: "{file} bỏ qua bước hỏi quyền của AI agent"
+check:
+  en: "No shell alias skips AI agent prompts"
+  vi: "Không alias nào bỏ qua bước hỏi của AI agent"
 explain:
   en: "Line {line_no} starts a coding agent with its safety prompts off. Text in a web page or README can then run commands on your machine."
   vi: "Dòng {line_no} chạy coding agent với bước hỏi quyền bị tắt. Khi đó chữ trong trang web hay README cũng có thể chạy lệnh trên máy bạn."

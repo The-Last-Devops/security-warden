@@ -6,6 +6,9 @@ match: "item.ssl_verify_off"
 title:
   en: "Git does not check HTTPS certificates"
   vi: "Git không kiểm tra chứng chỉ HTTPS"
+check:
+  en: "Git checks HTTPS certificates"
+  vi: "Git kiểm tra chứng chỉ HTTPS"
 explain:
   en: "http.sslVerify false lets anyone on the network serve you modified code."
   vi: "http.sslVerify false cho phép kẻ đứng giữa mạng đưa bạn code đã bị sửa."

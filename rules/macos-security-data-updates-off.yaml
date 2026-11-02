@@ -6,6 +6,9 @@ match: "has(item.security_data_updates) && !item.security_data_updates"
 title:
   en: "XProtect and security responses do not update"
   vi: "XProtect và bản vá phản hồi nhanh không tự cập nhật"
+check:
+  en: "XProtect and security responses update"
+  vi: "XProtect và phản hồi bảo mật tự cập nhật"
 explain:
   en: "Install Security Responses and system files is off, so the built-in malware definitions go stale."
   vi: "Mục cài phản hồi bảo mật và file hệ thống đang tắt, nên dữ liệu nhận diện mã độc có sẵn của macOS bị cũ."

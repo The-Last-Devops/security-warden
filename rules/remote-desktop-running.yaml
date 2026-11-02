@@ -6,6 +6,9 @@ match: item.kind == "remote_desktop"
 title:
   en: "Remote desktop app is running: {tool}"
   vi: "Đang chạy app điều khiển từ xa: {tool}"
+check:
+  en: "No remote desktop apps running"
+  vi: "Không có app điều khiển từ xa đang chạy"
 explain:
   en: "{tool} lets someone control this machine from outside. It is a common way scammers and attackers get in."
   vi: "{tool} cho người khác điều khiển máy này từ bên ngoài. Đây là đường vào quen thuộc của kẻ lừa đảo và tấn công."

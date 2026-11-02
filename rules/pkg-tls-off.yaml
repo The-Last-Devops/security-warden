@@ -6,6 +6,9 @@ match: "item.strict_ssl_off || item.http_registry || item.trusted_host"
 title:
   en: "{tool} installs packages without verifying the server"
   vi: "{tool} cài gói mà không xác minh server"
+check:
+  en: "Package managers verify their servers"
+  vi: "Trình quản lý gói xác minh server"
 explain:
   en: "{file} turns off TLS checks or uses a plain-HTTP registry, so packages can be swapped in transit."
   vi: "{file} tắt kiểm tra TLS hoặc dùng registry HTTP thường, nên gói có thể bị tráo trên đường truyền."

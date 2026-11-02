@@ -6,6 +6,9 @@ match: "item.kind == \"proxy\" && !item.loopback"
 title:
   en: "Traffic goes through a {type} proxy: {host}"
   vi: "Lưu lượng đi qua proxy {type}: {host}"
+check:
+  en: "No unknown system proxy"
+  vi: "Không có proxy hệ thống lạ"
 explain:
   en: "A system proxy at {host} can read or change your web traffic. Make sure it is your company's or your own."
   vi: "Proxy hệ thống ở {host} đọc hoặc sửa được lưu lượng web của bạn. Hãy chắc nó là của công ty hoặc của bạn."

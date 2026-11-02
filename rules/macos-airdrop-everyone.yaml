@@ -6,6 +6,9 @@ match: "has(item.airdrop) && item.airdrop == \"Everyone\""
 title:
   en: "AirDrop accepts files from everyone"
   vi: "AirDrop đang nhận file từ mọi người"
+check:
+  en: "AirDrop is limited to contacts"
+  vi: "AirDrop chỉ nhận từ danh bạ"
 explain:
   en: "Strangers nearby can see your Mac and send it files."
   vi: "Người lạ ở gần thấy được máy bạn và gửi file tới được."

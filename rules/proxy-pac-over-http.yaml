@@ -6,6 +6,9 @@ match: "item.kind == \"proxy\" && item.type == \"pac\" && item.scheme == \"http\
 title:
   en: "Proxy settings are downloaded over plain HTTP"
   vi: "Cấu hình proxy được tải qua HTTP không mã hoá"
+check:
+  en: "Proxy settings are not fetched over plain HTTP"
+  vi: "Cấu hình proxy không tải qua HTTP thường"
 explain:
   en: "Anyone on the network path can replace the PAC file from {host} and send your traffic anywhere."
   vi: "Ai đứng giữa đường mạng cũng thay được file PAC từ {host} và lái lưu lượng của bạn đi nơi khác."

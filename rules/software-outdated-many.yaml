@@ -6,6 +6,9 @@ match: item.kind == "summary" && item.total >= 10
 title:
   en: "{total} Homebrew packages are out of date"
   vi: "{total} gói Homebrew đã cũ"
+check:
+  en: "Homebrew packages are up to date"
+  vi: "Các gói Homebrew đã cập nhật"
 explain:
   en: "{formulae} formulae and {casks} apps have newer versions. Old libraries such as OpenSSL or curl carry known security bugs."
   vi: "{formulae} gói và {casks} app đã có bản mới. Thư viện cũ như OpenSSL hay curl mang theo lỗi bảo mật đã biết."

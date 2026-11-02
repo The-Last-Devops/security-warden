@@ -6,6 +6,9 @@ match: "item.count > 0 && item.ssh_on"
 title:
   en: "{count} keys can log in to this account over SSH"
   vi: "{count} khoá đăng nhập được vào tài khoản này qua SSH"
+check:
+  en: "No keys can log in over SSH"
+  vi: "Không khoá nào đăng nhập được qua SSH"
 explain:
   en: "Remote Login is on and {path} lists {count} keys. Each one is a way in."
   vi: "Đăng nhập từ xa đang bật và {path} có {count} khoá. Mỗi khoá là một lối vào."

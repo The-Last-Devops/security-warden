@@ -24,6 +24,7 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
         <span class="flex flex-wrap items-baseline gap-x-2">
           <span class="text-[16.5px] leading-snug font-semibold break-words">{{ title }}</span>
           <span v-if="group.rest.length" class="num rounded-md bg-panel2 px-1.5 text-[12px] font-bold text-muted ring-1 ring-line">+{{ group.rest.length }}</span>
+          <span v-if="f.gain" class="num rounded-md bg-ok-bg px-1.5 text-[12px] font-bold text-ok">{{ t.gain(f.gain) }}</span>
         </span>
         <span class="mt-1 block truncate text-[14px] text-muted" :class="f.plan ? 'font-mono text-[13px]' : ''">{{ sub }}</span>
       </button>

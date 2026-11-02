@@ -6,6 +6,9 @@ match: "item.all_urls && (item.debugger || item.proxy)"
 title:
   en: "{browser} extension {name} can control every site you visit"
   vi: "Extension {name} trên {browser} điều khiển được mọi trang bạn mở"
+check:
+  en: "No extension can control every site"
+  vi: "Không extension nào điều khiển được mọi trang"
 explain:
   en: "It can read and change all pages and also attach a debugger or reroute your traffic (profile {profile})."
   vi: "Nó đọc và sửa được mọi trang, lại còn gắn debugger hoặc lái lưu lượng của bạn đi nơi khác (hồ sơ {profile})."

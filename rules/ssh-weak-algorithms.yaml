@@ -6,6 +6,9 @@ match: "item.weak_algorithm"
 title:
   en: "SSH allows weak algorithms ({key})"
   vi: "SSH cho phép thuật toán yếu ({key})"
+check:
+  en: "SSH uses strong algorithms"
+  vi: "SSH dùng thuật toán mạnh"
 explain:
   en: "{file} line {line_no} enables legacy crypto ({value})."
   vi: "{file} dòng {line_no} bật mã hoá cũ ({value})."

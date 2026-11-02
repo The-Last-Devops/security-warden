@@ -6,6 +6,9 @@ match: "item.unpacked"
 title:
   en: "{browser} runs an unpacked extension: {name}"
   vi: "{browser} đang chạy extension cài tay: {name}"
+check:
+  en: "No unpacked browser extensions"
+  vi: "Không có extension cài tay"
 explain:
   en: "Unpacked extensions skip the store's review and update checks. Malware installs itself this way."
   vi: "Extension cài tay bỏ qua bước duyệt và cập nhật của store. Mã độc hay tự cài theo cách này."

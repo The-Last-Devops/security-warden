@@ -6,6 +6,9 @@ match: "item.kind == \"mcp\" && item.plain_http"
 title:
   en: "{tool} talks to MCP server {server} over plain HTTP"
   vi: "{tool} kết nối MCP server {server} qua HTTP không mã hoá"
+check:
+  en: "MCP servers use encrypted connections"
+  vi: "MCP server dùng kết nối mã hoá"
 explain:
   en: "Prompts, code and tokens sent to {server} can be read or changed on the way."
   vi: "Prompt, code và token gửi tới {server} có thể bị đọc hoặc sửa trên đường đi."

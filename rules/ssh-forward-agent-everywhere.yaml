@@ -6,6 +6,9 @@ match: "item.key == \"forwardagent\" && item.value == \"yes\" && item.all_hosts"
 title:
   en: "SSH agent is forwarded to every server"
   vi: "SSH agent được chuyển tiếp tới mọi server"
+check:
+  en: "SSH agent is not forwarded everywhere"
+  vi: "SSH agent không chuyển tiếp tới mọi server"
 explain:
   en: "ForwardAgent yes under Host * lets any server you log in to use your keys to reach other servers."
   vi: "ForwardAgent yes dưới Host * cho mọi server bạn đăng nhập dùng khoá của bạn để vào server khác."

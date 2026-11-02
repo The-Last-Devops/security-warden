@@ -6,6 +6,9 @@ match: has(item.exit_node) && (item.exit_node || item.advertises_subnets)
 title:
   en: This machine routes traffic for the tailnet
   vi: Máy này đang chuyển tiếp mạng cho tailnet
+check:
+  en: "This machine does not route tailnet traffic"
+  vi: "Máy không chuyển tiếp mạng cho tailnet"
 explain:
   en: "It is an exit node or advertises subnets ({subnet_routes}). Other devices in {tailnet} can reach the internet or your local network through it."
   vi: "Nó là exit node hoặc quảng bá subnet ({subnet_routes}). Thiết bị khác trong {tailnet} đi ra internet hoặc vào mạng nội bộ của bạn qua nó."

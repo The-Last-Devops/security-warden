@@ -6,6 +6,9 @@ match: "has(item.auto_login) && item.auto_login"
 title:
   en: "The Mac logs in automatically"
   vi: "Máy tự đăng nhập khi khởi động"
+check:
+  en: "No automatic login"
+  vi: "Không tự đăng nhập"
 explain:
   en: "Anyone who turns the Mac on gets your session without a password, and the login password is stored in /etc/kcpassword."
   vi: "Ai bật máy là vào thẳng phiên làm việc của bạn không cần mật khẩu, và mật khẩu đăng nhập bị lưu trong /etc/kcpassword."

@@ -6,6 +6,9 @@ match: "item.kind == \"mcp\" && item.unpinned_npx"
 title:
   en: "MCP server {server} runs the latest npm package each time"
   vi: "MCP server {server} chạy gói npm mới nhất mỗi lần khởi động"
+check:
+  en: "MCP servers use pinned versions"
+  vi: "MCP server dùng phiên bản cố định"
 explain:
   en: "npx without a version downloads whatever was published last. A hijacked package runs on your machine the next time {tool} starts."
   vi: "npx không ghi phiên bản sẽ tải bản phát hành mới nhất. Gói bị chiếm sẽ chạy trên máy bạn ngay lần sau {tool} khởi động."

@@ -6,6 +6,9 @@ match: item.reachable
 title:
   en: "{product} accepts connections from other machines (port {port})"
   vi: "{product} nhận kết nối từ máy khác (port {port})"
+check:
+  en: "No database or server open to other machines"
+  vi: "Không database hay server nào mở cho máy khác"
 explain:
   en: "{product} on this machine can be reached from the network you are on. Dev databases and caches often have no password or a default one."
   vi: "Máy khác trong mạng bạn đang dùng kết nối được vào {product} trên máy này. Database và cache để dev thường không có mật khẩu, hoặc dùng mật khẩu mặc định."

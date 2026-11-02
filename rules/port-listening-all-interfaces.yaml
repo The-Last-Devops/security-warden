@@ -9,6 +9,9 @@ match: item.reachable && !item.system_binary && !(item.process in ["IPNExtension
 title:
   en: "{process} accepts connections on port {port} from other machines"
   vi: "{process} nhận kết nối vào port {port} từ máy khác"
+check:
+  en: "No app accepts connections from other machines"
+  vi: "Không app nào nhận kết nối từ máy khác"
 explain:
   en: "Other machines on the same network (office, café Wi-Fi, VPN) can connect to port {port}. Dev servers rarely need that."
   vi: "Máy khác cùng mạng (văn phòng, Wi-Fi quán, VPN) kết nối được vào port {port}. Server dev hiếm khi cần vậy."

@@ -6,6 +6,9 @@ match: has(item.screen_lock) && !item.screen_lock
 title:
   en: Screen lock does not ask for a password
   vi: Khoá màn hình không hỏi mật khẩu
+check:
+  en: "Screen lock asks for a password"
+  vi: "Khoá màn hình có hỏi mật khẩu"
 explain:
   en: Anyone walking past an unattended machine can use it as you.
   vi: Ai đi ngang máy đang bỏ không cũng dùng được nó dưới danh nghĩa bạn.

@@ -6,6 +6,9 @@ match: "item.kind == \"insecure_flag\""
 title:
   en: "TLS checks turned off in {file}"
   vi: "Tắt kiểm tra TLS trong {file}"
+check:
+  en: "Shell files keep TLS checks on"
+  vi: "File shell không tắt kiểm tra TLS"
 explain:
   en: "Line {line_no} disables certificate checks (for Node, Python, Git or npm) for every shell. Anyone on the network can intercept those connections."
   vi: "Dòng {line_no} tắt kiểm tra chứng chỉ (cho Node, Python, Git hoặc npm) ở mọi shell. Ai trong mạng cũng chặn được các kết nối đó."

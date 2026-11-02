@@ -6,6 +6,9 @@ match: "item.host_network || item.host_pid || item.host_ipc"
 title:
   en: "Container {container} shares the host's network or processes"
   vi: "Container {container} dùng chung mạng hoặc tiến trình với máy chủ"
+check:
+  en: "No container shares the host network or processes"
+  vi: "Không container nào dùng chung mạng hay tiến trình với máy"
 explain:
   en: "{container} runs with --network host, --pid host or --ipc host. It sees every port and process of this machine, and every port it opens is open on the machine."
   vi: "{container} chạy với --network host, --pid host hoặc --ipc host. Nó thấy mọi port và tiến trình của máy, và port nó mở cũng là port của máy."

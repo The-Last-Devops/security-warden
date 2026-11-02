@@ -6,6 +6,9 @@ match: "item.kind == \"launchd\" && (item.program_in_tmp || item.inline_script) 
 title:
   en: "Login item runs from a temporary folder or inline script: {label}"
   vi: "Mục tự chạy chạy từ thư mục tạm hoặc script viết liền: {label}"
+check:
+  en: "No login items run from temporary folders"
+  vi: "Không mục tự chạy nào chạy từ thư mục tạm"
 explain:
   en: "{program} starts automatically from a world-writable place or as an inline shell command. Real apps install into /Applications or /Library."
   vi: "{program} tự khởi động từ chỗ ai cũng ghi được, hoặc là một lệnh shell viết liền. App thật thường cài vào /Applications hoặc /Library."

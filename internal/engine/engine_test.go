@@ -73,14 +73,23 @@ func containsPlaceholder(s string) bool {
 }
 
 func TestScore(t *testing.T) {
-	fs := []engine.Finding{{RuleID: "a", Severity: "high"}, {RuleID: "b", Severity: "medium"}, {RuleID: "c", Severity: "info"}}
-	if got := engine.Score(fs); got != 86 {
-		t.Errorf("score = %d, want 86", got)
+	mk := func(id, sev string) *engine.Rule {
+		return &engine.Rule{ID: id, Severity: sev, Source: "s", Platforms: []string{"macos"}, Tier: "stable"}
 	}
-	// The same rule five times costs its penalty plus at most half again.
-	many := []engine.Finding{{RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}, {RuleID: "a", Severity: "high"}}
-	if got := engine.Score(many); got != 100-10-5 {
-		t.Errorf("repeated score = %d, want %d", got, 100-10-5)
+	rs := []*engine.Rule{mk("a", "high"), mk("b", "medium"), mk("c", "low"), mk("d", "critical")}
+	ran := map[string]bool{"s": true}
+	// total weight 6+3+1+10 = 20; failing b (3) → 17/20 = 85
+	got, gain := engine.Score(rs, []engine.Finding{{RuleID: "b", Severity: "medium"}, {RuleID: "b", Severity: "medium"}}, ran, "macos")
+	if got != 85 || gain["b"] != 15 {
+		t.Errorf("score=%d gain=%v, want 85 and b:15", got, gain)
+	}
+	// a failing critical keeps the score below 80 even when most passes
+	got, _ = engine.Score(append(rs, mk("e", "high"), mk("f", "high"), mk("g", "high")), []engine.Finding{{RuleID: "d", Severity: "critical"}}, ran, "macos")
+	if got > 69 {
+		t.Errorf("score with a critical finding = %d", got)
+	}
+	if got, _ := engine.Score(rs, nil, ran, "macos"); got != 100 {
+		t.Errorf("clean score = %d", got)
 	}
 }
 

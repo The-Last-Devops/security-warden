@@ -6,6 +6,9 @@ match: has(item.firewall) && !item.firewall
 title:
   en: macOS firewall is off
   vi: Tường lửa macOS đang tắt
+check:
+  en: "macOS firewall is on"
+  vi: "Tường lửa macOS đang bật"
 explain:
   en: Any app can accept connections from the network you are on, such as café or hotel Wi-Fi.
   vi: App nào cũng nhận được kết nối từ mạng bạn đang dùng, ví dụ Wi-Fi quán cà phê hay khách sạn.

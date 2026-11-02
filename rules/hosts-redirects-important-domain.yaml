@@ -6,6 +6,9 @@ match: "item.kind == \"hosts\" && item.high_value && !item.blocks"
 title:
   en: "/etc/hosts sends {name} to {ip}"
   vi: "/etc/hosts trỏ {name} về {ip}"
+check:
+  en: "/etc/hosts does not redirect important sites"
+  vi: "/etc/hosts không đổi hướng trang quan trọng"
 explain:
   en: "Requests for {name} go to {ip} instead of the real server. Malware does this to steal logins or block updates."
   vi: "Truy cập {name} bị đưa tới {ip} thay vì máy chủ thật. Mã độc làm vậy để lấy cắp đăng nhập hoặc chặn cập nhật."

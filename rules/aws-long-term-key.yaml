@@ -6,6 +6,9 @@ match: item.aws_long_term_key
 title:
   en: Long-lived AWS access key on disk
   vi: Khoá truy cập AWS dài hạn nằm trên ổ đĩa
+check:
+  en: "No long-lived AWS keys on disk"
+  vi: "Không có khoá AWS dài hạn trên máy"
 explain:
   en: "{path} holds an IAM user key (AKIA...). It never expires, so a leaked copy keeps working until someone revokes it."
   vi: "{path} chứa khoá IAM user (AKIA...). Khoá này không hết hạn, lộ một bản là dùng được mãi tới khi có người thu hồi."

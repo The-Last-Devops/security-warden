@@ -6,6 +6,9 @@ match: "item.kind == \"launchd\" && !item.program_exists && !item.apple"
 title:
   en: "Login item points to a missing program: {label}"
   vi: "Mục tự chạy trỏ tới chương trình không còn: {label}"
+check:
+  en: "No login items point to missing programs"
+  vi: "Không mục tự chạy nào trỏ tới chương trình đã mất"
 explain:
   en: "{plist} starts {program}, which no longer exists. Leftovers like this can be hijacked by whoever creates that path."
   vi: "{plist} khởi động {program} nhưng file đó không còn. Mục sót lại kiểu này có thể bị chiếm bởi ai tạo được đường dẫn đó."

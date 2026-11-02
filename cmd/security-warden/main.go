@@ -169,6 +169,7 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 	checked, passed := engine.Coverage(rs, all, ran, platform())
 	entries, _ := ignore.Default().List(time.Now())
 	findings, ignored := ignore.Split(all, entries, time.Now())
+	score, gain := engine.Score(rs, findings, ran, platform())
 	host, _ := os.Hostname()
 	return report.Scan{
 		Version:  version,
@@ -176,7 +177,8 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 		Platform: platform(),
 		Host:     strings.TrimSuffix(host, ".local"),
 		Time:     time.Now().Format("2006-01-02 15:04"),
-		Score:    engine.Score(findings),
+		Score:    score,
+		Gain:     gain,
 		Checked:  checked,
 		Passed:   passed,
 		Sources:  report.Statuses(results),

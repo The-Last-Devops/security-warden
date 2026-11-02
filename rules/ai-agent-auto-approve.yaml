@@ -6,6 +6,9 @@ match: "item.kind == \"auto_approve\""
 title:
   en: "{tool} runs commands without asking ({setting})"
   vi: "{tool} chạy lệnh không hỏi ({setting})"
+check:
+  en: "AI agents ask before running commands"
+  vi: "AI agent hỏi trước khi chạy lệnh"
 explain:
   en: "With {setting} in {file}, instructions hidden in a web page, issue or README can make the agent run commands on this machine."
   vi: "Với {setting} trong {file}, chỉ dẫn giấu trong trang web, issue hay README có thể khiến agent chạy lệnh trên máy này."

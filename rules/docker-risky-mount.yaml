@@ -6,6 +6,9 @@ match: "item.risky_mount != \"\""
 title:
   en: "Container {container} can read {risky_mount} on this machine"
   vi: "Container {container} đọc được {risky_mount} trên máy này"
+check:
+  en: "No container mounts system or credential folders"
+  vi: "Không container nào mount thư mục hệ thống hay khoá"
 explain:
   en: "{container} ({image}) mounts {risky_mount} from the host. Anything that breaks into the container gets your files, keys or system configuration."
   vi: "{container} ({image}) mount {risky_mount} từ máy chủ. Thứ gì lọt được vào container là lấy được file, khoá hoặc cấu hình hệ thống của bạn."

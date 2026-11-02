@@ -40,6 +40,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open bool
 		return 2
 	}
 	srv := web.New(addr, kind, version, lang, ui.UI(), web.Scanner{
+		Rules: rs,
 		Collect: func(ctx context.Context, done func(string)) []source.Result {
 			return source.Run(ctx, source.All(), done)
 		},

@@ -6,6 +6,9 @@ match: item.privileged || item.mounts_docker_sock
 title:
   en: "Container {container} has full control of Docker"
   vi: "Container {container} có toàn quyền với Docker"
+check:
+  en: "No privileged containers or docker.sock mounts"
+  vi: "Không container privileged hay mount docker.sock"
 explain:
   en: "{container} ({image}) runs privileged or mounts docker.sock. If it is compromised, the attacker controls every container and the Docker host."
   vi: "{container} ({image}) chạy privileged hoặc mount docker.sock. Nó bị chiếm là kẻ tấn công điều khiển được mọi container và máy chạy Docker."

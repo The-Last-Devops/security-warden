@@ -6,6 +6,9 @@ match: "item.kind == \"printer\" && item.service_on"
 title:
   en: "Printer sharing is on"
   vi: "Đang chia sẻ máy in"
+check:
+  en: "Printer sharing is off"
+  vi: "Chia sẻ máy in đang tắt"
 explain:
   en: "The print service accepts jobs from the network, which exposes CUPS to other machines."
   vi: "Dịch vụ in nhận lệnh in từ mạng, tức là CUPS lộ ra cho máy khác."

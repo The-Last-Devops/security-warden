@@ -6,6 +6,9 @@ match: "item.insteadof_downgrade || item.file_protocol_always"
 title:
   en: "Git rewrites URLs to an unencrypted protocol"
   vi: "Git đổi URL sang giao thức không mã hoá"
+check:
+  en: "Git never downgrades to unencrypted URLs"
+  vi: "Git không đổi sang URL không mã hoá"
 explain:
   en: "A url.*.insteadOf rule sends Git traffic over http:// or git://, or protocol.file.allow is always."
   vi: "Rule url.*.insteadOf đưa lưu lượng Git qua http:// hoặc git://, hoặc protocol.file.allow đang là always."

@@ -6,6 +6,9 @@ match: "item.kind == \"cron\" && item.pipes_to_shell"
 title:
   en: "A cron job downloads code and runs it"
   vi: "Một cron job tải code về rồi chạy"
+check:
+  en: "No cron jobs running downloaded code"
+  vi: "Không cron job nào chạy code tải về"
 explain:
   en: "Line {line_no} of your crontab pipes a download into a shell. Whoever controls {url_host} controls this machine."
   vi: "Dòng {line_no} trong crontab đưa thứ tải về thẳng vào shell. Ai nắm {url_host} là nắm máy này."

@@ -6,6 +6,9 @@ match: "item.kind == \"kubeconfig\" && item.current_is_prod"
 title:
   en: "kubectl points at production by default ({current_context})"
   vi: "kubectl đang trỏ vào production ({current_context})"
+check:
+  en: "kubectl does not point at production"
+  vi: "kubectl không trỏ vào production"
 explain:
   en: "Every kubectl command, including a mistyped delete, goes to production."
   vi: "Mọi lệnh kubectl, kể cả lệnh delete gõ nhầm, đều chạy trên production."

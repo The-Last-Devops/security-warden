@@ -6,6 +6,9 @@ match: item.kind == "running" && item.reachable
 title:
   en: "Out-of-date {name} {version} accepts connections from other machines"
   vi: "{name} {version} đã cũ mà vẫn nhận kết nối từ máy khác"
+check:
+  en: "No out-of-date software open to the network"
+  vi: "Không phần mềm cũ nào mở ra mạng"
 explain:
   en: "A newer version ({latest}) is available. Old versions of network-facing software are the easiest way in, because their bugs are public."
   vi: "Đã có bản mới ({latest}). Phần mềm mở ra mạng mà dùng bản cũ là cửa dễ vào nhất, vì lỗi của nó đã công khai."

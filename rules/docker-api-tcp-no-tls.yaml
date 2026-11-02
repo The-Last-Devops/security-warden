@@ -6,6 +6,9 @@ match: "item.expose_tcp_no_tls"
 title:
   en: "Docker API is open on TCP without TLS"
   vi: "Docker API mở trên TCP không có TLS"
+check:
+  en: "Docker API is not open on TCP"
+  vi: "Docker API không mở trên TCP"
 explain:
   en: "Anything that can reach port 2375 controls Docker, which means root on the host. Even a web page can reach localhost."
   vi: "Thứ gì chạm được port 2375 là điều khiển được Docker, tức là có quyền root trên máy. Kể cả một trang web cũng chạm được localhost."

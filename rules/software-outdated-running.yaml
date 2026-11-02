@@ -6,6 +6,9 @@ match: item.kind == "running" && !item.reachable
 title:
   en: "Out-of-date {name} {version} is running"
   vi: "{name} {version} đã cũ vẫn đang chạy"
+check:
+  en: "Running software is up to date"
+  vi: "Phần mềm đang chạy đã cập nhật"
 explain:
   en: "A newer version ({latest}) is available and may fix security bugs."
   vi: "Đã có bản mới ({latest}), có thể đã vá lỗi bảo mật."
