@@ -139,7 +139,17 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/passkey/login/finish", s.handleLoginFinish)
 	// The app shell holds no data (every API call needs a session), so it
 	// is served to anyone; it shows the sign-in screen when signed out.
-	mux.Handle("GET /", http.FileServerFS(s.UI))
+	files := http.FileServerFS(s.UI)
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		// Hashed assets never change; the page itself must always be
+		// re-checked, or a browser keeps showing an old build after upgrades.
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		files.ServeHTTP(w, r)
+	})
 
 	allowed := s.allowedHosts()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
