@@ -8,6 +8,8 @@ import Segmented from './components/Segmented.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import FixSteps from './components/FixSteps.vue'
 import CodeLine from './components/CodeLine.vue'
+import PerPlace from './components/PerPlace.vue'
+import { perPlace, placeOf } from './fixgroup.js'
 import FindingRow from './components/FindingRow.vue'
 
 // Per-viewer preferences: "auto" follows the browser / system.
@@ -169,6 +171,7 @@ const groups = computed(() => {
 })
 // On "All", the most important group becomes the single "next step" card.
 const nextGroup = computed(() => (cat.value === 'all' ? groups.value[0] || null : null))
+const nextPP = computed(() => (nextGroup.value ? perPlace([nextGroup.value.first, ...nextGroup.value.rest]) : null))
 const listGroups = computed(() => (nextGroup.value ? groups.value.slice(1) : groups.value))
 // "By repo" view: everything about one repository together; problems of the
 // machine itself come first under its own heading.
@@ -193,8 +196,6 @@ const sections = computed(() => sevOrder.map(sev => ({ sev, groups: listGroups.v
 const nextOpen = ref(false)
 const scoreColor = computed(() => { const sc = data.value?.scan.score ?? 0; return sc >= 75 ? 'var(--color-ok)' : sc >= 50 ? 'var(--color-med)' : 'var(--color-crit)' })
 const RING = 2 * Math.PI * 30
-// Where a finding is: the part of its title after ": ", else the title.
-const placeOf = x => (x.title.includes(': ') ? x.title.slice(x.title.indexOf(': ') + 2) : String(x.item?.file || x.item?.path || x.item?.repo_name || x.item?.name || x.title).replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, '~'))
 // Two scopes: the machine itself, and the code (repositories) on it.
 const scopeOf = c => (codeCats.includes(c) ? 'code' : 'machine')
 const colorOf = sc => (sc >= 75 ? 'var(--color-ok)' : sc >= 50 ? 'var(--color-med)' : sc >= 26 ? 'var(--color-high)' : 'var(--color-crit)')
@@ -446,8 +447,12 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               </div>
               <div class="grid gap-3 rounded-xl bg-panel2 px-4 py-3.5 ring-1 ring-line">
                 <div class="caps">{{ t.howLabel }}</div>
-                <div v-if="nextGroup.first.plan" class="grid gap-1.5"><CodeLine v-for="(c, k) in nextGroup.first.plan" :key="k" :code="c" :t="t" /></div>
-                <FixSteps v-else :text="nextGroup.first.fix" :t="t" />
+                <PerPlace v-if="nextPP && nextPP.plan" :pp="nextPP" :t="t" />
+                <div v-else-if="nextGroup.first.plan" class="grid gap-1.5"><CodeLine v-for="(c, k) in nextGroup.first.plan" :key="k" :code="c" :t="t" /></div>
+                <template v-else>
+                  <FixSteps :text="nextGroup.first.fix" :t="t" :hide="nextPP ? nextPP.hide : undefined" />
+                  <PerPlace v-if="nextPP" class="border-t border-line pt-3" :pp="nextPP" :t="t" />
+                </template>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>

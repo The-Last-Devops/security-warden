@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import SevChip from './SevChip.vue'
 import FixSteps from './FixSteps.vue'
 import CodeLine from './CodeLine.vue'
+import PerPlace from './PerPlace.vue'
+import { perPlace, placeOf } from '../fixgroup.js'
 
 // One problem (a rule, with every place it was found). Collapsed: the line
 // you scan. Open: why, how to fix, where else, and the actions.
@@ -14,12 +16,12 @@ const f = computed(() => props.group.first)
 // a long list of one severity does not turn into one block of colour.
 const bar = { critical: 'bg-crit', high: 'bg-high', medium: 'bg-med', low: 'bg-low', info: 'bg-info' }
 const all = computed(() => [props.group.first, ...props.group.rest])
+const pp = computed(() => perPlace(all.value))
 // Short headline: the problem without the specific file or name ("X: detail").
 const parts = computed(() => {
   const i = f.value.title.indexOf(': ')
   return i > 0 ? [f.value.title.slice(0, i), f.value.title.slice(i + 2)] : [f.value.title, '']
 })
-const placeOf = x => (x.title.includes(': ') ? x.title.slice(x.title.indexOf(': ') + 2) : String(x.item?.file || x.item?.path || x.item?.repo_name || x.item?.name || x.title).replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, '~'))
 const title = computed(() => parts.value[0])
 // The second line says where: the place, or the first two places.
 const sub = computed(() => {
@@ -66,10 +68,14 @@ const chip = computed(() => {
       <p class="max-w-[76ch] text-[15px] leading-relaxed text-muted">{{ f.explain }}</p>
       <div class="grid gap-3 rounded-xl bg-panel2 px-4 py-3.5 ring-1 ring-line">
         <div class="caps">{{ t.howLabel }}</div>
-        <div v-if="f.plan" class="grid gap-1.5"><CodeLine v-for="(c, k) in f.plan" :key="k" :code="c" :t="t" /></div>
-        <FixSteps v-else :text="f.fix" :t="t" />
+        <PerPlace v-if="pp && pp.plan" :pp="pp" :t="t" />
+        <div v-else-if="f.plan" class="grid gap-1.5"><CodeLine v-for="(c, k) in f.plan" :key="k" :code="c" :t="t" /></div>
+        <template v-else>
+          <FixSteps :text="f.fix" :t="t" :hide="pp ? pp.hide : undefined" />
+          <PerPlace v-if="pp" class="border-t border-line pt-3" :pp="pp" :t="t" />
+        </template>
       </div>
-      <div v-if="group.rest.length">
+      <div v-if="group.rest.length && !pp">
         <div class="caps mb-1.5">{{ t.places(group.rest.length + 1) }}</div>
         <ul class="grid max-h-56 gap-1 overflow-y-auto border-l-2 border-line pl-3 font-mono text-[12.5px] text-muted">
           <li v-for="x in all" :key="x.key" class="break-all">{{ placeOf(x) }}</li>

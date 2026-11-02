@@ -1,5 +1,7 @@
 package vulndb
 
+import "strings"
+
 // Role says how a project lists a package: in its own manifest (direct,
 // maybe as a development dependency) or only through another package.
 type Role int
@@ -15,6 +17,9 @@ const (
 // with this kind of lock file, and the one that shows what pulls pkg in.
 // Every command only changes the project's manifest and lock file.
 func Commands(kind, pkg, fixed string, role Role) (upgrade, why string) {
+	// Names and versions come from lock files anyone can write: quote them
+	// so a pasted command can never run something hidden in a name.
+	pkg, fixed = shellWord(pkg), shellWord(fixed)
 	dev := ""
 	if role == DirectDev {
 		dev = "-D "
@@ -60,4 +65,13 @@ func Commands(kind, pkg, fixed string, role Role) (upgrade, why string) {
 		return "bundle update --conservative " + pkg, "gem dependency " + pkg + " --reverse-dependencies"
 	}
 	return "", ""
+}
+
+// shellWord returns s as one literal shell word, quoting only when needed.
+func shellWord(s string) string {
+	s = strings.ReplaceAll(s, "`", "'")
+	if s != "" && strings.Trim(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./@+=:,") == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

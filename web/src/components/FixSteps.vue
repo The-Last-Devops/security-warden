@@ -4,12 +4,11 @@
 // when they are commands). Text stays text: nothing is ever read as HTML.
 import { computed } from 'vue'
 import CodeLine from './CodeLine.vue'
+import { isBlock } from '../fixgroup.js'
 
-const props = defineProps({ text: { type: String, default: '' }, t: { type: Object, required: true } })
-
-// Commands (with a space, or long) get their own line; short names and
-// paths stay inline.
-const isBlock = code => code.includes(' ') || code.length > 32
+// hide: commands that differ per place; they are listed per place below
+// the steps, so here they become a short pointer.
+const props = defineProps({ text: { type: String, default: '' }, t: { type: Object, required: true }, hide: { type: Set, default: () => new Set() } })
 
 function parse(step) {
   const parts = []
@@ -40,6 +39,7 @@ const steps = computed(() => {
         <template v-for="(p, j) in parts" :key="j">
           <template v-if="p.text !== undefined">{{ p.text }}</template>
           <code v-else-if="!isBlock(p.code)" class="mx-0.5 rounded-md bg-panel px-1.5 py-0.5 font-mono text-[13px] ring-1 ring-line">{{ p.code }}</code>
+          <span v-else-if="hide.has(p.code)" class="mx-0.5 rounded-md bg-accent-soft px-1.5 py-0.5 text-[13px] font-semibold text-accent">{{ t.seeBelow }}</span>
           <CodeLine v-else class="my-1.5" :code="p.code" :t="t" />
         </template>
       </div>

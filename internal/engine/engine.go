@@ -222,21 +222,51 @@ func Render(s string, it Item) string {
 var markupFields = map[string]bool{"stop_cmd": true}
 
 // RenderFix is Render for fix texts, where `backticks` mark commands for
-// the web UI: a backtick inside a value from the machine (a file name can
-// contain one) becomes ' so it cannot end a command early or start a fake one.
+// the web UI. Values from the machine (an attacker can name a file) are made
+// safe two ways: a backtick in a value becomes ' so it cannot end or start a
+// command, and inside a command every value is shell-quoted, so pasting the
+// command never runs anything hidden in a file name.
 func RenderFix(s string, it Item) string {
-	return placeholder.ReplaceAllStringFunc(s, func(m string) string {
-		name := m[1 : len(m)-1]
-		v, ok := it[name]
-		if !ok {
-			return m
-		}
-		out := Clean(fmt.Sprint(v))
-		if !markupFields[name] {
-			out = strings.ReplaceAll(out, "`", "'")
-		}
-		return out
-	})
+	parts := strings.Split(s, "`")
+	for i := range parts {
+		inCode := i%2 == 1
+		parts[i] = fixPlaceholder.ReplaceAllStringFunc(parts[i], func(m string) string {
+			name, quote := strings.CutSuffix(m[1:len(m)-1], "|sh")
+			v, ok := it[name]
+			if !ok {
+				return m
+			}
+			out := Clean(fmt.Sprint(v))
+			switch {
+			case markupFields[name]:
+				return out // built by us, may carry markup
+			case commandFields[name]:
+				return strings.ReplaceAll(out, "`", "'") // already quoted where built
+			case quote || inCode:
+				return ShellQuote(out)
+			}
+			return strings.ReplaceAll(out, "`", "'")
+		})
+	}
+	return strings.Join(parts, "`")
+}
+
+// commandFields hold whole commands that Security Warden assembled itself,
+// quoting their parts; they are not quoted again.
+var commandFields = map[string]bool{"upgrade_cmd": true, "upgrade_command": true, "why": true}
+
+// fixPlaceholder also accepts {field|sh}: the value shell-quoted.
+var fixPlaceholder = regexp.MustCompile(`\{([a-z0-9_]+)(\|sh)?\}`)
+
+// ShellQuote makes s one literal shell word: '...' with any ' written as
+// '\” (and no backticks, which the UI reads as markup). Safe in sh, bash
+// and zsh: nothing inside single quotes is expanded.
+func ShellQuote(s string) string {
+	s = strings.ReplaceAll(s, "`", "'")
+	if s != "" && strings.Trim(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./@+=:,") == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // Clean makes a value from the machine (a file, repo, process or extension

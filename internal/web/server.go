@@ -593,6 +593,9 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ 
 // tilde shows the home folder as ~, like the terminal report.
 func tilde(s string) string {
 	if h, err := os.UserHomeDir(); err == nil && h != "" {
+		// A quoted path keeps working once shortened: '/home/u/a b' becomes
+		// ~/'a b' (inside quotes ~ would not mean the home folder).
+		s = strings.ReplaceAll(s, "'"+h+"/", "~/'")
 		return strings.ReplaceAll(s, h, "~")
 	}
 	return s
