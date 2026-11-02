@@ -157,7 +157,7 @@ func TestSessionsSurviveRestart(t *testing.T) {
 	b := newAuth()
 	b.loadSessions(path)
 	r := httptest.NewRequest("GET", "/", nil)
-	r.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	r.AddCookie(&http.Cookie{Name: "sw_session", Value: id})
 	if _, s := b.session(r); s == nil {
 		t.Fatal("session lost after restart")
 	}

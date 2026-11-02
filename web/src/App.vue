@@ -304,19 +304,6 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
 
       <!-- right: list -->
       <main class="panel min-w-0 self-start">
-        <!-- live scan progress -->
-        <div v-if="prog" class="border-b border-line bg-accent-soft px-5 py-4" role="status" aria-live="polite">
-          <div class="flex flex-wrap items-center gap-3">
-            <svg class="animate-spin text-accent" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-            <span class="text-[15px] font-semibold">{{ t.scanningNow(prog.done.length, prog.total || '…') }}</span>
-            <span class="num ml-auto text-[13px] font-bold text-accent">{{ progPct }}%</span>
-          </div>
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: progPct + '%' }" /></div>
-          <div class="mt-3 flex flex-wrap gap-1.5 text-[12.5px]">
-            <span v-for="d in prog.done" :key="d.name" class="rounded-full bg-ok-bg px-2 py-0.5 font-semibold text-ok">✓ {{ d.label }}</span>
-            <span v-for="n in prog.pending" :key="n" class="rounded-full bg-panel2 px-2 py-0.5 text-muted ring-1 ring-line">{{ n }}</span>
-          </div>
-        </div>
         <div class="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
           <h1 class="text-[19px] font-bold">{{ listTitle }}</h1>
           <span v-if="!['checked', 'ignored', 'safe'].includes(cat)" class="num rounded-full bg-panel2 px-2.5 py-0.5 text-[13px] font-bold text-muted ring-1 ring-line">{{ groups.length }}</span>
@@ -418,6 +405,29 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <p class="text-[12.5px] text-muted">{{ t.onbSafe }}</p>
       </section>
     </div>
+
+    <!-- scan in progress: a modal over a blurred page -->
+    <Transition enter-from-class="opacity-0" leave-to-class="opacity-0" enter-active-class="transition-opacity duration-200" leave-active-class="transition-opacity duration-300">
+      <div v-if="prog" class="fixed inset-0 z-50 grid place-items-center bg-page/60 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-live="polite" :aria-label="t.scanning">
+        <section class="panel rise grid w-full max-w-md justify-items-center gap-4 p-7 text-center shadow-2xl">
+          <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+            <circle cx="56" cy="56" r="46" fill="none" stroke="var(--color-line)" stroke-width="9" />
+            <circle cx="56" cy="56" r="46" fill="none" stroke="var(--color-accent)" stroke-width="9" stroke-linecap="round"
+              :stroke-dasharray="`${(2 * Math.PI * 46 * progPct) / 100} ${2 * Math.PI * 46}`" transform="rotate(-90 56 56)" class="transition-all duration-300" />
+            <text x="56" y="63" text-anchor="middle" font-size="24" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ progPct }}%</text>
+          </svg>
+          <div>
+            <h2 class="text-[19px] font-bold">{{ t.scanning }}</h2>
+            <p class="mt-0.5 text-[14px] text-muted">{{ t.scanningNow(prog.done.length, prog.total || '…') }}</p>
+          </div>
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: progPct + '%' }" /></div>
+          <div class="flex max-h-40 flex-wrap justify-center gap-1.5 overflow-hidden text-[12.5px]">
+            <span v-for="d in prog.done" :key="d.name" class="rounded-full bg-ok-bg px-2 py-0.5 font-semibold text-ok">✓ {{ d.label }}</span>
+            <span v-for="n in prog.pending" :key="n" class="rounded-full bg-panel2 px-2 py-0.5 text-muted ring-1 ring-line">{{ n }}</span>
+          </div>
+        </section>
+      </div>
+    </Transition>
 
     <!-- fix confirmation -->
     <div v-if="sheet" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="sheet = null">

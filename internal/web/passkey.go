@@ -154,8 +154,6 @@ func (s *Server) port() string {
 	return p
 }
 
-const pkCookie = "sw_pk"
-
 func (s *Server) handlePasskeyStatus(w http.ResponseWriter, r *http.Request) {
 	u, err := s.pk.load()
 	if err != nil {
@@ -186,7 +184,7 @@ func (s *Server) handleRegisterBegin(w http.ResponseWriter, r *http.Request, _ s
 		errJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	setCeremony(w, s.pk.put(data))
+	s.setCeremony(w, s.pk.put(data))
 	writeJSON(w, http.StatusOK, opts)
 }
 
@@ -254,7 +252,7 @@ func (s *Server) handleLoginBegin(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	setCeremony(w, s.pk.put(data))
+	s.setCeremony(w, s.pk.put(data))
 	writeJSON(w, http.StatusOK, opts)
 }
 
@@ -291,7 +289,7 @@ func (s *Server) handleLoginFinish(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = s.pk.save(u)
 	id := s.auth.newSession(ip)
-	setSessionCookie(w, id)
+	s.auth.setSessionCookie(w, id)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
@@ -305,12 +303,12 @@ func webauthnErr(err error) string {
 	return err.Error()
 }
 
-func setCeremony(w http.ResponseWriter, id string) {
-	http.SetCookie(w, &http.Cookie{Name: pkCookie, Value: id, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 120})
+func (s *Server) setCeremony(w http.ResponseWriter, id string) {
+	http.SetCookie(w, &http.Cookie{Name: "sw_pk_" + s.port(), Value: id, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 120})
 }
 
 func (s *Server) takeCeremony(r *http.Request) (*webauthn.SessionData, bool) {
-	c, err := r.Cookie(pkCookie)
+	c, err := r.Cookie("sw_pk_" + s.port())
 	if err != nil {
 		return nil, false
 	}

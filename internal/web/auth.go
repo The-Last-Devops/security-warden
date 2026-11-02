@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	cookieName  = "sw_session"
 	sessionTTL  = 12 * time.Hour
 	maxFailures = 5
 	lockout     = 15 * time.Minute
@@ -46,10 +45,11 @@ type auth struct {
 	now      func() time.Time
 	store    string               // file the sessions survive restarts in ("" = memory only)
 	tickets  map[string]time.Time // sha256(ticket) -> expiry; one-time sign-in
+	cookie   string               // session cookie name, per port (cookies ignore ports)
 }
 
 func newAuth() *auth {
-	return &auth{token: randomHex(32), sessions: map[string]*session{}, failures: map[string][]time.Time{}, tickets: map[string]time.Time{}, now: time.Now}
+	return &auth{token: randomHex(32), sessions: map[string]*session{}, failures: map[string][]time.Time{}, tickets: map[string]time.Time{}, now: time.Now, cookie: "sw_session"}
 }
 
 // hashID: only hashes of session ids are kept, in memory and on disk, so
@@ -155,15 +155,15 @@ func (a *auth) newSession(ip string) string {
 	return id
 }
 
-func setSessionCookie(w http.ResponseWriter, id string) {
+func (a *auth) setSessionCookie(w http.ResponseWriter, id string) {
 	http.SetCookie(w, &http.Cookie{
-		Name: cookieName, Value: id, Path: "/", HttpOnly: true,
+		Name: a.cookie, Value: id, Path: "/", HttpOnly: true,
 		SameSite: http.SameSiteStrictMode, MaxAge: int(sessionTTL / time.Second),
 	})
 }
 
 func (a *auth) session(r *http.Request) (string, *session) {
-	c, err := r.Cookie(cookieName)
+	c, err := r.Cookie(a.cookie)
 	if err != nil {
 		return "", nil
 	}

@@ -77,6 +77,9 @@ var persist = true
 
 func New(addr, kind, version, lang string, ui fs.FS, sc Scanner) *Server {
 	s := &Server{Addr: addr, Kind: kind, Version: version, Lang: lang, UI: ui, Scanner: sc, auth: newAuth(), pk: newPasskeys()}
+	// Browsers share cookies between ports of one host, so each instance
+	// (release on 7348, development on 7349) needs its own cookie names.
+	s.auth.cookie = "sw_session_" + s.port()
 	if persist {
 		s.auth.loadSessions(filepath.Join(filepath.Dir(s.pk.path), "sessions.json"))
 	}
@@ -209,7 +212,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		setSessionCookie(w, id)
+		s.auth.setSessionCookie(w, id)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -219,7 +222,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.loginPage(w)
 		return
 	}
-	setSessionCookie(w, id)
+	s.auth.setSessionCookie(w, id)
 	// Drop the token from the address bar and history.
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -236,7 +239,7 @@ func (s *Server) loginPage(w http.ResponseWriter) {
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, id string, _ *session) {
 	s.auth.logout(id)
-	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
+	http.SetCookie(w, &http.Cookie{Name: s.auth.cookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
