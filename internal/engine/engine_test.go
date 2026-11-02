@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
+	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/rules"
 )
@@ -19,7 +20,7 @@ func sourceNames() []string {
 // Every bundled rule must load and pass its own sample items. This is the
 // check CI runs on every contributed rule.
 func TestBundledRules(t *testing.T) {
-	rs, err := engine.Load(rules.FS, sourceNames())
+	rs, err := engine.Load(rules.FS, sourceNames(), fix.IDs())
 	if err != nil {
 		t.Fatal(err)
 	}

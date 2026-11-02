@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {guest_account: true}, expect: true}
   - {item: {guest_account: false}, expect: false}
+remedy: {action: macos_guest_off}

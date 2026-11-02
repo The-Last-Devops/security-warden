@@ -17,3 +17,4 @@ tests:
   - {item: {tailnet: t, shields_up: false}, expect: true}
   - {item: {tailnet: t, shields_up: true}, expect: false}
   - {item: {tailnet: t}, expect: false, note: prefs unreadable}
+remedy: {action: tailscale_shields_up}

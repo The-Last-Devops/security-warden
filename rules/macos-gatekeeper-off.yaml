@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {gatekeeper: false}, expect: true}
   - {item: {gatekeeper: true}, expect: false}
+remedy: {action: macos_gatekeeper_on}

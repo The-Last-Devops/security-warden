@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {kind: summary, total: 42, formulae: 40, casks: 2}, expect: true}
   - {item: {kind: summary, total: 3, formulae: 3, casks: 0}, expect: false}
+remedy: {action: brew_upgrade_all}

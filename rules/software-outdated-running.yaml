@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {kind: running, name: node, version: "22.1.0", latest: "22.11.0", reachable: false}, expect: true}
   - {item: {kind: running, name: node, version: "22.1.0", latest: "22.11.0", reachable: true}, expect: false, note: software-outdated-exposed covers it}
+remedy: {action: brew_upgrade, params: {name: "{name}"}}

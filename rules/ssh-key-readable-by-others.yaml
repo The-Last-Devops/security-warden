@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {name: id_rsa, path: /h/.ssh/id_rsa, mode: "0644", group_readable: true, world_readable: true}, expect: true}
   - {item: {name: id_rsa, path: /h/.ssh/id_rsa, mode: "0600", group_readable: false, world_readable: false}, expect: false}
+remedy: {action: chmod_private, params: {path: "{path}"}}

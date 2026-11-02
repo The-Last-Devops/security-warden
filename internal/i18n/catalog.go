@@ -42,6 +42,7 @@ var en = map[string]string{
 
 Usage:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
+  security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -56,6 +57,21 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"report.passed":   "Passed %d of %d checks",
 	"report.more":     "Details for every item: security-warden --verbose",
 	"report.progress": "Checking",
+	"fix.none":        "Nothing here can be fixed automatically. Follow the → lines in the report.",
+	"fix.header":      "security-warden can fix %d of %d findings:",
+	"fix.ask":         "Apply? [y/N] ",
+	"fix.applied":     "Done",
+	"fix.failed":      "Failed: %s",
+	"fix.skipped":     "Skipped",
+	"fix.no_undo":     "cannot be undone",
+	"fix.needs_admin": "needs your admin password",
+	"fix.dry_run":     "Dry run: nothing was changed.",
+	"fix.sudo":        "Some fixes need administrator rights. macOS will ask for your password once.",
+	"fix.undo_hint":   "Changed your mind? Run: security-warden fix --undo",
+	"fix.undone":      "Reverted %d changes.",
+	"fix.nothing":     "There is nothing to undo.",
+	"fix.manual":      "Still to do by hand:",
+
 }
 
 var vi = map[string]string{
@@ -100,6 +116,7 @@ var vi = map[string]string{
 
 Cách dùng:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
+  security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -114,4 +131,19 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"report.passed":   "Đạt %d trên %d kiểm tra",
 	"report.more":     "Xem chi tiết từng mục: security-warden --verbose",
 	"report.progress": "Đang kiểm",
+	"fix.none":        "Không có mục nào sửa tự động được. Làm theo các dòng → trong báo cáo.",
+	"fix.header":      "security-warden sửa được %d trên %d vấn đề:",
+	"fix.ask":         "Áp dụng? [y/N] ",
+	"fix.applied":     "Xong",
+	"fix.failed":      "Lỗi: %s",
+	"fix.skipped":     "Bỏ qua",
+	"fix.no_undo":     "không hoàn tác được",
+	"fix.needs_admin": "cần mật khẩu quản trị",
+	"fix.dry_run":     "Chạy thử: chưa thay đổi gì.",
+	"fix.sudo":        "Vài mục cần quyền quản trị. Máy sẽ hỏi mật khẩu một lần.",
+	"fix.undo_hint":   "Đổi ý? Chạy: security-warden fix --undo",
+	"fix.undone":      "Đã hoàn tác %d thay đổi.",
+	"fix.nothing":     "Không có gì để hoàn tác.",
+	"fix.manual":      "Còn phải tự làm:",
+
 }

@@ -52,9 +52,18 @@ type Rule struct {
 	References []string `yaml:"references"`
 	Author     string   `yaml:"author"`
 	Tests      []Test   `yaml:"tests"`
+	// Remedy names a built-in fix action; rules never carry commands.
+	Remedy *Remedy `yaml:"remedy"`
 
 	file string
 	prg  cel.Program
+}
+
+// Remedy points a rule at a fix action, with parameters filled from the
+// finding ({field} placeholders).
+type Remedy struct {
+	Action string            `yaml:"action" json:"action"`
+	Params map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
 // File is where the rule was loaded from.
@@ -75,7 +84,7 @@ func newEnv() (*cel.Env, error) {
 
 // Load parses and compiles every *.yaml rule in fsys. knownSources lists the
 // source names a rule may refer to.
-func Load(fsys fs.FS, knownSources []string) ([]*Rule, error) {
+func Load(fsys fs.FS, knownSources, knownActions []string) ([]*Rule, error) {
 	env, err := newEnv()
 	if err != nil {
 		return nil, err
@@ -83,6 +92,10 @@ func Load(fsys fs.FS, knownSources []string) ([]*Rule, error) {
 	known := map[string]bool{}
 	for _, s := range knownSources {
 		known[s] = true
+	}
+	actions := map[string]bool{}
+	for _, a := range knownActions {
+		actions[a] = true
 	}
 	files, err := fs.Glob(fsys, "*.yaml")
 	if err != nil {
@@ -102,6 +115,9 @@ func Load(fsys fs.FS, knownSources []string) ([]*Rule, error) {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
 		r.file = path.Base(f)
+		if r.Remedy != nil && !actions[r.Remedy.Action] {
+			return nil, fmt.Errorf("%s: unknown remedy action %q", f, r.Remedy.Action)
+		}
 		if err := validate(&r, known); err != nil {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
@@ -197,8 +213,9 @@ type Finding struct {
 	Source   string `json:"source"`
 	Title    string `json:"title"`
 	Explain  string `json:"explain"`
-	Fix      string `json:"fix"`
-	Item     Item   `json:"item"`
+	Fix      string  `json:"fix"`
+	Remedy   *Remedy `json:"remedy,omitempty"`
+	Item     Item    `json:"item"`
 }
 
 // Evaluate runs the rules that apply to platform on the collected items.
@@ -221,6 +238,7 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 				Title:    Render(r.Title.Get(lang), it),
 				Explain:  Render(r.Explain.Get(lang), it),
 				Fix:      Render(r.Fix.Get(lang), it),
+				Remedy:   renderRemedy(r.Remedy, it),
 				Item:     it,
 			})
 		}
@@ -250,6 +268,17 @@ func Coverage(rules []*Rule, findings []Finding, ran map[string]bool, platform s
 		}
 	}
 	return checked, passed
+}
+
+func renderRemedy(r *Remedy, it Item) *Remedy {
+	if r == nil {
+		return nil
+	}
+	out := &Remedy{Action: r.Action, Params: map[string]string{}}
+	for k, v := range r.Params {
+		out.Params[k] = Render(v, it)
+	}
+	return out
 }
 
 // Score is 100 minus a penalty per finding, never below 0.

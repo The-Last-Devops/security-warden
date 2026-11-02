@@ -17,3 +17,4 @@ tests:
   - {item: {kind: running, name: redis, version: "7.2.4", latest: "7.4.1", reachable: true}, expect: true}
   - {item: {kind: running, name: redis, version: "7.2.4", latest: "7.4.1", reachable: false}, expect: false}
   - {item: {kind: summary, total: 30}, expect: false}
+remedy: {action: brew_upgrade, params: {name: "{name}"}}

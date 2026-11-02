@@ -17,3 +17,4 @@ tests:
   - {item: {tailnet: example.com, ssh: true}, expect: true}
   - {item: {tailnet: example.com, ssh: false}, expect: false}
   - {item: {tailnet: example.com}, expect: false, note: prefs unreadable}
+remedy: {action: tailscale_ssh_off}

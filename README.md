@@ -35,6 +35,22 @@ security-warden version
 
 `sudo security-warden` also sees ports held by other users' processes.
 
+### Fix
+
+```sh
+security-warden fix --dry-run   # show what would change
+security-warden fix             # ask before each fix
+security-warden fix --yes       # apply every fix
+security-warden fix --undo      # revert the last batch
+```
+
+Fixes are built into security-warden, not written in rules: a rule can only point to one of a few known
+actions (tighten a file's permissions, turn the firewall on, turn the guest account off, raise Tailscale
+shields, upgrade a Homebrew package…). File fixes only touch regular files inside your home folder.
+Every reversible change is recorded in `~/Library/Application Support/security-warden/fixes.jsonl`
+(`~/.config/security-warden/` on Linux) so `--undo` can put it back. Anything risky, such as rotating a
+key or stopping a tunnel you may be using, stays a written instruction.
+
 The language comes from `--lang`, then `SW_LANG`, then your system language. Supported: English, Vietnamese.
 
 ## What it checks
@@ -101,7 +117,6 @@ Releases: push a `v*` tag. GitHub Actions builds every platform, then signs, not
 
 ## Roadmap
 
-- Planned next: `security-warden fix` to apply the safe fixes for you, after you choose which (with undo).
 
 - Live alerts: a background agent that notifies you when a new port, tunnel, container or login item
   appears (polling plus file events), then real-time process and network events through Endpoint

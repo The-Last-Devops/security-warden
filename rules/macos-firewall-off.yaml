@@ -16,3 +16,4 @@ author: the-last-devops
 tests:
   - {item: {firewall: false}, expect: true}
   - {item: {firewall: true}, expect: false}
+remedy: {action: macos_firewall_on}

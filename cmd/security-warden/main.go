@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
+	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
@@ -43,6 +44,9 @@ func run(args []string) int {
 	lang := fs.String("lang", "", "language: "+fmt.Sprint(i18n.Supported))
 	asJSON := fs.Bool("json", false, "print JSON")
 	verbose := fs.Bool("verbose", false, "show every detail")
+	yes := fs.Bool("yes", false, "fix: apply every fix without asking")
+	dryRun := fs.Bool("dry-run", false, "fix: only show what would change")
+	undo := fs.Bool("undo", false, "fix: revert the last batch of fixes")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -53,7 +57,7 @@ func run(args []string) int {
 	for _, c := range source.All() {
 		names = append(names, c.Name)
 	}
-	rs, err := engine.Load(rules.FS, names)
+	rs, err := engine.Load(rules.FS, names, fix.IDs())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
@@ -69,13 +73,17 @@ func run(args []string) int {
 			fmt.Printf("  %-36s %-8s %s\n", r.ID, r.Severity, r.Title.Get(l))
 		}
 		return 0
-	case "scan":
+	case "scan", "fix":
 	case "help":
 		fs.Usage()
 		return 0
 	default:
 		fs.Usage()
 		return 2
+	}
+
+	if cmd == "fix" && *undo {
+		return runUndo(l)
 	}
 
 	var prog *report.Progress
@@ -112,6 +120,9 @@ func run(args []string) int {
 		Sources:  report.Statuses(results),
 		Findings: findings,
 		Root:     os.Geteuid() == 0,
+	}
+	if cmd == "fix" {
+		return runFix(l, findings, *yes, *dryRun)
 	}
 	if *asJSON {
 		if err := report.JSON(os.Stdout, s); err != nil {
