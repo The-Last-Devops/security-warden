@@ -15,6 +15,7 @@ It only reads. It changes nothing and sends nothing.
 
 ```sh
 brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden
+brew trust the-last-devops/security-warden   # recent Homebrew asks you to trust third-party taps
 brew install security-warden
 security-warden serve      # opens Security Warden in its own window
 ```
