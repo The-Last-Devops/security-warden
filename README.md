@@ -1,11 +1,12 @@
 # security-warden
 
-Phần mềm kiểm tra máy làm việc (macOS trước, Windows sau):
+A security checkup for work machines (macOS first, Windows later):
 
-- rà soát cấu hình bảo mật (FileVault/BitLocker, firewall, cập nhật…);
-- tìm "cửa mở" ra ngoài: port, Docker, Tailscale, tunnel, remote desktop;
-- tìm secret để lộ trên máy (SSH key, `.env`, `~/.aws`, kubeconfig…).
+- **Posture**: audits security settings (FileVault/BitLocker, firewall, updates…).
+- **Exposure**: finds doors open to the outside: listening ports, Docker, Tailscale, tunnels, remote desktop.
+- **Secrets**: finds secrets left lying around (SSH keys, `.env`, `~/.aws`, kubeconfig…).
 
-Engine + CLI viết bằng Go, rule khai báo bằng YAML + CEL, rule do cộng đồng đóng góp.
+Engine and CLI in Go. Rules are declarative YAML + CEL, contributed by the community.
+The app is multilingual: every user-facing string goes through translations.
 
-Trạng thái: mới định hướng, chưa có code.
+Status: early design, no code yet.
