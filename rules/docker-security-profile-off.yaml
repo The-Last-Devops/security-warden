@@ -1,0 +1,18 @@
+id: docker-security-profile-off
+severity: medium
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "item.seccomp_unconfined || item.apparmor_unconfined"
+title:
+  en: "Container {container} runs without its security profile"
+  vi: "Container {container} chạy không có lớp bảo vệ"
+explain:
+  en: "seccomp or AppArmor is set to unconfined, which removes the filter that blocks dangerous system calls."
+  vi: "seccomp hoặc AppArmor bị đặt unconfined, tức là gỡ bộ lọc chặn các lời gọi hệ thống nguy hiểm."
+fix:
+  en: "Remove security_opt: seccomp=unconfined / apparmor=unconfined."
+  vi: "Bỏ security_opt: seccomp=unconfined / apparmor=unconfined."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": true, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": false}

@@ -15,6 +15,8 @@ export const api = {
   async meta() { const m = await call('GET', '/api/meta'); csrf = m.csrf; return m },
   scan: lang => call('GET', `/api/scan?lang=${lang}`),
   rescan: lang => call('POST', `/api/scan?lang=${lang}`),
+  startScan: () => call('POST', '/api/scan/start'),
+  progress: lang => call('GET', `/api/scan/progress?lang=${lang}`),
   fix: (keys, lang) => call('POST', `/api/fix?lang=${lang}`, { keys }),
   undo: () => call('POST', '/api/undo'),
   ignore: (keys, days) => call('POST', '/api/ignore', { keys, days }),

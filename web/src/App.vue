@@ -41,9 +41,37 @@ const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'dev
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 
 async function load(force = false) {
+  if (force) return rescan()
   busy.value = true
-  try { data.value = await (force ? api.rescan(lang.value) : api.scan(lang.value)) } catch (e) { fail(e) } finally { busy.value = false }
+  try { data.value = await api.scan(lang.value) } catch (e) { fail(e) } finally { busy.value = false }
 }
+
+// Rescan with visible progress: start, poll which sources are done, then
+// load the result and say what changed.
+const prog = ref(null)
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+async function rescan() {
+  if (prog.value) return
+  const before = new Set(findings.value.map(f => f.key))
+  busy.value = true
+  prog.value = { done: [], pending: [], total: 0 }
+  try {
+    await api.startScan()
+    for (;;) {
+      await sleep(250)
+      const p = await api.progress(lang.value)
+      prog.value = p
+      if (!p.running && p.done.length >= p.total) break
+    }
+    data.value = await api.scan(lang.value)
+    const after = new Set(findings.value.map(f => f.key))
+    let added = 0, gone = 0
+    for (const k of after) if (!before.has(k)) added++
+    for (const k of before) if (!after.has(k)) gone++
+    say(t.value.scanDone(after.size, added, gone))
+  } catch (e) { fail(e) } finally { prog.value = null; busy.value = false }
+}
+const progPct = computed(() => (prog.value?.total ? Math.round((prog.value.done.length / prog.value.total) * 100) : 4))
 
 // Passkeys
 const pk = ref({ count: 0, available: false, localhost: '' })
@@ -96,6 +124,7 @@ const groups = computed(() => {
 })
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
 const passedN = computed(() => (data.value?.scan.passed || []).length)
+const window = globalThis.window
 const fmtTime = iso => (iso ? new Date(iso).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) : '')
 const fmtDate = iso => new Date(iso).toLocaleDateString(lang.value, { day: 'numeric', month: 'short', year: 'numeric' })
 const listTitle = computed(() => (cat.value === 'all' ? t.value.issuesTitle : cat.value === 'checked' ? t.value.checkedTitle : cat.value === 'ignored' ? t.value.ignoredTitle : t.value[cat.value]))
@@ -153,10 +182,10 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
     <!-- top bar -->
     <header class="border-b border-line">
       <div class="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-6">
-        <span class="flex items-center gap-2.5 text-[15px] font-extrabold tracking-[.06em] uppercase">
+        <button class="flex items-center gap-2.5 rounded-lg text-[15px] font-extrabold tracking-[.06em] uppercase hover:text-accent" :title="t.home" @click="cat = 'all'; window.scrollTo({ top: 0, behavior: 'smooth' })">
           <svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M10 1 2 4v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V4z" fill="var(--color-accent)" /></svg>
           Security Warden
-        </span>
+        </button>
         <span class="hidden items-center gap-2 text-[13px] text-muted lg:flex">
           <i class="h-2 w-2 rounded-full bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]" />
           {{ t.watching }} · {{ data?.scan.host || '' }} · {{ t.lastScan(fmtTime(data?.scanned_at)) }}
@@ -221,6 +250,19 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
 
       <!-- right: list -->
       <main class="panel min-w-0 self-start">
+        <!-- live scan progress -->
+        <div v-if="prog" class="border-b border-line bg-accent-soft px-5 py-4" role="status" aria-live="polite">
+          <div class="flex flex-wrap items-center gap-3">
+            <svg class="animate-spin text-accent" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            <span class="text-[15px] font-semibold">{{ t.scanningNow(prog.done.length, prog.total || '…') }}</span>
+            <span class="num ml-auto text-[13px] font-bold text-accent">{{ progPct }}%</span>
+          </div>
+          <div class="mt-3 h-2 overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: progPct + '%' }" /></div>
+          <div class="mt-3 flex flex-wrap gap-1.5 text-[12.5px]">
+            <span v-for="d in prog.done" :key="d.name" class="rounded-full bg-ok-bg px-2 py-0.5 font-semibold text-ok">✓ {{ d.label }}</span>
+            <span v-for="n in prog.pending" :key="n" class="rounded-full bg-panel2 px-2 py-0.5 text-muted ring-1 ring-line">{{ n }}</span>
+          </div>
+        </div>
         <div class="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
           <h1 class="text-[19px] font-bold">{{ listTitle }}</h1>
           <span v-if="cat !== 'checked' && cat !== 'ignored'" class="num rounded-full bg-panel2 px-2.5 py-0.5 text-[13px] font-bold text-muted ring-1 ring-line">{{ groups.length }}</span>

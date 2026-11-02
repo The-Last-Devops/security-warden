@@ -1,0 +1,19 @@
+id: docker-runs-as-root
+severity: low
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "item.runs_as_root && !item.privileged"
+title:
+  en: "Container {container} runs as root"
+  vi: "Container {container} chạy bằng root"
+explain:
+  en: "If {image} has a bug, the attacker is root inside the container, one step from the host."
+  vi: "Nếu {image} có lỗi, kẻ tấn công là root trong container, chỉ cách máy chủ một bước."
+fix:
+  en: "Run as a normal user: user: \"1000:1000\" in compose, or USER in the Dockerfile."
+  vi: "Chạy bằng user thường: user: \"1000:1000\" trong compose, hoặc USER trong Dockerfile."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "", "runs_as_root": true}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": true, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": true}, "expect": false, "note": "docker-privileged covers it"}

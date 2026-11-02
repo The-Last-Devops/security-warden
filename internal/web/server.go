@@ -29,7 +29,7 @@ import (
 // Scanner runs a scan and evaluates it in a language; the CLI provides it
 // so the web shows exactly what the terminal shows.
 type Scanner struct {
-	Collect  func(ctx context.Context) []source.Result
+	Collect  func(ctx context.Context, done func(name string)) []source.Result
 	Evaluate func(results []source.Result, lang string) report.Scan
 }
 
@@ -47,6 +47,14 @@ type Server struct {
 	results  []source.Result
 	scanned  time.Time
 	scanning sync.Mutex
+	prog     progress
+}
+
+// progress is what the UI shows while a scan runs.
+type progress struct {
+	Running bool     `json:"running"`
+	Done    []string `json:"done"`
+	Total   int      `json:"total"`
 }
 
 // Token is the login secret to print in the terminal.
@@ -116,6 +124,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
+	mux.HandleFunc("POST /api/scan/start", s.withSession(s.handleScanStart))
+	mux.HandleFunc("GET /api/scan/progress", s.withSession(s.handleProgress))
 	mux.HandleFunc("POST /api/fix", s.withSession(s.handleFix))
 	mux.HandleFunc("POST /api/undo", s.withSession(s.handleUndo))
 	mux.HandleFunc("POST /api/ignore", s.withSession(s.handleIgnore))
@@ -215,9 +225,17 @@ func (s *Server) scan(ctx context.Context, force bool) []source.Result {
 		return s.results
 	}
 	source.ResetCaches()
-	res := s.Scanner.Collect(ctx)
+	s.mu.Lock()
+	s.prog = progress{Running: true, Total: len(source.All())}
+	s.mu.Unlock()
+	res := s.Scanner.Collect(ctx, func(name string) {
+		s.mu.Lock()
+		s.prog.Done = append(s.prog.Done, name)
+		s.mu.Unlock()
+	})
 	s.mu.Lock()
 	s.results, s.scanned = res, time.Now()
+	s.prog.Running = false
 	s.mu.Unlock()
 	return res
 }
@@ -318,6 +336,46 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
 	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang)))
+}
+
+// handleScanStart begins a scan in the background; the UI polls progress
+// and then reads the result with GET /api/scan.
+func (s *Server) handleScanStart(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	// Mark running before returning, so the first progress poll cannot
+	// see the previous, finished scan.
+	s.mu.Lock()
+	running := s.prog.Running
+	if !running {
+		s.prog = progress{Running: true, Total: len(source.All())}
+	}
+	s.mu.Unlock()
+	if !running {
+		go s.scan(context.Background(), true)
+	}
+	writeJSON(w, http.StatusAccepted, map[string]bool{"started": true})
+}
+
+func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	lang := langOf(r, s.Lang)
+	s.mu.Lock()
+	p := s.prog
+	done := append([]string(nil), p.Done...)
+	s.mu.Unlock()
+	labels := make([]map[string]string, 0, len(done))
+	for _, n := range done {
+		labels = append(labels, map[string]string{"name": n, "label": i18n.T(lang, "source."+n)})
+	}
+	pending := []string{}
+	seen := map[string]bool{}
+	for _, n := range done {
+		seen[n] = true
+	}
+	for _, c := range source.All() {
+		if !seen[c.Name] {
+			pending = append(pending, i18n.T(lang, "source."+c.Name))
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"running": p.Running, "total": p.Total, "done": labels, "pending": pending})
 }
 
 func (s *Server) handleRescan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {

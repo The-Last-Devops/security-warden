@@ -42,7 +42,7 @@ func init() { persist = false }
 func testServer() *Server {
 	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>ui</title>")}}
 	sc := Scanner{
-		Collect:  func(context.Context) []source.Result { return nil },
+		Collect:  func(context.Context, func(string)) []source.Result { return nil },
 		Evaluate: func([]source.Result, string) report.Scan { return report.Scan{} },
 	}
 	return New("127.0.0.1:7348", KindLoopback, "test", "en", ui, sc)
