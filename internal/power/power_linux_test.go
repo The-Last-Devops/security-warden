@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// onBatteryIn is Linux only (sysfs), so this file builds on Linux only:
+// `GOOS=darwin go vet` and `GOOS=windows go vet` would not find it.
 func TestOnBatteryLinuxSysfs(t *testing.T) {
 	mk := func(dir, typ, file, val string) {
 		_ = os.MkdirAll(dir, 0o755)

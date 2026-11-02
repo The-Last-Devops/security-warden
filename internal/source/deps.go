@@ -166,7 +166,7 @@ func repoVulnItem(repo string, pkgs []vulnPkg) Item {
 		"fixed": fixed, "ids": strings.Join(ids, ", "), "more_ids": more,
 		"severity": vulndb.SeverityLabel(top.rank()), "severe": severe,
 		"packages": len(pkgs), "others": len(pkgs) - 1,
-		"upgrade": upgrade, "why": why,
+		"upgrade_cmd": upgrade, "why": why,
 	}
 }
 

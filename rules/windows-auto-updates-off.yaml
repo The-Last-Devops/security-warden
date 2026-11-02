@@ -1,0 +1,21 @@
+id: windows-auto-updates-off
+severity: medium
+platforms: [windows]
+source: posture
+match: has(item.updates_disabled_by_policy) && item.updates_disabled_by_policy
+title:
+  en: "Automatic Windows updates are turned off by policy"
+  vi: "Cập nhật Windows tự động bị chính sách tắt"
+check:
+  en: "Windows installs updates automatically"
+  vi: "Windows tự cài bản cập nhật"
+explain:
+  en: "A policy (NoAutoUpdate = 1) stops Windows Update from installing security fixes on its own. Holes that are already public stay open until someone updates by hand."
+  vi: "Một chính sách (NoAutoUpdate = 1) chặn Windows Update tự cài bản vá bảo mật. Lỗ hổng đã công khai sẽ còn nguyên cho tới khi có người cập nhật bằng tay."
+fix:
+  en: "If your organisation manages this PC, ask IT. Otherwise, as an administrator: gpedit.msc > Computer Configuration > Administrative Templates > Windows Components > Windows Update > Manage end user experience (Windows 10: Windows Update) > Configure Automatic Updates > Not Configured. Windows Home has no gpedit: in a terminal opened with \"Run as administrator\": reg delete HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU /v NoAutoUpdate /f. Then Settings > Windows Update > Check for updates."
+  vi: "Máy do tổ chức quản lý thì hỏi bộ phận IT. Nếu không, với quyền quản trị: gpedit.msc > Computer Configuration > Administrative Templates > Windows Components > Windows Update > Manage end user experience (Windows 10: Windows Update) > Configure Automatic Updates > Not Configured. Windows Home không có gpedit: trong cửa sổ lệnh mở bằng \"Run as administrator\": reg delete HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU /v NoAutoUpdate /f. Rồi vào Cài đặt > Windows Update > Kiểm tra cập nhật."
+author: the-last-devops
+tests:
+  - {item: {os: windows, updates_disabled_by_policy: true}, expect: true}
+  - {item: {os: windows, updates_disabled_by_policy: false}, expect: false}

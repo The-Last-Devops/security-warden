@@ -38,7 +38,7 @@ var tempDirs = []string{"/tmp/", "/private/tmp/", "/var/tmp/", "/private/var/tmp
 // miners, and programs started from a temp folder or from the downloads
 // folder. Only paths are compared; no file is opened.
 func processes(ctx context.Context) ([]Item, error) {
-	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return nil, Skip{"skip.platform"}
 	}
 	byPath := map[string]Item{}
@@ -60,6 +60,9 @@ func processes(ctx context.Context) ([]Item, error) {
 }
 
 func processItem(pid int, path string) Item {
+	if runtime.GOOS == "windows" {
+		return winProcessItem(pid, path, envLookup)
+	}
 	fromTemp := false
 	for _, d := range tempDirs {
 		if strings.HasPrefix(path, d) {
@@ -73,6 +76,20 @@ func processItem(pid int, path string) Item {
 		"pid":            pid,
 		"from_temp":      fromTemp,
 		"from_downloads": underDownloads(path),
+		"miner":          isMiner(name),
+	}
+}
+
+// winProcessItem is processItem for Windows paths (any case, backslashes).
+func winProcessItem(pid int, path string, env func(string) string) Item {
+	f := winPathFlags(path, env)
+	name := winBase(path)
+	return Item{
+		"name":           name,
+		"path":           path,
+		"pid":            pid,
+		"from_temp":      f.temp,
+		"from_downloads": f.downloads,
 		"miner":          isMiner(name),
 	}
 }

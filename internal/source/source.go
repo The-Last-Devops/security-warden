@@ -41,6 +41,7 @@ type Result struct {
 func All() []Collector {
 	return []Collector{
 		{"posture", posture},
+		{"defender", defender},
 		{"backup", backup},
 		{"listening_ports", listeningPorts},
 		{"remote_services", remoteServices},
@@ -80,7 +81,7 @@ func All() []Collector {
 
 // Slow lists sources that are costly (file walks, package manager calls);
 // watch mode runs them less often.
-var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "git_remotes": true, "git_history": true, "project_deps": true, "browser_extensions": true, "shell_history": true, "apps": true}
+var Slow = map[string]bool{"outdated_software": true, "dev_files": true, "git_remotes": true, "git_history": true, "project_deps": true, "browser_extensions": true, "shell_history": true, "apps": true, "defender": true}
 
 // Run executes the collectors in parallel. done, if not nil, is called with
 // each collector's name as it finishes.
@@ -166,6 +167,10 @@ func load_processPaths() map[int]string {
 	if runtime.GOOS == "linux" {
 		return procExePaths()
 	}
+	if runtime.GOOS == "windows" {
+		out, _ := runPS(context.Background(), winProcessScript)
+		return parseWinProcesses(out)
+	}
 	m := map[int]string{}
 	out, err := run(context.Background(), "ps", "-axww", "-o", "pid=,comm=")
 	if err != nil {
@@ -202,6 +207,9 @@ func atoi(s string) int {
 func systemBinary(path string) bool {
 	if runtime.GOOS == "linux" {
 		return false
+	}
+	if runtime.GOOS == "windows" {
+		return winSystemProcess(path, envLookup("SystemRoot"))
 	}
 	for _, p := range []string{"/System/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/"} {
 		if strings.HasPrefix(path, p) {

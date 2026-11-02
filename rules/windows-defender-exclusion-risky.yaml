@@ -1,0 +1,23 @@
+id: windows-defender-exclusion-risky
+severity: high
+platforms: [windows]
+source: defender
+match: item.kind == "exclusion" && item.risky
+title:
+  en: "Microsoft Defender skips {value}"
+  vi: "Microsoft Defender bỏ qua không quét {value}"
+check:
+  en: "Microsoft Defender has no broad exclusions"
+  vi: "Microsoft Defender không có vùng loại trừ quá rộng"
+explain:
+  en: "This exclusion is so broad that Defender never scans a whole drive, your user folder, a temp or Downloads folder, a kind of executable file or what a script engine runs. Malware dropped there runs unchecked, and attackers add exclusions like this on purpose."
+  vi: "Vùng loại trừ này rộng tới mức Defender không bao giờ quét cả một ổ đĩa, thư mục người dùng, thư mục tạm hay Downloads, một loại file chạy được, hoặc những gì một trình chạy script chạy. Mã độc thả vào đó chạy mà không bị kiểm tra, và kẻ tấn công cố tình thêm kiểu loại trừ này."
+fix:
+  en: "Windows Security > Virus & threat protection > Virus & threat protection settings > Manage settings > Exclusions > Add or remove exclusions > select {value} > Remove. Needs an administrator. If a tool needs an exclusion, exclude only its own folder."
+  vi: "Bảo mật Windows > Bảo vệ khỏi virus & mối đe doạ > Cài đặt bảo vệ khỏi virus & mối đe doạ > Quản lý cài đặt > Loại trừ > Thêm hoặc xoá loại trừ > chọn {value} > Xoá. Cần quyền quản trị. Nếu công cụ nào cần loại trừ, chỉ loại trừ đúng thư mục của nó."
+author: the-last-devops
+tests:
+  - {item: {kind: exclusion, type: path, value: "C:\\", risky: true, reason: drive}, expect: true}
+  - {item: {kind: exclusion, type: extension, value: ".exe", risky: true, reason: executable_type}, expect: true}
+  - {item: {kind: exclusion, type: path, value: "D:\\src\\big-repo", risky: false, reason: ""}, expect: false}
+  - {item: {kind: status, risky: false}, expect: false}

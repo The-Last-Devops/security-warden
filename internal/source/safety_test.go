@@ -12,7 +12,12 @@ import (
 // no source file may call them.
 func TestNoPromptingCommands(t *testing.T) {
 	banned := []string{`"sfltool"`, `"tccutil"`, `"profiles"`, `"systemsetup"`, `"bputil"`, `"firmwarepasswd"`,
-		`"find-generic-password"`, `"find-internet-password"`, `"dump-keychain"`, `"nvram", "-p"`, `"sudo", "-v"`}
+		`"find-generic-password"`, `"find-internet-password"`, `"dump-keychain"`, `"nvram", "-p"`, `"sudo", "-v"`,
+		// Package managers: only read the local cache, never refresh or install.
+		`"apt-get"`, `"apt", "update"`, `"upgrade"`, `"makecache"`, `"--refresh"`, `"install"`,
+		// Windows: tools that change settings, elevate or need an administrator.
+		`"reg", "add"`, `"reg", "delete"`, `"manage-bde"`, `"runas"`, `"RunAs"`, `"Set-MpPreference"`, `"Update-MpSignature"`,
+		`"schtasks"`, `"netsh"`, `"sc.exe"`, `"bcdedit"`, `"-EncodedCommand"`}
 	// Folders protected by macOS privacy controls (TCC).
 	tcc := []string{`"Documents"`, `"Desktop"`, `"Downloads"`, `"Library/Mail"`, `"Library/Messages"`, `"Library/Safari"`, `"Library/Mobile Documents"`,
 		// Other apps' data: macOS asks "would like to access data from other
@@ -29,6 +34,26 @@ func TestNoPromptingCommands(t *testing.T) {
 				t.Errorf("%s uses %s, which can prompt the user or needs root", f, s)
 			}
 		}
+	}
+}
+
+// dnf refreshes its metadata over the network unless told not to.
+func TestDnfCacheOnly(t *testing.T) {
+	b, err := os.ReadFile("packages.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.Contains(line, "dnfRun(ctx, ") {
+			n++
+			if !strings.Contains(line, `"--cacheonly"`) {
+				t.Errorf("dnf call without --cacheonly: %s", strings.TrimSpace(line))
+			}
+		}
+	}
+	if n == 0 {
+		t.Error("no dnf calls found")
 	}
 }
 

@@ -66,3 +66,32 @@ jobs:
         with:
           name: smoke-report-linux
           path: report.json
+
+  # Windows: the checks run PowerShell and netstat as the runner's user. The
+  # Windows sources must run without error (a skip is fine).
+  smoke-windows:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - name: Scan
+        shell: bash
+        run: |
+          ./security-warden-windows-amd64.exe version
+          ./security-warden-windows-amd64.exe --lang vi || [ $? -eq 1 ]
+          ./security-warden-windows-amd64.exe --json > report.json || [ $? -eq 1 ]
+          python -c "
+          import json, sys
+          r = json.load(open('report.json', encoding='utf-8'))
+          print(r['platform'], r['score'], len(r['findings']))
+          for s in r['sources']:
+              print(' ', s['name'], s.get('items'), s.get('skipped', ''), s.get('error', ''))
+          bad = [s['name'] for s in r['sources'] if s['name'] in ('posture', 'defender', 'persistence', 'listening_ports', 'processes') and s.get('error')]
+          sys.exit('failed on Windows: ' + ', '.join(bad) if bad else 0)
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-windows
+          path: report.json

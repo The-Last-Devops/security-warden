@@ -1,0 +1,22 @@
+id: windows-autostart-appdata-root
+severity: medium
+platforms: [windows]
+source: persistence
+match: item.kind == "autostart" && item.appdata_root && !item.in_temp && !item.in_downloads && !item.script_loader
+title:
+  en: "A startup item runs a loose file in AppData or ProgramData: {name}"
+  vi: "Có mục tự chạy chạy một file nằm lẻ trong AppData hay ProgramData: {name}"
+check:
+  en: "No startup items run loose files from AppData or ProgramData"
+  vi: "Không mục tự chạy nào chạy file nằm lẻ trong AppData hay ProgramData"
+explain:
+  en: "{program} sits directly in AppData or ProgramData instead of in its own vendor folder, and starts by itself ({location}). Installers almost always use a named subfolder; malware often drops a single file there."
+  vi: "{program} nằm thẳng trong AppData hoặc ProgramData chứ không trong thư mục riêng của hãng, và tự khởi động ({location}). Trình cài đặt gần như luôn dùng một thư mục con có tên; mã độc hay thả một file lẻ vào đó."
+fix:
+  en: "If you don't recognise {name}, disable it: Task Manager > Startup apps (Run keys and the Startup folder; all-users entries need an administrator), or Task Scheduler > {location} > {name} > Disable. Then scan {program} with Microsoft Defender."
+  vi: "Không nhận ra {name} thì tắt nó: Task Manager > Startup apps (khoá Run và thư mục Startup; mục của mọi người dùng cần quyền quản trị), hoặc Task Scheduler > {location} > {name} > Disable. Sau đó quét {program} bằng Microsoft Defender."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "autostart", "where": "run_key", "name": "sync", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Roaming\\winsync.exe", "in_temp": false, "in_downloads": false, "appdata_root": true, "script_loader": false}, "expect": true}
+  - {"item": {"kind": "autostart", "where": "run_key", "name": "Discord", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Local\\Discord\\Update.exe", "in_temp": false, "in_downloads": false, "appdata_root": false, "script_loader": false}, "expect": false}
+  - {"item": {"kind": "autostart", "where": "run_key", "name": "x", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Local\\Temp\\x.exe", "in_temp": true, "in_downloads": false, "appdata_root": true, "script_loader": false}, "expect": false, "note": "windows-autostart-from-temp covers it"}

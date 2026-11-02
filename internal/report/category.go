@@ -7,7 +7,7 @@ func Category(source string) string {
 		return "secrets"
 	case "listening_ports", "remote_services", "remote_tools", "tailscale", "sharing", "authorized_keys", "services", "network_config":
 		return "exposure"
-	case "posture", "privilege", "backup":
+	case "posture", "defender", "privilege", "backup":
 		return "settings"
 	case "persistence", "processes", "apps":
 		return "persistence"

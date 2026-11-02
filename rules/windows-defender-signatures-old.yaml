@@ -1,0 +1,22 @@
+id: windows-defender-signatures-old
+severity: medium
+platforms: [windows]
+source: defender
+match: item.kind == "status" && item.active && item.signature_age_days > 7
+title:
+  en: "Microsoft Defender's virus definitions are {signature_age_days} days old"
+  vi: "Dữ liệu nhận diện virus của Microsoft Defender đã cũ {signature_age_days} ngày"
+check:
+  en: "Microsoft Defender's virus definitions are up to date"
+  vi: "Dữ liệu nhận diện virus của Microsoft Defender còn mới"
+explain:
+  en: "Defender normally updates several times a day. Definitions {signature_age_days} days old miss the malware released since, and a stalled update can mean Windows Update is blocked."
+  vi: "Defender bình thường cập nhật vài lần mỗi ngày. Dữ liệu cũ {signature_age_days} ngày sẽ không nhận ra mã độc mới ra từ đó, và cập nhật bị kẹt có thể là dấu hiệu Windows Update bị chặn."
+fix:
+  en: "Windows Security > Virus & threat protection > Protection updates > Check for updates. If it fails, check Settings > Windows Update."
+  vi: "Bảo mật Windows > Bảo vệ khỏi virus & mối đe doạ > Cập nhật bảo vệ > Kiểm tra cập nhật. Nếu lỗi, xem Cài đặt > Windows Update."
+author: the-last-devops
+tests:
+  - {item: {kind: status, active: true, signature_age_days: 12}, expect: true}
+  - {item: {kind: status, active: true, signature_age_days: 0}, expect: false}
+  - {item: {kind: status, active: false, signature_age_days: 40}, expect: false, note: passive mode}
