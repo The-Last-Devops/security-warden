@@ -61,6 +61,7 @@ Usage:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
+  security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -75,6 +76,11 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"report.passed":     "Passed %d of %d checks",
 	"report.more":       "Details for every item: security-warden --verbose",
 	"report.progress":   "Checking",
+	"serve.open":        "Open this link in your browser (it signs you in):",
+	"serve.secret":      "Keep the link private: it works until you stop the server (Ctrl+C).",
+	"serve.lan_warning": "Warning: this address is reachable by everyone on that network.",
+	"serve.root":        "Run security-warden serve as your normal user, not as root.",
+	"serve.no_ui":       "This build has no web UI. Build it with: docker compose run --rm web",
 	"watch.start":       "Watching: %d issues now. Quick scan every %s, full scan every %s. New problems show as notifications.",
 	"watch.stop":        "Stopped.",
 	"watch.more_title":  "More new issues",
@@ -162,6 +168,7 @@ Cách dùng:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
+  security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -176,6 +183,11 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"report.passed":     "Đạt %d trên %d kiểm tra",
 	"report.more":       "Xem chi tiết từng mục: security-warden --verbose",
 	"report.progress":   "Đang kiểm",
+	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
+	"serve.secret":      "Giữ kín link: nó dùng được tới khi bạn dừng server (Ctrl+C).",
+	"serve.lan_warning": "Cảnh báo: mọi người trong mạng đó đều truy cập được địa chỉ này.",
+	"serve.root":        "Chạy security-warden serve bằng tài khoản thường, không chạy bằng root.",
+	"serve.no_ui":       "Bản build này chưa có giao diện web. Build bằng: docker compose run --rm web",
 	"watch.start":       "Đang canh: hiện có %d vấn đề. Quét nhanh mỗi %s, quét đầy đủ mỗi %s. Có vấn đề mới sẽ hiện thông báo.",
 	"watch.stop":        "Đã dừng.",
 	"watch.more_title":  "Thêm vấn đề mới",

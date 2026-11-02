@@ -2,6 +2,7 @@
 #
 #   docker compose run --rm tidy     # go mod tidy (updates go.mod / go.sum)
 #   docker compose run --rm test     # go vet + go test
+#   docker compose run --rm web      # build the web UI (web/dist)
 #   docker compose run --rm build    # ./dist/security-warden for this Mac
 #   ./dist/security-warden           # run the scan on the host
 #
@@ -24,6 +25,15 @@ x-go: &go
     CGO_ENABLED: "0"
 
 services:
+  # Build the web UI into web/dist (embedded by the Go build).
+  web:
+    image: node:22-alpine
+    working_dir: /web
+    volumes:
+      - ./web:/web
+      - npm-cache:/root/.npm
+    command: sh -c "npm ci --ignore-scripts --no-audit --no-fund && npm run build"
+
   tidy:
     <<: *go
     command: go mod tidy
@@ -43,5 +53,6 @@ services:
       -o dist/security-warden ./cmd/security-warden
 
 volumes:
+  npm-cache:
   go-mod:
   go-build:

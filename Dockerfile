@@ -8,6 +8,16 @@
 # See docker-compose.yml for the day-to-day commands.
 
 ARG GO_VERSION=1.27
+ARG NODE_VERSION=22
+
+# ui: the Vue + Tailwind web UI, built once and embedded in the binary.
+# Scripts from dependencies never run (--ignore-scripts).
+FROM node:${NODE_VERSION}-alpine AS ui
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
 
 # dev: toolchain only; docker compose mounts the source here.
 FROM golang:${GO_VERSION} AS dev
@@ -23,6 +33,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 # test: vet and unit tests, including every rule's sample items.
 FROM deps AS test
 COPY . .
+COPY --from=ui /web/dist/ web/dist/
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w ."; exit 1; }; \
     go vet ./... && GOOS=darwin go vet ./... && GOOS=windows go vet ./... && go test ./...

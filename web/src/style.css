@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Same palette as the desktop app mockup; dark values follow the system. */
+@theme {
+  --color-page: #e9edf2;
+  --color-win: #f7f8fa;
+  --color-panel: #ffffff;
+  --color-side: #eef1f5;
+  --color-line: #dde2e9;
+  --color-fg: #19202b;
+  --color-muted: #677285;
+  --color-accent: #2f6fdb;
+  --color-accent-soft: #e5eefc;
+  --color-crit: #c4283a;
+  --color-high: #d9562b;
+  --color-med: #b8860b;
+  --color-low: #2b8bb3;
+  --color-info: #677285;
+  --color-ok: #1f9d5a;
+  --color-crit-bg: #fde8eb;
+  --color-high-bg: #fdeee7;
+  --color-med-bg: #fbf3dc;
+  --color-low-bg: #e6f3f9;
+  --color-info-bg: #eef1f5;
+  --color-ok-bg: #e4f5ec;
+  --font-sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-page: #11151b;
+    --color-win: #1f242c;
+    --color-panel: #262c35;
+    --color-side: #1b2028;
+    --color-line: #343c47;
+    --color-fg: #e6eaf0;
+    --color-muted: #96a0b0;
+    --color-accent: #6ea2ff;
+    --color-accent-soft: #23314a;
+    --color-crit-bg: #4a1d24;
+    --color-high-bg: #47271b;
+    --color-med-bg: #3f3418;
+    --color-low-bg: #1a3644;
+    --color-info-bg: #2a313b;
+    --color-ok-bg: #173628;
+    color-scheme: dark;
+  }
+}
+
+html, body { height: 100%; }
+body { background: var(--color-page); color: var(--color-fg); font-family: var(--font-sans); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

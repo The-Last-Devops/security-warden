@@ -49,6 +49,8 @@ func run(args []string) int {
 	undo := fs.Bool("undo", false, "fix: revert the last batch of fixes")
 	interval := fs.Duration("interval", time.Minute, "watch: time between quick scans")
 	full := fs.Duration("full", 30*time.Minute, "watch: time between full scans")
+	listen := fs.String("listen", "127.0.0.1:7878", "serve: one IP:PORT of this machine (loopback or Tailscale)")
+	allowLAN := fs.Bool("allow-lan", false, "serve: allow a LAN address (never 0.0.0.0)")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -91,6 +93,8 @@ func run(args []string) int {
 		return runWatch(l, rs, *interval, *full)
 	case "agent":
 		return runAgent(l, subArgs)
+	case "serve":
+		return runServe(l, rs, *listen, *allowLAN)
 	case "help":
 		fs.Usage()
 		return 0
@@ -122,22 +126,9 @@ func run(args []string) int {
 		items[r.Name] = r.Items
 		ran[r.Name] = r.SkipKey == "" && r.Err == nil
 	}
-	findings := engine.Evaluate(rs, items, platform(), l)
-	checked, passed := engine.Coverage(rs, findings, ran, platform())
-	host, _ := os.Hostname()
-	s := report.Scan{
-		Version:  version,
-		Lang:     l,
-		Platform: platform(),
-		Host:     strings.TrimSuffix(host, ".local"),
-		Time:     time.Now().Format("2006-01-02 15:04"),
-		Score:    engine.Score(findings),
-		Checked:  checked,
-		Passed:   passed,
-		Sources:  report.Statuses(results),
-		Findings: findings,
-		Root:     os.Geteuid() == 0,
-	}
+	_ = ran
+	s := buildScan(rs, results, l)
+	findings := s.Findings
 	if cmd == "fix" {
 		return runFix(l, findings, *yes, *dryRun)
 	}
@@ -155,4 +146,30 @@ func run(args []string) int {
 		}
 	}
 	return 0
+}
+
+// buildScan evaluates collector results into a report in one language.
+func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan {
+	items := map[string][]engine.Item{}
+	ran := map[string]bool{}
+	for _, r := range results {
+		items[r.Name] = r.Items
+		ran[r.Name] = r.SkipKey == "" && r.Err == nil
+	}
+	findings := engine.Evaluate(rs, items, platform(), l)
+	checked, passed := engine.Coverage(rs, findings, ran, platform())
+	host, _ := os.Hostname()
+	return report.Scan{
+		Version:  version,
+		Lang:     l,
+		Platform: platform(),
+		Host:     strings.TrimSuffix(host, ".local"),
+		Time:     time.Now().Format("2006-01-02 15:04"),
+		Score:    engine.Score(findings),
+		Checked:  checked,
+		Passed:   passed,
+		Sources:  report.Statuses(results),
+		Findings: findings,
+		Root:     os.Geteuid() == 0,
+	}
 }
