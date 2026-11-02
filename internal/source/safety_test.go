@@ -14,7 +14,10 @@ func TestNoPromptingCommands(t *testing.T) {
 	banned := []string{`"sfltool"`, `"tccutil"`, `"profiles"`, `"systemsetup"`, `"bputil"`, `"firmwarepasswd"`,
 		`"find-generic-password"`, `"find-internet-password"`, `"dump-keychain"`, `"nvram", "-p"`, `"sudo", "-v"`}
 	// Folders protected by macOS privacy controls (TCC).
-	tcc := []string{`"Documents"`, `"Desktop"`, `"Downloads"`, `"Library/Mail"`, `"Library/Messages"`, `"Library/Safari"`, `"Library/Mobile Documents"`}
+	tcc := []string{`"Documents"`, `"Desktop"`, `"Downloads"`, `"Library/Mail"`, `"Library/Messages"`, `"Library/Safari"`, `"Library/Mobile Documents"`,
+		// Other apps' data: macOS asks "would like to access data from other
+		// apps" for anything inside these (seen with Docker Desktop's group).
+		`Group Containers`, `Library/Containers`}
 	files, _ := filepath.Glob("*.go")
 	for _, f := range files {
 		if strings.HasSuffix(f, "_test.go") || f == "tcc.go" {

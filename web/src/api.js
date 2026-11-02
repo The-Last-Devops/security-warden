@@ -2,11 +2,18 @@ import { createPasskey, getPasskey } from './passkey.js'
 
 let csrf = ''
 
-async function call(method, path, body) {
+async function call(method, path, body, retried = false) {
   const headers = method === 'GET' ? {} : { 'Content-Type': 'application/json' }
   if (method !== 'GET' && csrf) headers['X-CSRF-Token'] = csrf
   const res = await fetch(path, { method, credentials: 'same-origin', headers, body: body ? JSON.stringify(body) : undefined })
   const data = await res.json().catch(() => ({}))
+  // The token went stale (the page was open across a restart or update):
+  // fetch the current one and try once more instead of showing an error.
+  if (res.status === 403 && /csrf/i.test(data.error || '') && !retried) {
+    const m = await call('GET', '/api/meta')
+    csrf = m.csrf
+    return call(method, path, body, true)
+  }
   if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status })
   return data
 }

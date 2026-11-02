@@ -170,7 +170,6 @@ const scoreColor = computed(() => { const sc = data.value?.scan.score ?? 0; retu
 const RING = 2 * Math.PI * 30
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
 // Points earned by fixing every safe item (each rule counts once).
-const safeGain = computed(() => { const seen = {}; for (const f of safeFixes.value) seen[f.rule_id] = f.gain || 0; return Object.values(seen).reduce((a, b) => a + b, 0) })
 const passedN = computed(() => (data.value?.scan.passed || []).length)
 const window = globalThis.window
 const fmtTime = iso => (iso ? new Date(iso).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) : '')
@@ -259,7 +258,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             </ul>
             <p v-else class="text-[14px] leading-relaxed">{{ t.notWatchingBody }}</p>
             <p v-if="!data.watching" class="rounded-lg bg-panel2 px-3 py-2 font-mono text-[13px] ring-1 ring-line">security-warden start</p>
-            <p class="border-t border-line pt-3 text-[13px] text-muted">{{ data.watching ? t.watchNext(fmtTime(new Date(new Date(data.scanned_at).getTime() + 10 * 60000).toISOString())) + ' ' + t.watchStop : t.local }}</p>
+            <p class="border-t border-line pt-3 text-[13px] text-muted">{{ data.watching ? t.watchNext(fmtTime(new Date(new Date(data.scanned_at).getTime() + 30 * 60000).toISOString())) + ' ' + t.watchStop : t.local }}</p>
           </div>
         </div>
         <div class="relative ml-auto">
@@ -326,7 +325,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               <p class="mt-1 text-[13px] text-muted">{{ t.passedShort(passedN, groupsAll) }}</p>
             </div>
           </div>
-          <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ safeGain ? t.fixGain(safeFixes.length, safeGain) : t.fixSafe(safeFixes.length) }}</button>
+          <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ t.fixSafe(safeFixes.length) }}</button>
           <div class="flex items-center gap-2">
             <button class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-line bg-panel2 px-4 py-2.5 text-[14px] font-semibold hover:border-accent hover:text-accent disabled:opacity-50" :disabled="busy" @click="load(true)">
               <svg :class="busy ? 'animate-spin' : ''" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.6 0 3 .7 4 1.7M12.5 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -399,7 +398,6 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <div class="flex flex-wrap items-center gap-2 px-5 py-2.5"
               :class="{ critical: 'bg-rail-crit text-white', high: 'bg-rail-high text-white', medium: 'bg-rail-med text-[#1a1300]', low: 'bg-rail-low text-white', info: 'bg-rail-info text-white' }[nextGroup.first.severity]">
               <span class="text-[12.5px] font-extrabold tracking-[.1em] uppercase">{{ t.nextUp }} · {{ t.sev[nextGroup.first.severity] }}</span>
-              <span v-if="nextGroup.first.gain" class="num ml-auto rounded-full bg-black/15 px-2.5 py-0.5 text-[13px] font-bold">{{ t.gain(nextGroup.first.gain) }}</span>
             </div>
             <div class="grid gap-3 p-5">
             <h2 class="text-[21px] leading-snug font-extrabold tracking-tight">{{ nextGroup.first.title.split(': ')[0] }}</h2>

@@ -108,7 +108,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	return 0
 }
 
-// watchInBackground rescans every 10 minutes and notifies about problems
+// watchInBackground rescans every 30 minutes and notifies about problems
 // that were not there before (medium and worse; snoozed ones are skipped
 // because they are not in the findings).
 func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string) {
@@ -119,7 +119,7 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 	for _, f := range srv.ScanNow(ctx) {
 		known[engine.FindingID(f)] = true
 	}
-	tick := time.NewTicker(10 * time.Minute)
+	tick := time.NewTicker(30 * time.Minute)
 	defer tick.Stop()
 	for {
 		select {

@@ -33,7 +33,6 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
       <div class="flex items-center gap-3">
         <button v-if="group.fixable.length" class="rounded-[10px] bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50"
           :disabled="busy" @click="emit('fix', group.fixable)">{{ t.fix }}</button>
-        <span v-else-if="f.gain" class="num text-[13px] font-semibold text-ok">{{ t.gain(f.gain) }}</span>
         <button class="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel2 hover:text-fg" :aria-label="open ? t.showLess : t.details" @click="open = !open">
           <svg width="14" height="14" viewBox="0 0 16 16" :class="open ? 'rotate-180' : ''" class="transition-transform"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
@@ -43,7 +42,6 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
     <div v-if="open" class="grid gap-3 border-t border-line/70 px-4 pt-3.5 pb-4">
       <div class="flex flex-wrap items-center gap-2">
         <SevChip :sev="f.severity" :label="t.sev[f.severity]" />
-        <span v-if="f.gain" class="num text-[13px] font-semibold text-ok">{{ t.gain(f.gain) }}</span>
         <span class="ml-auto font-mono text-[12px] text-muted">{{ f.rule_id }}</span>
       </div>
       <p v-if="parts[1] && !group.rest.length" class="font-mono text-[13px] break-all text-muted">{{ parts[1] }}</p>

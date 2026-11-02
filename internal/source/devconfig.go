@@ -3,10 +3,12 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -196,12 +198,18 @@ func pkgConfig(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
-// dockerDaemonConfig reads Docker Desktop's settings and daemon.json.
+// dockerDaemonConfig reads Docker's settings and daemon.json. Docker
+// Desktop's own settings on macOS live in its app group container, which
+// macOS guards with a prompt, so instead we look for what that setting does:
+// the Docker API answering without TLS on localhost:2375.
 func dockerDaemonConfig(ctx context.Context) ([]Item, error) {
 	it := Item{"expose_tcp_no_tls": false, "insecure_registries": 0, "found": false}
+	if c, err := net.DialTimeout("tcp", "127.0.0.1:2375", 300*time.Millisecond); err == nil {
+		c.Close()
+		it["found"] = true
+		it["expose_tcp_no_tls"] = true
+	}
 	for _, f := range []string{
-		filepath.Join(home(), "Library/Group Containers/group.com.docker/settings-store.json"),
-		filepath.Join(home(), "Library/Group Containers/group.com.docker/settings.json"),
 		filepath.Join(home(), ".docker/desktop/settings-store.json"),
 		filepath.Join(os.Getenv("APPDATA"), "Docker/settings-store.json"),
 	} {

@@ -135,7 +135,7 @@ shows how many points fixing it earns.
 ## Web UI and security
 
 `start` runs a small web server on `127.0.0.1:7348` (never on `0.0.0.0`) as a LaunchAgent on macOS, a
-systemd user service on Linux or a background process on Windows. It rescans every 10 minutes, notifies
+systemd user service on Linux or a background process on Windows. It rescans every 30 minutes, notifies
 you about new problems, and opens the window for new high or critical ones (at most once an hour).
 
 - **Sign-in:** a passkey, or a one-time ticket the CLI asks for when you run `start` or `open` (valid
