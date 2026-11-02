@@ -23,6 +23,8 @@ export const api = {
   unignore: keys => call('POST', '/api/unignore', { keys }),
   logout: () => call('POST', '/api/logout'),
   passkeyStatus: () => call('GET', '/api/passkey'),
+  updateStatus: () => call('GET', '/api/update'),
+  setAutoUpdate: auto => call('POST', '/api/update/auto', { auto }),
   async addPasskey() {
     const opts = await call('POST', '/api/passkey/register/begin')
     return call('POST', '/api/passkey/register/finish', await createPasskey(opts))

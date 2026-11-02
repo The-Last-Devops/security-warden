@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/The-Last-Devops/security-warden/internal/appdir"
+	"github.com/The-Last-Devops/security-warden/internal/update"
 	"github.com/The-Last-Devops/security-warden/internal/web"
 	"os"
 	"runtime"
@@ -109,6 +110,15 @@ func run(args []string) int {
 			*interval = 10 * time.Second
 		}
 		return runWatch(l, rs, *interval, *full)
+	case "update":
+		if len(subArgs) > 0 && (subArgs[0] == "on" || subArgs[0] == "off") {
+			st := update.Load()
+			st.Auto = subArgs[0] == "on"
+			_ = update.Save(st)
+			fmt.Println(i18n.T(l, "update.auto_"+subArgs[0]))
+			return 0
+		}
+		return runUpdate(l)
 	case "start":
 		return runStart(l)
 	case "stop":

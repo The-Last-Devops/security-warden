@@ -59,6 +59,7 @@ Other archives: `darwin-amd64`, `linux-amd64`, `linux-arm64` (`.tar.gz`) and `wi
 | `security-warden open` | Open the browser, signed in |
 | `security-warden status` | Is it running? |
 | `security-warden stop` | Stop it and remove it from login items |
+| `security-warden update` | Update now (`on`/`off` for automatic updates) |
 | `security-warden` | Scan once and print a report in the terminal |
 | `security-warden fix` | Fix what can be fixed, asking first (`--dry-run`, `--yes`, `--undo`) |
 | `security-warden ignore list\|clear` | Snoozed findings |
@@ -68,12 +69,17 @@ Add `--lang vi` or `--lang en` to any command, or `--json` to the scan.
 
 ## Update
 
+Homebrew installs **update themselves**: the background service checks once a day and runs
+`brew upgrade security-warden`, then restarts on the new version. Turn it off with
+`security-warden update off` (or in ⚙ Settings). To update right away:
+
 ```sh
-brew update && brew upgrade security-warden
-security-warden stop && security-warden start
+security-warden update
 ```
 
-With the disk image, install the new `.dmg` the same way. Passkeys, snoozed findings and settings are kept.
+With the disk image you get a notification; install the new `.dmg` the same way. Passkeys, snoozed findings
+and settings are kept. The update check only reads which release is the latest; nothing about your machine
+is sent.
 
 ## Uninstall
 
@@ -196,7 +202,7 @@ repository is its own Homebrew tap).
 
 ## Roadmap
 
-- Signed rule updates without a new release.
+- Signed rule updates without a new release; self-update for direct binary installs.
 - Full Windows checks (firewall, BitLocker, Defender, RDP).
 - Docker image vulnerability scanning.
 - Real-time process and network events (Endpoint Security on macOS, ETW on Windows).

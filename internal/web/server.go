@@ -9,6 +9,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"github.com/The-Last-Devops/security-warden/internal/update"
 	"io/fs"
 	"net"
 	"net/http"
@@ -134,6 +135,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/fix", s.withSession(s.handleFix))
 	mux.HandleFunc("POST /api/undo", s.withSession(s.handleUndo))
 	mux.HandleFunc("POST /api/ignore", s.withSession(s.handleIgnore))
+	mux.HandleFunc("GET /api/update", s.withSession(s.handleUpdateStatus))
+	mux.HandleFunc("POST /api/update/auto", s.withSession(s.handleUpdateAuto))
 	mux.HandleFunc("POST /api/unignore", s.withSession(s.handleUnignore))
 	mux.HandleFunc("GET /api/passkey", s.handlePasskeyStatus)
 	mux.HandleFunc("POST /api/passkey/register/begin", s.withSession(s.handleRegisterBegin))
@@ -526,6 +529,31 @@ func (s *Server) handleUnignore(w http.ResponseWriter, r *http.Request, _ string
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	st := update.Load()
+	writeJSON(w, http.StatusOK, map[string]any{
+		"current": s.Version, "latest": st.Latest, "auto": st.Auto, "method": update.Method(),
+		"available": update.Newer(st.Latest, s.Version), "checked": st.Checked, "error": st.LastError,
+	})
+}
+
+func (s *Server) handleUpdateAuto(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	var req struct {
+		Auto bool `json:"auto"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errJSON(w, http.StatusBadRequest, "send {\"auto\": true|false}")
+		return
+	}
+	st := update.Load()
+	st.Auto = req.Auto
+	if err := update.Save(st); err != nil {
+		errJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"auto": st.Auto})
 }
 
 func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ *session) {

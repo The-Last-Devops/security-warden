@@ -62,6 +62,7 @@ Usage:
   security-warden start                 run in the background and open the window
   security-warden stop                  stop it (and do not start at login)
   security-warden status | open
+  security-warden update [on|off]       update now, or turn automatic updates on/off
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -83,6 +84,14 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"ignore.forever":    "for good",
 	"serve.open":        "Open this link in your browser (it signs you in):",
 	"serve.opened":      "Opened in your browser.",
+	"update.applied":    "Updated to",
+	"update.available":  "A new version is available",
+	"update.how":        "Security Warden %s is out. Update with: brew upgrade security-warden, or download it from GitHub Releases.",
+	"update.current":    "Security Warden %s is up to date.",
+	"update.installing": "Installing Security Warden %s…",
+	"update.done":       "Updated to %s.",
+	"update.auto_on":    "Automatic updates are on.",
+	"update.auto_off":   "Automatic updates are off.",
 	"start.ok":          "Security Warden is running in the background (http://localhost:%d) and starts at login. Opening it…",
 	"start.slow":        "Security Warden did not answer yet. Check the log: %s",
 	"stop.ok":           "Security Warden stopped. It will not start at login until you run: security-warden start",
@@ -185,6 +194,7 @@ Cách dùng:
   security-warden start                 chạy nền và mở cửa sổ
   security-warden stop                  dừng (và không tự bật khi đăng nhập)
   security-warden status | open
+  security-warden update [on|off]       cập nhật ngay, hoặc bật/tắt tự cập nhật
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -206,6 +216,14 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"ignore.forever":    "luôn luôn",
 	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
 	"serve.opened":      "Đã mở trong trình duyệt.",
+	"update.applied":    "Đã cập nhật lên",
+	"update.available":  "Có phiên bản mới",
+	"update.how":        "Đã có Security Warden %s. Cập nhật bằng: brew upgrade security-warden, hoặc tải từ GitHub Releases.",
+	"update.current":    "Security Warden %s đã là bản mới nhất.",
+	"update.installing": "Đang cài Security Warden %s…",
+	"update.done":       "Đã cập nhật lên %s.",
+	"update.auto_on":    "Đã bật tự cập nhật.",
+	"update.auto_off":   "Đã tắt tự cập nhật.",
 	"start.ok":          "Security Warden đang chạy nền (http://localhost:%d) và tự bật khi đăng nhập. Đang mở…",
 	"start.slow":        "Security Warden chưa phản hồi. Xem nhật ký: %s",
 	"stop.ok":           "Đã dừng Security Warden. Nó sẽ không tự bật khi đăng nhập cho tới khi bạn chạy: security-warden start",

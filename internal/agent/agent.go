@@ -6,6 +6,7 @@ package agent
 import (
 	"fmt"
 	"github.com/The-Last-Devops/security-warden/internal/appdir"
+	"github.com/The-Last-Devops/security-warden/internal/update"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,7 +78,8 @@ Description=Security Warden: web UI on localhost:7348 and background checks
 
 [Service]
 ExecStart=` + cmd + `
-Restart=on-failure
+Restart=always
+RestartSec=5
 Nice=10
 IOSchedulingClass=idle
 
@@ -88,11 +90,9 @@ WantedBy=default.target
 
 // Install writes the service and starts it.
 func Install(lang string) (string, error) {
-	bin, err := os.Executable()
+	// For Homebrew, the opt path survives upgrades; Cellar/<version> does not.
+	bin, err := update.StableExecutable()
 	if err != nil {
-		return "", err
-	}
-	if bin, err = filepath.EvalSymlinks(bin); err != nil {
 		return "", err
 	}
 	// The agent runs this file at every login; refuse one others can replace.

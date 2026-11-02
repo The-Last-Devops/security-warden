@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/The-Last-Devops/security-warden/internal/agent"
+	"github.com/The-Last-Devops/security-warden/internal/update"
 	"os"
 	"os/signal"
 	"strings"
@@ -75,6 +77,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		// Running as a service: no secret in the log; watch and notify.
 		fmt.Printf("%s  %s %s\n", time.Now().Format("2006-01-02 15:04:05"), t("serve.background"), addr)
 		go watchInBackground(ctx, srv, lang, popup)
+		go autoUpdate(ctx, lang, stop)
 		if err := srv.Run(ctx, ln); err != nil {
 			fmt.Println(err)
 			return 2
@@ -169,4 +172,94 @@ func runOpen(lang string, rs []*engine.Rule) int {
 		return 0
 	}
 	return runServe(lang, rs, "", false, true, false, false, "off")
+}
+
+// autoUpdate checks for a new release two minutes after start and then
+// daily. Homebrew installs upgrade themselves and restart (the service
+// manager starts the new version); others get a notification once.
+func autoUpdate(ctx context.Context, lang string, stop context.CancelFunc) {
+	if version == "dev" {
+		return
+	}
+	wait := 2 * time.Minute
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(wait):
+		}
+		wait = 24 * time.Hour
+		if checkAndUpdate(ctx, lang) {
+			// New version installed: exit so launchd/systemd restarts us.
+			stop()
+			os.Exit(3)
+		}
+	}
+}
+
+// checkAndUpdate returns true when a new version was installed.
+func checkAndUpdate(ctx context.Context, lang string) bool {
+	t := func(k string) string { return i18n.T(lang, k) }
+	st := update.Load()
+	latest, err := update.Latest(ctx)
+	st.Checked = time.Now()
+	if err != nil {
+		st.LastError = err.Error()
+		_ = update.Save(st)
+		return false
+	}
+	st.Latest, st.LastError = latest, ""
+	if !update.Newer(latest, version) {
+		_ = update.Save(st)
+		return false
+	}
+	if st.Auto && update.Method() == "brew" {
+		if err := update.ApplyBrew(ctx); err != nil {
+			st.LastError = err.Error()
+			_ = update.Save(st)
+			return false
+		}
+		st.Applied = latest
+		_ = update.Save(st)
+		fmt.Printf("%s  %s %s\n", time.Now().Format("2006-01-02 15:04:05"), t("update.applied"), latest)
+		notify.Send("Security Warden", t("update.applied"), latest)
+		return true
+	}
+	if st.Notified != latest {
+		notify.Send("Security Warden", t("update.available"), fmt.Sprintf(t("update.how"), latest))
+		st.Notified = latest
+	}
+	_ = update.Save(st)
+	return false
+}
+
+// runUpdate updates now (CLI).
+func runUpdate(lang string) int {
+	t := func(k string) string { return i18n.T(lang, k) }
+	latest, err := update.Latest(context.Background())
+	if err != nil {
+		fmt.Printf(t("fix.failed")+"\n", err)
+		return 2
+	}
+	if !update.Newer(latest, version) {
+		fmt.Printf(t("update.current")+"\n", version)
+		return 0
+	}
+	if update.Method() != "brew" {
+		fmt.Printf(t("update.how")+"\n", latest)
+		return 1
+	}
+	fmt.Printf(t("update.installing")+"\n", latest)
+	if err := update.ApplyBrew(context.Background()); err != nil {
+		fmt.Printf(t("fix.failed")+"\n", err)
+		return 2
+	}
+	if web.RunningHere(web.DefaultPort) && agent.Installed() {
+		// Restart the background service on the new version.
+		_ = agent.Uninstall()
+		time.Sleep(time.Second)
+		_, _ = agent.Install(lang)
+	}
+	fmt.Printf(t("update.done")+"\n", latest)
+	return 0
 }

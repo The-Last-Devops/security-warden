@@ -193,6 +193,13 @@ async function ignoreFindings(list, days) {
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
 const menuOpen = ref(false)
+const upd = ref(null)
+async function refreshUpdate() { try { upd.value = await api.updateStatus() } catch {} }
+async function toggleAuto() {
+  if (!upd.value) return
+  try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
+}
+onMounted(refreshUpdate)
 function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false } }
 onMounted(() => document.addEventListener('click', () => { menuOpen.value = false }))
 </script>
@@ -238,6 +245,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
                 <button v-if="pk.count" class="rounded-[10px] border border-line px-3 py-2 text-[13px] font-semibold text-muted hover:text-crit" @click="menuOpen = false; clearPasskeys()">{{ t.removePasskeys }}</button>
               </div>
             </div>
+            <div v-if="upd" class="grid gap-2">
+              <span class="caps">{{ t.updates }}</span>
+              <label class="flex items-center justify-between gap-3 text-[14px]">
+                <span>{{ t.autoUpdate }}</span>
+                <button type="button" role="switch" :aria-checked="upd.auto" class="relative h-6 w-11 rounded-full transition-colors" :class="upd.auto ? 'bg-accent' : 'bg-line'" @click="toggleAuto">
+                  <span class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all" :class="upd.auto ? 'left-[22px]' : 'left-0.5'" />
+                </button>
+              </label>
+              <span class="text-[12.5px] text-muted">{{ t.version(upd.current) }}</span>
+            </div>
             <div class="border-t border-line pt-3">
               <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="menuOpen = false; logout()">{{ t.signOut }}</button>
             </div>
@@ -246,6 +263,12 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
       </div>
     </header>
 
+    <div v-if="upd && upd.available" class="mx-auto mt-4 flex max-w-[1280px] flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:px-6">
+      <div class="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-accent-soft px-4 py-2.5 text-[14px] ring-1 ring-accent/30">
+        <span class="font-semibold text-accent">{{ t.newVersion(upd.latest) }}</span>
+        <span class="text-muted">{{ upd.method === 'brew' ? t.updateHowBrew : t.updateHowManual }}</span>
+      </div>
+    </div>
     <div class="mx-auto grid max-w-[1280px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[290px_1fr]">
       <!-- left: score, counts, groups -->
       <aside class="grid content-start gap-5">
