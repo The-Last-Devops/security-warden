@@ -1,0 +1,24 @@
+id: macos-firewall-stealth-off
+severity: low
+platforms: [macos]
+source: posture
+match: "has(item.stealth_mode) && !item.stealth_mode && has(item.firewall) && item.firewall"
+title:
+  en: "Firewall answers probes from the network (stealth mode is off)"
+  vi: "Tường lửa vẫn trả lời dò quét từ mạng (chế độ ẩn đang tắt)"
+check:
+  en: "The firewall does not answer probes (stealth mode)"
+  vi: "Tường lửa không trả lời dò quét (chế độ ẩn)"
+explain:
+  en: "With stealth mode off, this Mac answers pings and connection attempts on closed ports, so anyone on the same Wi-Fi can find it and start probing it."
+  vi: "Khi tắt chế độ ẩn, máy Mac trả lời ping và các lần thử kết nối vào port đóng, nên ai cùng mạng Wi-Fi cũng dễ phát hiện và bắt đầu dò máy."
+fix:
+  en: "System Settings › Network › Firewall › Options, and turn on Enable stealth mode."
+  vi: "Cài đặt hệ thống › Mạng › Tường lửa › Tuỳ chọn, và chọn Bật chế độ ẩn."
+references:
+  - https://github.com/usnistgov/macos_security
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "firewall": true, "stealth_mode": false}, "expect": true}
+  - {"item": {"os": "macos", "firewall": true, "stealth_mode": true}, "expect": false}
+  - {"item": {"os": "macos", "firewall": false, "stealth_mode": false}, "expect": false, "note": "macos-firewall-off covers it"}

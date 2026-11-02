@@ -1,0 +1,23 @@
+id: macos-hot-corner-no-lock
+severity: low
+platforms: [macos]
+source: posture
+match: "has(item.hot_corner_no_lock) && item.hot_corner_no_lock"
+title:
+  en: "A hot corner stops the screen from locking"
+  vi: "Một góc nóng ngăn màn hình tự khoá"
+check:
+  en: "No hot corner stops the screen from locking"
+  vi: "Không góc nóng nào ngăn màn hình tự khoá"
+explain:
+  en: "A hot corner is set to Disable Screen Saver. Leave the pointer there and the Mac never locks itself while you are away."
+  vi: "Một góc nóng được đặt là Tắt trình bảo vệ màn hình. Để con trỏ ở góc đó là máy Mac không bao giờ tự khoá khi bạn rời đi."
+fix:
+  en: "System Settings › Desktop & Dock › Hot Corners, and change Disable Screen Saver to another action (Lock Screen is a good one)."
+  vi: "Cài đặt hệ thống › Màn hình nền & Dock › Góc nóng, và đổi Tắt trình bảo vệ màn hình thành việc khác (Khoá màn hình là lựa chọn tốt)."
+references:
+  - https://github.com/usnistgov/macos_security
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "hot_corner_no_lock": true}, "expect": true}
+  - {"item": {"os": "macos", "hot_corner_no_lock": false}, "expect": false}

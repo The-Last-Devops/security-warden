@@ -1,0 +1,23 @@
+id: macos-content-caching-on
+severity: low
+platforms: [macos]
+source: posture
+match: "has(item.content_caching) && item.content_caching"
+title:
+  en: "Content caching is on"
+  vi: "Lưu đệm nội dung đang bật"
+check:
+  en: "Content caching is off"
+  vi: "Lưu đệm nội dung đang tắt"
+explain:
+  en: "This Mac stores Apple software updates and iCloud data and serves them to other devices on the network. On a laptop that moves between networks, that is a service other people's devices can reach."
+  vi: "Máy Mac này lưu bản cập nhật phần mềm Apple và dữ liệu iCloud rồi phát lại cho thiết bị khác trong mạng. Với laptop hay đổi mạng, đó là một dịch vụ mà thiết bị của người khác chạm tới được."
+fix:
+  en: "System Settings › General › Sharing, and turn off Content Caching unless this Mac is meant to serve the office."
+  vi: "Cài đặt hệ thống › Cài đặt chung › Chia sẻ, và tắt Lưu đệm nội dung, trừ khi máy này được dùng để phục vụ cả văn phòng."
+references:
+  - https://github.com/usnistgov/macos_security
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "content_caching": true}, "expect": true}
+  - {"item": {"os": "macos", "content_caching": false}, "expect": false}

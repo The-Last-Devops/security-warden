@@ -2,3 +2,7 @@
 web/node_modules/
 web/dist/*
 !web/dist/.keep
+
+# Inputs of the tools/ generators, fetched by hand or by refresh-lists.yml
+tools/**/gitleaks.toml
+tools/**/RemovedPackages.md

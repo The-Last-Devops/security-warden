@@ -5,3 +5,17 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
 Ideas on what to check were informed by bordercheck
 (https://github.com/ptrinh/bordercheck), MIT License.
+
+Secret patterns adapted from gitleaks (https://github.com/gitleaks/gitleaks),
+MIT License, Copyright (c) 2019 Zachary Rice.
+
+Container checks follow Docker Bench for Security
+(https://github.com/docker/docker-bench-security), Apache License 2.0,
+Copyright 2015 Docker, Inc.
+
+The list of extensions removed from the Visual Studio Marketplace comes from
+https://github.com/microsoft/vsmarketplace, MIT License,
+Copyright (c) Microsoft Corporation.
+
+Some macOS checks follow the macOS Security Compliance Project
+(https://github.com/usnistgov/macos_security), CC BY 4.0.

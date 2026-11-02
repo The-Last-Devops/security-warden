@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -100,22 +101,22 @@ func cloudConfig(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
+// historyKinds are the checks gitleaks' token formats do not make. Token
+// formats themselves come from scanSecrets.
 var historyKinds = []struct {
-	kind string
-	re   *regexp.Regexp
+	kind, family string
+	re           *regexp.Regexp
 }{
-	{"aws_key", regexp.MustCompile(`AKIA[0-9A-Z]{16}`)},
-	{"github_token", regexp.MustCompile(`gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}`)},
-	{"ai_key", regexp.MustCompile(`sk-(ant-|proj-)?[A-Za-z0-9_-]{30,}`)},
-	{"slack_token", regexp.MustCompile(`xox[abprs]-[A-Za-z0-9-]{10,}`)},
-	{"private_key", regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
-	{"password_flag", regexp.MustCompile(`--password[= ]\S{4,}|\b(mysql|mariadb|mysqldump|mysqladmin)\b[^\n]*\s-p[^\s-]\S{3,}|PGPASSWORD=\S{4,}|MYSQL_PWD=\S{4,}|sshpass -p\s*\S{4,}`)},
-	{"bearer", regexp.MustCompile(`Authorization:\s*Bearer\s+[A-Za-z0-9._-]{20,}`)},
-	{"url_with_password", regexp.MustCompile(`[a-z][a-z0-9+.-]*://[^:/\s@]+:[^@\s/]{4,}@`)},
+	{"ai_key", "token", regexp.MustCompile(`sk-(ant-|proj-)?[A-Za-z0-9_-]{30,}`)},
+	{"private_key", "token", regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
+	{"password_flag", "password", regexp.MustCompile(`--password[= ]\S{4,}|\b(mysql|mariadb|mysqldump|mysqladmin)\b[^\n]*\s-p[^\s-]\S{3,}|PGPASSWORD=\S{4,}|MYSQL_PWD=\S{4,}|sshpass -p\s*\S{4,}`)},
+	{"bearer", "password", regexp.MustCompile(`Authorization:\s*Bearer\s+[A-Za-z0-9._-]{20,}`)},
+	{"url_with_password", "password", regexp.MustCompile(`[a-z][a-z0-9+.-]*://[^:/\s@]+:[^@\s/]{4,}@`)},
 }
 
 // shellHistory counts secrets in shell and REPL history files. Only counts
-// per kind are kept.
+// per kind are kept: a gitleaks rule id for known token formats
+// (family "token"), or one of historyKinds.
 func shellHistory(ctx context.Context) ([]Item, error) {
 	var items []Item
 	for _, rel := range []string{".zsh_history", ".bash_history", ".local/share/fish/fish_history",
@@ -126,13 +127,42 @@ func shellHistory(ctx context.Context) ([]Item, error) {
 			continue
 		}
 		s := string(b)
+		hits := scanSecrets(s)
+		counts := map[string]int{}
+		for _, h := range hits {
+			counts[h.ID]++
+		}
+		ids := make([]string, 0, len(counts))
+		for id := range counts {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			items = append(items, Item{"file": path, "kind": id, "family": "token", "count": counts[id]})
+		}
+		// A token inside a header or URL is already counted above.
 		for _, k := range historyKinds {
-			if n := len(k.re.FindAllStringIndex(s, -1)); n > 0 {
-				items = append(items, Item{"file": path, "kind": k.kind, "count": n})
+			n := 0
+			for _, m := range k.re.FindAllStringIndex(s, -1) {
+				if !overlaps(hits, m[0], m[1]) {
+					n++
+				}
+			}
+			if n > 0 {
+				items = append(items, Item{"file": path, "kind": k.kind, "family": k.family, "count": n})
 			}
 		}
 	}
 	return items, nil
+}
+
+func overlaps(hits []secretHit, start, end int) bool {
+	for _, h := range hits {
+		if h.Start < end && start < h.End {
+			return true
+		}
+	}
+	return false
 }
 
 // kubeClientCertContext returns the first context whose user logs in with a

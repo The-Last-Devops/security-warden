@@ -1,0 +1,48 @@
+name: refresh-lists
+
+# Regenerates the lists the scanner ships with, so scans never need the
+# network: gitleaks' secret patterns (latest release) and the VS Marketplace
+# list of removed extensions. Commits to main only when something changed.
+on:
+  schedule:
+    - cron: "17 4 * * 1" # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/go.mod
+          cache-dependency-path: tools/go.sum
+      - name: Fetch sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api repos/gitleaks/gitleaks/releases/latest -q .tag_name)
+          echo "GITLEAKS_TAG=$tag" >> "$GITHUB_ENV"
+          gh api "repos/gitleaks/gitleaks/contents/config/gitleaks.toml?ref=$tag" -q .content | base64 -d > "$RUNNER_TEMP/gitleaks.toml"
+          gh api repos/microsoft/vsmarketplace/contents/RemovedPackages.md -q .content | base64 -d > "$RUNNER_TEMP/RemovedPackages.md"
+      - name: Generate
+        working-directory: tools
+        run: |
+          go run ./gen-secret-patterns -in "$RUNNER_TEMP/gitleaks.toml" -tag "$GITLEAKS_TAG" -out ../internal/source/secretpatterns_gen.go
+          go run ./gen-removed-extensions -in "$RUNNER_TEMP/RemovedPackages.md" -out ../internal/source/removedextensions_gen.go
+      # The same gate as CI, so a new pattern that breaks a test never lands.
+      - name: Test
+        run: |
+          go vet ./... && go test ./internal/source/ ./internal/engine/
+      - name: Commit to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add internal/source/secretpatterns_gen.go internal/source/removedextensions_gen.go
+          git commit -m "Refresh secret patterns ($GITLEAKS_TAG) and removed extensions" || exit 0
+          git push origin main

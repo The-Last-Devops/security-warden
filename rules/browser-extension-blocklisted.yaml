@@ -1,0 +1,24 @@
+id: browser-extension-blocklisted
+severity: high
+platforms: [macos, windows, linux]
+source: browser_extensions
+match: "item.blocklisted != \"\" && item.blocklisted != \"malware\""
+title:
+  en: "{browser} flagged the extension {name} ({blocklisted})"
+  vi: "{browser} đã đánh dấu extension {name} ({blocklisted})"
+check:
+  en: "No browser extension is flagged by Google"
+  vi: "Không extension trình duyệt nào bị Google đánh dấu"
+explain:
+  en: "Google flagged {name} ({id}) in the {profile} profile: it breaks Chrome Web Store policy, is unwanted software, or has a known security hole. It is still installed."
+  vi: "Google đã đánh dấu {name} ({id}) trong hồ sơ {profile}: nó vi phạm chính sách Chrome Web Store, là phần mềm không mong muốn, hoặc có lỗ hổng bảo mật đã biết. Nó vẫn còn trên máy."
+fix:
+  en: "Remove it (chrome://extensions › Remove) unless you know why you need it; if so, look for a safer replacement."
+  vi: "Gỡ nó (chrome://extensions › Xoá) trừ khi bạn biết rõ vì sao cần nó; nếu cần, hãy tìm extension khác an toàn hơn."
+author: the-last-devops
+tests:
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abcdefghijklmnopabcdefghijklmnop", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": false, "blocklisted": "policy_violation"}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abcdefghijklmnopabcdefghijklmnop", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": true, "blocklisted": "potentially_unwanted"}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abcdefghijklmnopabcdefghijklmnop", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": false, "blocklisted": "security_vulnerability"}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abcdefghijklmnopabcdefghijklmnop", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": false, "blocklisted": "malware"}, "expect": false}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abcdefghijklmnopabcdefghijklmnop", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": true, "blocklisted": ""}, "expect": false}

@@ -1,0 +1,23 @@
+id: macos-bluetooth-sharing-on
+severity: medium
+platforms: [macos]
+source: posture
+match: "has(item.bluetooth_sharing) && item.bluetooth_sharing"
+title:
+  en: "Bluetooth Sharing is on"
+  vi: "Chia sẻ Bluetooth đang bật"
+check:
+  en: "Bluetooth Sharing is off"
+  vi: "Chia sẻ Bluetooth đang tắt"
+explain:
+  en: "Devices nearby can send files to this Mac or browse its shared folder over Bluetooth, without being on your network."
+  vi: "Thiết bị ở gần có thể gửi file vào máy Mac hoặc xem thư mục chia sẻ của nó qua Bluetooth, mà không cần vào mạng của bạn."
+fix:
+  en: "System Settings › General › Sharing, and turn off Bluetooth Sharing."
+  vi: "Cài đặt hệ thống › Cài đặt chung › Chia sẻ, và tắt Chia sẻ Bluetooth."
+references:
+  - https://github.com/usnistgov/macos_security
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "bluetooth_sharing": true}, "expect": true}
+  - {"item": {"os": "macos", "bluetooth_sharing": false}, "expect": false}

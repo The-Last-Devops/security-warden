@@ -17,6 +17,7 @@ var (
 	rcExport    = regexp.MustCompile(`^\s*export\s+([A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|ACCESS_KEY)[A-Za-z0-9_]*)=(.*)$`)
 	rcInsecure  = regexp.MustCompile(`NODE_TLS_REJECT_UNAUTHORIZED=["']?0|PYTHONHTTPSVERIFY=["']?0|GIT_SSL_NO_VERIFY=["']?(1|true)|strict-ssl\s+false|--insecure-skip-tls-verify|HOMEBREW_NO_VERIFY_ATTESTATIONS`)
 	rcSkipPerms = regexp.MustCompile(`--dangerously-skip-permissions|--yolo\b|--dangerously-bypass-approvals-and-sandbox`)
+	rcAnyExport = regexp.MustCompile(`^\s*export\s+([A-Za-z_][A-Za-z0-9_]*)=`)
 )
 
 // literalValue reports whether an assignment value is a hard-coded string
@@ -41,13 +42,22 @@ func shellRC(ctx context.Context) ([]Item, error) {
 		if err != nil {
 			continue
 		}
-		for i, line := range strings.Split(string(b), "\n") {
+		// Known token formats, by line: the gitleaks rule id of the first.
+		tokens := map[int]string{}
+		text := string(b)
+		for _, h := range scanSecrets(text) {
+			n := strings.Count(text[:h.Start], "\n")
+			if _, ok := tokens[n]; !ok {
+				tokens[n] = h.ID
+			}
+		}
+		for i, line := range strings.Split(text, "\n") {
 			t := strings.TrimSpace(line)
 			if strings.HasPrefix(t, "#") {
 				continue
 			}
 			add := func(kind, name string) {
-				items = append(items, Item{"kind": kind, "file": path, "line_no": i + 1, "var_name": name})
+				items = append(items, Item{"kind": kind, "file": path, "line_no": i + 1, "var_name": name, "secret_kind": tokens[i]})
 			}
 			switch {
 			case rcPipeShell.MatchString(t) || rcEvalNet.MatchString(t):
@@ -59,6 +69,13 @@ func shellRC(ctx context.Context) ([]Item, error) {
 			}
 			if m := rcExport.FindStringSubmatch(t); m != nil && literalValue(m[3]) {
 				add("exported_secret", m[1])
+			} else if tokens[i] != "" {
+				// A known token format, whatever the variable is called.
+				if m := rcAnyExport.FindStringSubmatch(t); m != nil {
+					add("exported_secret", m[1])
+				} else {
+					add("token_in_line", "")
+				}
 			}
 		}
 	}

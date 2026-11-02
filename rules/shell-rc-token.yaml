@@ -1,0 +1,21 @@
+id: shell-rc-token
+severity: high
+platforms: [macos, linux]
+source: shell_rc
+match: "item.kind == \"token_in_line\""
+title:
+  en: "Token written into {file} (line {line_no})"
+  vi: "Token viết thẳng trong {file} (dòng {line_no})"
+check:
+  en: "No tokens written into shell files"
+  vi: "Không token nào viết thẳng trong file shell"
+explain:
+  en: "Line {line_no} holds a {secret_kind} token, for example inside an alias or a command. Dotfiles get backed up, synced and shared, and the token works for whoever reads it."
+  vi: "Dòng {line_no} chứa một token {secret_kind}, ví dụ trong một alias hay một lệnh. File dotfile hay được sao lưu, đồng bộ và chia sẻ, và ai đọc được token là dùng được nó."
+fix:
+  en: "Remove the token from line {line_no}, load it when needed instead (security find-generic-password -w, op read, direnv), then rotate it."
+  vi: "Xoá token khỏi dòng {line_no}, lấy nó khi cần thay vì viết cứng (security find-generic-password -w, op read, direnv), rồi đổi token."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "token_in_line", "file": "/h/.zshrc", "line_no": 7, "var_name": "", "secret_kind": "github-pat"}, "expect": true}
+  - {"item": {"kind": "exported_secret", "file": "/h/.zshrc", "line_no": 7, "var_name": "GH", "secret_kind": "github-pat"}, "expect": false}

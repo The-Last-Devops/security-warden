@@ -1,0 +1,21 @@
+id: docker-shared-mount-propagation
+severity: medium
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "item.shared_mount != \"\""
+title:
+  en: "Container {container} shares mounts with the host"
+  vi: "Container {container} dùng chung các mount với máy chủ"
+check:
+  en: "No container mounts a host folder with shared propagation"
+  vi: "Không container nào mount thư mục của máy ở chế độ shared"
+explain:
+  en: "{container} mounts {shared_mount} with shared propagation: anything it mounts inside that folder also appears on the host, so it can change what the host sees."
+  vi: "{container} mount {shared_mount} ở chế độ shared: thứ gì nó mount bên trong thư mục đó cũng hiện ra trên máy chủ, nên nó có thể thay đổi những gì máy chủ nhìn thấy."
+fix:
+  en: "Drop :shared / :rshared from the volume (the default, rprivate, is safe) unless the container really has to mount things for the host."
+  vi: "Bỏ :shared / :rshared khỏi volume (mặc định rprivate là an toàn), trừ khi container thật sự phải mount cho máy chủ."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "/srv/data", "host_uts": false, "host_userns": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}

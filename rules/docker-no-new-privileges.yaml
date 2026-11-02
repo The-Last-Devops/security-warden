@@ -1,0 +1,22 @@
+id: docker-no-new-privileges
+severity: low
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "!item.no_new_privileges && !item.runs_as_root && !item.privileged"
+title:
+  en: "Container {container} can still gain privileges"
+  vi: "Container {container} vẫn có thể leo thang quyền"
+check:
+  en: "Containers that run as a normal user cannot gain privileges"
+  vi: "Container chạy bằng user thường không leo thang quyền được"
+explain:
+  en: "{container} runs as user {user}, which is good, but without no-new-privileges a setuid program inside {image} can still turn it into root."
+  vi: "{container} chạy bằng user {user}, như vậy là tốt, nhưng thiếu no-new-privileges thì một chương trình setuid trong {image} vẫn có thể biến nó thành root."
+fix:
+  en: "Add security_opt: [\"no-new-privileges:true\"] in compose (or --security-opt no-new-privileges), or set \"no-new-privileges\": true in daemon.json for every container."
+  vi: "Thêm security_opt: [\"no-new-privileges:true\"] trong compose (hoặc --security-opt no-new-privileges), hoặc đặt \"no-new-privileges\": true trong daemon.json cho mọi container."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": true, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "", "runs_as_root": true, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false, "note": "docker-runs-as-root covers it"}

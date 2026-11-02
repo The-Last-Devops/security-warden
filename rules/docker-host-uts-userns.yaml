@@ -1,0 +1,22 @@
+id: docker-host-uts-userns
+severity: medium
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "item.host_uts || item.host_userns"
+title:
+  en: "Container {container} shares the host's hostname or user namespace"
+  vi: "Container {container} dùng chung tên máy hoặc không gian user với máy chủ"
+check:
+  en: "No container shares the host's hostname or user namespace"
+  vi: "Không container nào dùng chung tên máy hay không gian user với máy"
+explain:
+  en: "{container} runs with --uts host or --userns host. With --uts host it can rename the machine; with --userns host it skips the user remapping the Docker daemon may be set up to use, so root inside is root outside."
+  vi: "{container} chạy với --uts host hoặc --userns host. Với --uts host nó đổi được tên máy; với --userns host nó bỏ qua việc đổi user mà Docker có thể đang dùng, nên root bên trong cũng là root bên ngoài."
+fix:
+  en: "Remove uts: host and userns_mode: host from the compose file (or --uts / --userns from docker run)."
+  vi: "Bỏ uts: host và userns_mode: host khỏi file compose (hoặc --uts / --userns khỏi docker run)."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": true, "host_userns": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": true}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}

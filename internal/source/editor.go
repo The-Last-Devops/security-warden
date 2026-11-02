@@ -38,7 +38,8 @@ func editorSettings(ctx context.Context) ([]Item, error) {
 			continue
 		}
 		var secrets []string
-		walkSecrets("", m, &secrets)
+		kinds := map[string]bool{}
+		walkSecrets("", m, &secrets, kinds)
 		sort.Strings(secrets)
 		items = append(items, Item{
 			"editor":                e.name,
@@ -49,14 +50,16 @@ func editorSettings(ctx context.Context) ([]Item, error) {
 			"proxy_strict_ssl_off":  setting(m, "http.proxyStrictSSL") == false,
 			"extension_updates_off": setting(m, "extensions.autoUpdate") == false,
 			"secret_settings":       strings.Join(secrets, ", "),
+			"secret_kinds":          joinSet(kinds),
 			"has_secret":            len(secrets) > 0,
 		})
 	}
 	return items, nil
 }
 
-// editorExtensions lists extensions that did not come from the marketplace
-// (installed from a .vsix file): nobody reviewed them and they never update.
+// editorExtensions lists installed extensions: whether they came from a
+// .vsix file (nobody reviewed them and they never update), and why the
+// Marketplace removed them, if it did (removedextensions_gen.go).
 func editorExtensions(ctx context.Context) ([]Item, error) {
 	var items []Item
 	for _, e := range editors {
@@ -82,7 +85,8 @@ func editorExtensions(ctx context.Context) ([]Item, error) {
 				continue
 			}
 			items = append(items, Item{"editor": e.name, "extension": x.Identifier.ID, "version": x.Version,
-				"from_file": x.Metadata.Source == "vsix"})
+				"from_file":    x.Metadata.Source == "vsix",
+				"removed_type": removedExtensions[strings.ToLower(x.Identifier.ID)]})
 		}
 	}
 	return items, nil
@@ -104,7 +108,9 @@ func setting(m map[string]any, key string) any {
 	return nil
 }
 
-func walkSecrets(path string, v any, out *[]string) {
+// walkSecrets collects the paths of settings holding literal secrets, and
+// the gitleaks rule ids of the token formats found.
+func walkSecrets(path string, v any, out *[]string, kinds map[string]bool) {
 	switch x := v.(type) {
 	case map[string]any:
 		for k, val := range x {
@@ -112,15 +118,22 @@ func walkSecrets(path string, v any, out *[]string) {
 			if path != "" {
 				p = path + "." + k
 			}
-			walkSecrets(p, val, out)
+			walkSecrets(p, val, out, kinds)
 		}
 	case []any:
 		for _, val := range x {
-			walkSecrets(path, val, out)
+			walkSecrets(path, val, out, kinds)
 		}
 	case string:
 		key := path[strings.LastIndex(path, ".")+1:]
-		if isLiteralSecret(key, x) && !contains(*out, path) {
+		ok, kind := literalSecret(key, x)
+		if !ok {
+			return
+		}
+		if kind != "" {
+			kinds[kind] = true
+		}
+		if !contains(*out, path) {
 			*out = append(*out, path)
 		}
 	}

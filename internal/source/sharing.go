@@ -120,6 +120,11 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 					continue
 				}
 				for id, st := range prefs.Extensions.Settings {
+					// The two files can each hold part of an extension's
+					// settings: keep a blocklist verdict from either.
+					if old, ok := settings[id]; ok && st.blocklisted() == "" {
+						st.BlocklistState, st.TelemetryState, st.OmahaState = old.BlocklistState, old.TelemetryState, old.OmahaState
+					}
 					settings[id] = st
 				}
 			}
@@ -127,13 +132,23 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 				if s.Location == 5 || s.Location == 10 { // component / built-in
 					continue
 				}
+				enabled := true
 				if s.State != nil && *s.State == 0 {
-					continue
+					enabled = false
 				}
 				if dr, ok := s.DisableReasons.(float64); ok && dr != 0 {
-					continue
+					enabled = false
 				}
 				if l, ok := s.DisableReasons.([]any); ok && len(l) > 0 {
+					enabled = false
+				}
+				blocked := s.blocklisted()
+				// Disabled extensions only matter when Google flagged them:
+				// Chrome turns those off but leaves them installed.
+				if !enabled {
+					if blocked != "" {
+						items = append(items, blockedExtensionItem(r.browser, profile, id, s.FromWebstore, blocked, false))
+					}
 					continue
 				}
 				manifest := ""
@@ -147,6 +162,9 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 				}
 				mb, err := readSmall(manifest)
 				if err != nil {
+					if blocked != "" {
+						items = append(items, blockedExtensionItem(r.browser, profile, id, s.FromWebstore, blocked, true))
+					}
 					continue
 				}
 				var m struct {
@@ -193,6 +211,8 @@ func browserExtensions(ctx context.Context) ([]Item, error) {
 					"native":               perms["nativeMessaging"],
 					"cookies":              perms["cookies"],
 					"web_request_blocking": perms["webRequestBlocking"],
+					"enabled":              true,
+					"blocklisted":          blocked,
 				})
 			}
 		}
@@ -215,6 +235,63 @@ type extSetting struct {
 	DisableReasons any    `json:"disable_reasons"`
 	FromWebstore   bool   `json:"from_webstore"`
 	Path           string `json:"path"`
+	// Blocklist verdicts, see Chromium extensions/browser/
+	// blocklist_extension_prefs.cc. The first two hold a BlocklistState
+	// (1 malware, 2 security vulnerability, 3 Web Store policy violation,
+	// 4 potentially unwanted); the Omaha one is a bit map of the same
+	// (1, 2, 4, 8).
+	BlocklistState *int `json:"blacklist_state"`
+	TelemetryState *int `json:"extension_telemetry_service_blocklist_state"`
+	OmahaState     *int `json:"omaha_blocklist_state"`
+}
+
+// blocklisted returns why Google flagged the extension, or "". When several
+// verdicts apply, the worst wins, in Chromium's own order: malware, policy
+// violation, potentially unwanted, security vulnerability.
+func (s extSetting) blocklisted() string {
+	bits := 0
+	for _, st := range []*int{s.BlocklistState, s.TelemetryState} {
+		if st != nil && *st >= 1 && *st <= 4 {
+			bits |= 1 << (*st - 1)
+		}
+	}
+	if s.OmahaState != nil && *s.OmahaState > 0 {
+		bits |= *s.OmahaState & 0xf
+	}
+	switch {
+	case bits&1 != 0:
+		return "malware"
+	case bits&4 != 0:
+		return "policy_violation"
+	case bits&8 != 0:
+		return "potentially_unwanted"
+	case bits&2 != 0:
+		return "security_vulnerability"
+	}
+	return ""
+}
+
+// blockedExtensionItem describes a flagged extension that is turned off or
+// whose files are gone. Its permission fields stay false so the rules about
+// what an extension can do only judge extensions that run.
+func blockedExtensionItem(browser, profile, id string, fromWebstore bool, blocked string, enabled bool) Item {
+	name := id
+	if ms, _ := filepath.Glob(filepath.Join(profile, "Extensions", id, "*", "manifest.json")); len(ms) > 0 {
+		if mb, err := readSmall(ms[len(ms)-1]); err == nil {
+			var m struct {
+				Name string `json:"name"`
+			}
+			if json.Unmarshal(mb, &m) == nil && m.Name != "" && !strings.HasPrefix(m.Name, "__MSG_") {
+				name = m.Name
+			}
+		}
+	}
+	return Item{
+		"browser": browser, "profile": filepath.Base(profile), "id": id, "name": name,
+		"unpacked": false, "from_webstore": fromWebstore, "external": false, "all_urls": false,
+		"debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false,
+		"enabled": enabled, "blocklisted": blocked,
+	}
 }
 
 func localizedName(dir, msg string) string {

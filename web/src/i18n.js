@@ -20,7 +20,7 @@ export const dict = {
     watching: 'Watching', notWatching: 'Not watching',
     watchTitle: 'Security Warden is watching this machine',
     watchLines: [
-      'Scans again every 30 minutes in the background. This page does not need to be open.',
+      'Scans again every 30 minutes in the background (every 2 hours on battery). This page does not need to be open.',
       'Sends a notification when a new problem appears.',
       'Opens this page by itself for new high or critical problems, at most once an hour.',
       'Starts with your computer and updates itself.',
@@ -77,7 +77,7 @@ export const dict = {
     watching: 'Đang bảo vệ', notWatching: 'Chưa chạy ngầm',
     watchTitle: 'Security Warden đang bảo vệ máy này',
     watchLines: [
-      'Cứ 30 phút tự quét lại một lần, chạy ngầm, không cần mở trang này.',
+      'Cứ 30 phút tự quét lại một lần (chạy pin thì 2 tiếng), chạy ngầm, không cần mở trang này.',
       'Có vấn đề mới là báo bằng thông báo của máy.',
       'Vấn đề mới mức cao hoặc nghiêm trọng thì tự mở trang này, tối đa 1 lần mỗi giờ.',
       'Tự chạy khi bật máy và tự cập nhật.',

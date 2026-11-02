@@ -65,18 +65,26 @@ func aiAgents(ctx context.Context) ([]Item, error) {
 			}
 			for name, s := range servers {
 				var keys []string
-				for k, v := range s.Env {
-					if isLiteralSecret(k, v) {
-						keys = append(keys, k)
+				kinds := map[string]bool{}
+				check := func(vals map[string]string) {
+					for k, v := range vals {
+						if ok, kind := literalSecret(k, v); ok {
+							keys = append(keys, k)
+							if kind != "" {
+								kinds[kind] = true
+							}
+						}
 					}
 				}
-				for k, v := range s.Headers {
-					if isLiteralSecret(k, v) {
-						keys = append(keys, k)
-					}
-				}
+				check(s.Env)
+				check(s.Headers)
 				sort.Strings(keys)
-				inArgs := tokenShape.MatchString(strings.Join(s.Args, " ")) || tokenShape.MatchString(s.URL)
+				args := strings.Join(s.Args, " ") + " " + s.URL
+				argKind := secretKind(args)
+				if argKind != "" {
+					kinds[argKind] = true
+				}
+				inArgs := argKind != "" || tokenShape.MatchString(args)
 				unpinned := false
 				if filepath.Base(s.Command) == "npx" {
 					for _, a := range s.Args {
@@ -89,6 +97,7 @@ func aiAgents(ctx context.Context) ([]Item, error) {
 				items = append(items, Item{
 					"kind": "mcp", "tool": f.tool, "file": f.path, "server": name,
 					"secret_keys":    strings.Join(keys, ", "),
+					"secret_kinds":   joinSet(kinds),
 					"has_secret":     len(keys) > 0 || inArgs,
 					"plain_http":     strings.HasPrefix(s.URL, "http://") && !strings.Contains(s.URL, "localhost") && !strings.Contains(s.URL, "127.0.0.1"),
 					"unpinned_npx":   unpinned,
@@ -101,7 +110,7 @@ func aiAgents(ctx context.Context) ([]Item, error) {
 	// Safety switches that let an agent run commands without asking.
 	add := func(tool, file, setting string) {
 		items = append(items, Item{"kind": "auto_approve", "tool": tool, "file": file, "setting": setting,
-			"has_secret": false, "plain_http": false, "unpinned_npx": false, "world_readable": false})
+			"secret_kinds": "", "has_secret": false, "plain_http": false, "unpinned_npx": false, "world_readable": false})
 	}
 	claude := filepath.Join(h, ".claude/settings.json")
 	if b, err := readSmall(claude); err == nil {
@@ -152,13 +161,34 @@ func aiAgents(ctx context.Context) ([]Item, error) {
 }
 
 func isLiteralSecret(key, val string) bool {
+	ok, _ := literalSecret(key, val)
+	return ok
+}
+
+// literalSecret reports whether val is a hard-coded secret. kind is the
+// gitleaks rule id when val has a known token format, "" otherwise (a
+// secret recognised only by its key name or the generic token shape).
+func literalSecret(key, val string) (ok bool, kind string) {
 	if val == "" || strings.Contains(val, "${") || strings.HasPrefix(val, "$") {
-		return false
+		return false, ""
+	}
+	if kind = secretKind(val); kind != "" {
+		return true, kind
 	}
 	if tokenShape.MatchString(val) {
-		return true
+		return true, ""
 	}
-	return secretKeyName.MatchString(key) && len(val) >= 12 && !strings.ContainsAny(val, " /") && !looksPlaceholder(val)
+	return secretKeyName.MatchString(key) && len(val) >= 12 && !strings.ContainsAny(val, " /") && !looksPlaceholder(val), ""
+}
+
+// joinSet returns the keys of a set, sorted and comma separated.
+func joinSet(m map[string]bool) string {
+	xs := make([]string, 0, len(m))
+	for k := range m {
+		xs = append(xs, k)
+	}
+	sort.Strings(xs)
+	return strings.Join(xs, ", ")
 }
 
 func looksPlaceholder(v string) bool {

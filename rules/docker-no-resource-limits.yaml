@@ -1,0 +1,23 @@
+id: docker-no-resource-limits
+severity: low
+platforms: [macos, windows, linux]
+source: docker_containers
+match: "item.published_all && item.memory_limit == 0 && item.pids_limit == 0"
+title:
+  en: "Container {container} is open to the network with no memory or process limit"
+  vi: "Container {container} mở ra mạng mà không giới hạn bộ nhớ hay số tiến trình"
+check:
+  en: "Containers open to the network have memory and process limits"
+  vi: "Container mở ra mạng có giới hạn bộ nhớ và số tiến trình"
+explain:
+  en: "{container} ({image}) publishes a port on every network interface and can use all the memory and start as many processes as it likes. A flood of requests or a fork bomb in it can freeze the whole machine."
+  vi: "{container} ({image}) mở port trên mọi card mạng và được dùng hết bộ nhớ, chạy bao nhiêu tiến trình cũng được. Một đợt dồn request hay một fork bomb trong đó có thể làm treo cả máy."
+fix:
+  en: "Set limits in compose: mem_limit: 512m and pids_limit: 200 (or docker run --memory 512m --pids-limit 200), sized for the app."
+  vi: "Đặt giới hạn trong compose: mem_limit: 512m và pids_limit: 200 (hoặc docker run --memory 512m --pids-limit 200), chỉnh theo nhu cầu của app."
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": true, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": true, "no_new_privileges": false, "memory_limit": 536870912, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": true, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 200, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": false}

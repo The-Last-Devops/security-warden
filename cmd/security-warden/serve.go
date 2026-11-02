@@ -15,6 +15,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/notify"
+	"github.com/The-Last-Devops/security-warden/internal/power"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/internal/web"
@@ -108,7 +109,10 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	return 0
 }
 
-// watchInBackground rescans every 30 minutes and notifies about problems
+// batteryInterval is how often the background scan runs on battery.
+const batteryInterval = 2*time.Hour - time.Minute
+
+// watchInBackground rescans every 30 minutes (every 2 hours on battery) and notifies about problems
 // that were not there before (medium and worse; snoozed ones are skipped
 // because they are not in the findings).
 func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string) {
@@ -121,12 +125,18 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 	}
 	tick := time.NewTicker(30 * time.Minute)
 	defer tick.Stop()
+	last := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
 		}
+		// On battery, scan every 2 hours instead of every 30 minutes.
+		if power.OnBattery() && time.Since(last) < batteryInterval {
+			continue
+		}
+		last = time.Now()
 		now := srv.ScanNow(ctx)
 		var added []engine.Finding
 		next := map[string]bool{}

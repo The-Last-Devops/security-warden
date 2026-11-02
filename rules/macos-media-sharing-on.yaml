@@ -1,0 +1,23 @@
+id: macos-media-sharing-on
+severity: low
+platforms: [macos]
+source: posture
+match: "has(item.media_sharing) && item.media_sharing"
+title:
+  en: "Media sharing is on"
+  vi: "Chia sẻ phương tiện đang bật"
+check:
+  en: "Media sharing is off"
+  vi: "Chia sẻ phương tiện đang tắt"
+explain:
+  en: "Your Music and TV library is shared with other devices on the network (Home Sharing or sharing with guests). Every service that listens on the network is one more way in."
+  vi: "Thư viện Nhạc và TV đang được chia sẻ cho các thiết bị khác trong mạng (Chia sẻ trong gia đình hoặc chia sẻ với khách). Mỗi dịch vụ mở ra mạng là thêm một lối vào máy."
+fix:
+  en: "System Settings › General › Sharing, and turn off Media Sharing if you do not use it."
+  vi: "Cài đặt hệ thống › Cài đặt chung › Chia sẻ, và tắt Chia sẻ phương tiện nếu bạn không dùng."
+references:
+  - https://github.com/usnistgov/macos_security
+author: the-last-devops
+tests:
+  - {"item": {"os": "macos", "media_sharing": true}, "expect": true}
+  - {"item": {"os": "macos", "media_sharing": false}, "expect": false}

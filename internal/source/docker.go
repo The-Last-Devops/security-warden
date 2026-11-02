@@ -22,19 +22,25 @@ type dockerContainer struct {
 		Env   []string
 	}
 	HostConfig struct {
-		Privileged  bool
-		NetworkMode string
-		PidMode     string
-		IpcMode     string
-		CapAdd      []string
-		SecurityOpt []string
-		Devices     []struct{ PathOnHost string }
+		Privileged     bool
+		NetworkMode    string
+		PidMode        string
+		IpcMode        string
+		UTSMode        string
+		UsernsMode     string
+		CapAdd         []string
+		SecurityOpt    []string
+		Devices        []struct{ PathOnHost string }
+		Memory         int64
+		PidsLimit      *int64
+		ReadonlyRootfs bool
 	}
 	Mounts []struct {
 		Type        string
 		Source      string
 		Destination string
 		RW          bool
+		Propagation string
 	}
 	created         time.Time
 	NetworkSettings struct {
@@ -174,8 +180,9 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 		return nil, err
 	}
 	var items []Item
+	daemonNNP := daemonNoNewPrivileges()
 	for _, c := range cs {
-		sock, risky := false, ""
+		sock, risky, shared := false, "", ""
 		for _, m := range c.Mounts {
 			if strings.HasSuffix(m.Source, "docker.sock") || strings.HasSuffix(m.Destination, "docker.sock") {
 				sock = true
@@ -184,6 +191,9 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 			if m.Type == "bind" && risky == "" {
 				risky = riskyMount(m.Source)
 			}
+			if m.Type == "bind" && shared == "" && (m.Propagation == "shared" || m.Propagation == "rshared") {
+				shared = m.Source
+			}
 		}
 		var caps []string
 		for _, cp := range c.HostConfig.CapAdd {
@@ -191,11 +201,29 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 				caps = append(caps, strings.TrimPrefix(strings.ToUpper(cp), "CAP_"))
 			}
 		}
-		seccomp, apparmor := false, false
+		seccomp, apparmor, noNewPriv := false, false, daemonNNP
 		for _, o := range c.HostConfig.SecurityOpt {
 			o = strings.ToLower(strings.ReplaceAll(o, "=", ":"))
 			seccomp = seccomp || o == "seccomp:unconfined"
 			apparmor = apparmor || o == "apparmor:unconfined"
+			if o == "no-new-privileges" || o == "no-new-privileges:true" {
+				noNewPriv = true
+			} else if o == "no-new-privileges:false" {
+				noNewPriv = false
+			}
+		}
+		// 0 and -1 both mean "no limit" to Docker.
+		pids := int64(0)
+		if p := c.HostConfig.PidsLimit; p != nil && *p > 0 {
+			pids = *p
+		}
+		published := false
+		for _, binds := range c.NetworkSettings.Ports {
+			for _, b := range binds {
+				if b.HostIp == "" || b.HostIp == "0.0.0.0" || b.HostIp == "::" {
+					published = true
+				}
+			}
 		}
 		// Variable names only: values never leave this function.
 		var secretKeys []string
@@ -224,9 +252,35 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 			"runs_as_root":        user == "" || user == "root" || user == "0" || strings.HasPrefix(user, "0:"),
 			"image_age_days":      imageAgeDays(c.created),
 			"latest_tag":          latestTag(c.Config.Image),
+			"no_new_privileges":   noNewPriv,
+			"memory_limit":        c.HostConfig.Memory,
+			"pids_limit":          pids,
+			"read_only_rootfs":    c.HostConfig.ReadonlyRootfs,
+			"published_all":       published,
+			"shared_mount":        shared,
+			"host_uts":            c.HostConfig.UTSMode == "host",
+			"host_userns":         c.HostConfig.UsernsMode == "host",
 		})
 	}
 	return items, nil
+}
+
+// daemonNoNewPrivileges reports whether daemon.json turns no-new-privileges
+// on for every container; docker inspect does not show that default.
+func daemonNoNewPrivileges() bool {
+	for _, f := range []string{filepath.Join(home(), ".docker/daemon.json"), "/etc/docker/daemon.json"} {
+		b, err := readSmall(f)
+		if err != nil {
+			continue
+		}
+		var d struct {
+			NoNewPrivileges bool `json:"no-new-privileges"`
+		}
+		if json.Unmarshal(b, &d) == nil && d.NoNewPrivileges {
+			return true
+		}
+	}
+	return false
 }
 
 func dockerPorts(ctx context.Context) ([]Item, error) {

@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-![Rules](https://img.shields.io/badge/rules-119-0b6e52)
+![Rules](https://img.shields.io/badge/rules-134-0b6e52)
 
 </div>
 
@@ -39,6 +39,8 @@ password to remember.
 |---|---|
 | **Homebrew** (macOS, Linux) | See [Quick start](#quick-start). `brew trust` is needed once for third-party taps. |
 | **macOS disk image** | Download `security-warden-<version>-macos.dmg` from [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest), open it, double-click `Install.command`. Signed and notarized by Apple. |
+| **Debian, Ubuntu** | Download `security-warden_<version>_amd64.deb` (or `arm64`) from [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest), then `sudo apt install ./security-warden_*.deb` |
+| **Fedora, RHEL, openSUSE** | Download the `.rpm`, then `sudo rpm -i security-warden-*.rpm` |
 | **Binary** (macOS, Linux, Windows) | Download from [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest) and check it against `SHA256SUMS`. |
 | **From source** | `docker build --target export --output dist .` (needs only Docker) |
 
@@ -108,19 +110,19 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-119 rules over 33 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+134 rules over 33 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
 | Area | Examples |
 |---|---|
-| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase or weak (DSA, short RSA), plain-text AWS/kube/npm/Git credentials, tokens in shell history and in Git remote URLs |
+| 🔑 **Secrets & keys** | Private keys and `.env` committed to Git, SSH keys without a passphrase or weak (DSA, short RSA), plain-text AWS/kube/npm/Git credentials, tokens in shell history, shell startup files and Git remote URLs (about 200 token formats from gitleaks) |
 | 🚪 **Open doors** | Ports reachable from other machines, SSH/Screen Sharing/RDP, tunnels (ngrok, cloudflared, VS Code), remote desktop apps, file sharing |
-| 🐳 **Docker** | Ports on every network, privileged containers, `docker.sock` or home folder mounts, host network, dangerous capabilities, secrets in env, images older than 6 months or on `latest` |
-| 🔒 **System settings** | macOS out of security support, FileVault/LUKS, firewall, SIP, Gatekeeper, automatic updates, XProtect, screen lock, auto login, AirDrop |
+| 🐳 **Docker** | Ports on every network, privileged containers, `docker.sock` or home folder mounts, host network/UTS/user namespace, shared mount propagation, dangerous capabilities, no `no-new-privileges`, no memory or process limits, secrets in env, images older than 6 months or on `latest` |
+| 🔒 **System settings** | macOS out of security support, FileVault/LUKS, firewall and stealth mode, SIP, Gatekeeper, automatic updates, XProtect, screen lock, hot corners that block it, password hints, auto login, AirDrop, Bluetooth/media sharing, content caching |
 | 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs; running crypto miners or programs started from /tmp or Downloads; unsigned apps in /Applications |
 | 🤖 **AI agents** | Tokens written into MCP configs, MCP over plain HTTP, agents allowed to run commands without asking |
-| 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or client certificates |
+| 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files or removed from the Marketplace (malware, impersonation); browser extensions Google flagged as malware or unwanted; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or client certificates |
 | 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker |
 | 🌐 **Network & Tailscale** | System proxies, `/etc/hosts` redirects, Tailscale shields down, SSH, exit node, Funnel |
 
@@ -136,7 +138,7 @@ shows how many points fixing it earns.
 ## Web UI and security
 
 `start` runs a small web server on `127.0.0.1:7348` (never on `0.0.0.0`) as a LaunchAgent on macOS, a
-systemd user service on Linux or a background process on Windows. It rescans every 30 minutes, notifies
+systemd user service on Linux or a background process on Windows. It rescans every 30 minutes (every 2 hours on battery), notifies
 you about new problems, and opens the window for new high or critical ones (at most once an hour).
 
 - **Sign-in:** a passkey, or a one-time ticket the CLI asks for when you run `start` or `open` (valid
@@ -214,6 +216,14 @@ repository is its own Homebrew tap).
 ## Acknowledgements
 
 Ideas on what to check were informed by [bordercheck](https://github.com/ptrinh/bordercheck) (MIT).
+
+- Secret patterns adapted from [gitleaks](https://github.com/gitleaks/gitleaks) (MIT), regenerated weekly by
+  [`refresh-lists`](.github/workflows/refresh-lists.yml).
+- Container checks follow [Docker Bench for Security](https://github.com/docker/docker-bench-security) (Apache-2.0).
+- The list of extensions removed from the VS Marketplace comes from
+  [microsoft/vsmarketplace](https://github.com/microsoft/vsmarketplace) (MIT), regenerated weekly.
+- Flagged browser extensions are read from Chromium's own extension preferences (blocklist state).
+- Some macOS checks follow the [macOS Security Compliance Project](https://github.com/usnistgov/macos_security) (CC BY 4.0).
 
 ## License
 

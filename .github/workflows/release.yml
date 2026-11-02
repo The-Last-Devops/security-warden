@@ -46,6 +46,9 @@ jobs:
             --cache-from type=gha --cache-from type=gha,scope=release-rest \
             --cache-to type=gha,scope=release-rest,mode=max .
           rm dist/SHA256SUMS
+      - name: Linux packages (.deb, .rpm)
+        run: |
+          scripts/make-packages.sh "$GITHUB_REF_NAME"
           ls -l dist
       - uses: actions/upload-artifact@v4
         with:
@@ -90,7 +93,7 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Checksums
-        run: cd dist && sha256sum security-warden-* > SHA256SUMS && cat SHA256SUMS
+        run: cd dist && sha256sum security-warden* > SHA256SUMS && cat SHA256SUMS
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -135,3 +138,23 @@ jobs:
         run: |
           security-warden --json > report.json || [ $? -eq 1 ]
           python3 -c "import json; r=json.load(open('report.json')); print(r['score'], r['checked'], len(r['findings']))"
+
+  # Install the Linux packages the way users do, on the distributions they use.
+  verify-linux:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$GITHUB_REF_NAME" -R ${{ github.repository }} -p '*.deb' -p '*.rpm' -D pkgs
+      - name: .deb on Ubuntu and Debian
+        run: |
+          for img in ubuntu:24.04 debian:12; do
+            docker run --rm -v "$PWD/pkgs:/p" "$img" sh -c "apt-get install -y -qq /p/security-warden_*_amd64.deb >/dev/null && security-warden version" | tee v.txt
+            [ "$(cat v.txt)" = "$GITHUB_REF_NAME" ]
+          done
+      - name: .rpm on Fedora
+        run: |
+          docker run --rm -v "$PWD/pkgs:/p" fedora:41 sh -c "rpm -i /p/security-warden-*.x86_64.rpm && security-warden version" | tee v.txt
+          [ "$(cat v.txt)" = "$GITHUB_REF_NAME" ]
