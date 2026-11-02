@@ -14,14 +14,25 @@ It only reads. It changes nothing and sends nothing.
 **Homebrew** (macOS, Linux)
 
 ```sh
-brew install the-last-devops/tap/security-warden
+brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden
+brew install security-warden
+security-warden serve      # opens Security Warden in its own window
 ```
 
 **macOS disk image**: download `security-warden-<version>-macos.dmg` from
 [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest), open it and double-click
-`Install.command`. The binary is signed with a Developer ID and notarized by Apple.
+`Install.command`: it installs to `/usr/local/bin` and opens Security Warden. The binary is signed with a
+Developer ID and notarized by Apple.
 
-**Plain binaries** for macOS, Linux and Windows are on the same Releases page, with `SHA256SUMS`.
+**Plain binaries** for macOS, Linux and Windows are on the same Releases page, with `SHA256SUMS`:
+
+```sh
+# macOS (Apple silicon) example
+curl -LO https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-darwin-arm64
+chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 serve
+```
+
+**From source** (needs only Docker): `docker build --target export --output dist .`
 
 ## Use
 
@@ -145,7 +156,8 @@ docker build --target export --build-arg VERSION=v0.1.0 --output dist .   # ever
 ```
 
 Releases: push a `v*` tag. GitHub Actions builds every platform, then signs, notarizes and packages the
-`.dmg` on macOS, publishes the release, and updates the Homebrew formula.
+`.dmg` on macOS, publishes the release, and updates `Formula/security-warden.rb` (this repository is its own
+Homebrew tap).
 
 ## Roadmap
 
