@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -34,6 +35,8 @@ func TestValidateListen(t *testing.T) {
 		t.Error("0.0.0.0 accepted with --allow-lan")
 	}
 }
+
+func init() { persist = false }
 
 func testServer() *Server {
 	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>ui</title>")}}
@@ -140,5 +143,29 @@ func TestPasskeyUserIDStable(t *testing.T) {
 	b, _ := p.load()
 	if string(a.ID) != string(b.ID) {
 		t.Fatal("user id changed between loads; registration would fail")
+	}
+}
+
+func TestSessionsSurviveRestart(t *testing.T) {
+	path := t.TempDir() + "/sessions.json"
+	a := newAuth()
+	a.loadSessions(path)
+	id := a.newSession("127.0.0.1")
+	b := newAuth()
+	b.loadSessions(path)
+	r := httptest.NewRequest("GET", "/", nil)
+	r.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	if _, s := b.session(r); s == nil {
+		t.Fatal("session lost after restart")
+	}
+	raw, _ := os.ReadFile(path)
+	if strings.Contains(string(raw), id) {
+		t.Fatal("session id stored in clear")
+	}
+	b.logout(id)
+	c := newAuth()
+	c.loadSessions(path)
+	if _, s := c.session(r); s != nil {
+		t.Fatal("logged-out session came back")
 	}
 }

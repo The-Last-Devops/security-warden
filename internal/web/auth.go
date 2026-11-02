@@ -2,10 +2,14 @@ package web
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"encoding/json"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -26,8 +30,8 @@ func randomHex(n int) string {
 }
 
 type session struct {
-	csrf    string
-	expires time.Time
+	CSRF    string    `json:"csrf"`
+	Expires time.Time `json:"expires"`
 }
 
 // auth holds the login token (shown once in the terminal) and the browser
@@ -36,13 +40,65 @@ type session struct {
 type auth struct {
 	token    string
 	mu       sync.Mutex
-	sessions map[string]*session
+	sessions map[string]*session    // key: sha256 of the session id
 	failures map[string][]time.Time // per client IP
 	now      func() time.Time
+	store    string // file the sessions survive restarts in ("" = memory only)
 }
 
 func newAuth() *auth {
 	return &auth{token: randomHex(32), sessions: map[string]*session{}, failures: map[string][]time.Time{}, now: time.Now}
+}
+
+// hashID: only hashes of session ids are kept, in memory and on disk, so
+// the sessions file cannot be used to sign in.
+func hashID(id string) string {
+	h := sha256.Sum256([]byte(id))
+	return hex.EncodeToString(h[:])
+}
+
+// loadSessions restores sessions saved by an earlier run, so restarting
+// the server (an upgrade, the background agent) does not sign people out.
+func (a *auth) loadSessions(path string) {
+	a.store = path
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var m map[string]*session
+	if json.Unmarshal(b, &m) != nil {
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	now := a.now()
+	for k, s := range m {
+		if s != nil && now.Before(s.Expires) && len(k) == 64 {
+			a.sessions[k] = s
+		}
+	}
+}
+
+// saveLocked writes the sessions file; the caller holds a.mu.
+func (a *auth) saveLocked() {
+	if a.store == "" {
+		return
+	}
+	b, err := json.Marshal(a.sessions)
+	if err != nil {
+		return
+	}
+	_ = os.MkdirAll(filepath.Dir(a.store), 0o700)
+	tmp := a.store + ".tmp"
+	_ = os.Remove(tmp)
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	_, werr := f.Write(b)
+	if f.Close() == nil && werr == nil {
+		_ = os.Rename(tmp, a.store)
+	}
 }
 
 func clientIP(r *http.Request) string {
@@ -90,8 +146,9 @@ func (a *auth) login(ip, token string) (string, bool) {
 func (a *auth) newSession(ip string) string {
 	id := randomHex(32)
 	a.mu.Lock()
-	a.sessions[id] = &session{csrf: randomHex(16), expires: a.now().Add(sessionTTL)}
+	a.sessions[hashID(id)] = &session{CSRF: randomHex(16), Expires: a.now().Add(sessionTTL)}
 	delete(a.failures, ip)
+	a.saveLocked()
 	a.mu.Unlock()
 	return id
 }
@@ -110,12 +167,13 @@ func (a *auth) session(r *http.Request) (string, *session) {
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	s, ok := a.sessions[c.Value]
+	s, ok := a.sessions[hashID(c.Value)]
 	if !ok {
 		return "", nil
 	}
-	if a.now().After(s.expires) {
-		delete(a.sessions, c.Value)
+	if a.now().After(s.Expires) {
+		delete(a.sessions, hashID(c.Value))
+		a.saveLocked()
 		return "", nil
 	}
 	return c.Value, s
@@ -123,6 +181,7 @@ func (a *auth) session(r *http.Request) (string, *session) {
 
 func (a *auth) logout(id string) {
 	a.mu.Lock()
-	delete(a.sessions, id)
+	delete(a.sessions, hashID(id))
+	a.saveLocked()
 	a.mu.Unlock()
 }

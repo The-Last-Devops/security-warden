@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -63,8 +64,15 @@ func (s *Server) LoginURL() string {
 }
 
 // New prepares a server; call Run to start it.
+// persist keeps sessions across restarts; tests turn it off.
+var persist = true
+
 func New(addr, kind, version, lang string, ui fs.FS, sc Scanner) *Server {
-	return &Server{Addr: addr, Kind: kind, Version: version, Lang: lang, UI: ui, Scanner: sc, auth: newAuth(), pk: newPasskeys()}
+	s := &Server{Addr: addr, Kind: kind, Version: version, Lang: lang, UI: ui, Scanner: sc, auth: newAuth(), pk: newPasskeys()}
+	if persist {
+		s.auth.loadSessions(filepath.Join(filepath.Dir(s.pk.path), "sessions.json"))
+	}
+	return s
 }
 
 // allowedHosts are the Host header values a request may carry. Anything
@@ -150,7 +158,7 @@ func (s *Server) withSession(h sessHandler) http.HandlerFunc {
 			errJSON(w, http.StatusUnauthorized, "sign in with the link printed by security-warden serve")
 			return
 		}
-		if r.Method == http.MethodPost && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-CSRF-Token")), []byte(sess.csrf)) != 1 {
+		if r.Method == http.MethodPost && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-CSRF-Token")), []byte(sess.CSRF)) != 1 {
 			errJSON(w, http.StatusForbidden, "missing or wrong CSRF token")
 			return
 		}
@@ -189,7 +197,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, id string,
 
 func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request, _ string, sess *session) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"version": s.Version, "lang": s.Lang, "csrf": sess.csrf, "listen": s.Addr, "kind": s.Kind,
+		"version": s.Version, "lang": s.Lang, "csrf": sess.CSRF, "listen": s.Addr, "kind": s.Kind,
 	})
 }
 
