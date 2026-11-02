@@ -123,9 +123,51 @@ func Install(lang string) (string, error) {
 			}
 		}
 	default:
-		return "", fmt.Errorf("background agent is not supported on %s yet", runtime.GOOS)
+		// No launchd or systemd (Windows): start a detached process and
+		// remember its pid. It does not restart at login yet.
+		return startDetached(bin, lang)
 	}
 	return unit, nil
+}
+
+func pidFile() string {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		base = os.TempDir()
+	}
+	return filepath.Join(base, "security-warden", "service.pid")
+}
+
+func startDetached(bin, lang string) (string, error) {
+	args := []string{"serve", "--background"}
+	if lang != "" {
+		args = append(args, "--lang", lang)
+	}
+	cmd := exec.Command(bin, args...)
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+	p := pidFile()
+	_ = os.MkdirAll(filepath.Dir(p), 0o700)
+	if err := os.WriteFile(p, []byte(strconv.Itoa(cmd.Process.Pid)), 0o600); err != nil {
+		return "", err
+	}
+	_ = cmd.Process.Release()
+	return p, nil
+}
+
+func stopDetached() error {
+	b, err := os.ReadFile(pidFile())
+	if err != nil {
+		return nil
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err == nil {
+		if proc, err := os.FindProcess(pid); err == nil {
+			_ = proc.Kill()
+		}
+	}
+	return os.Remove(pidFile())
 }
 
 // writeFresh replaces path with content without following a symlink that
@@ -153,6 +195,8 @@ func Uninstall() error {
 		_ = exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d/%s", os.Getuid(), label)).Run()
 	case "linux":
 		_ = exec.Command("systemctl", "--user", "disable", "--now", "security-warden.service").Run()
+	default:
+		return stopDetached()
 	}
 	if err := os.Remove(unit); err != nil && !os.IsNotExist(err) {
 		return err
@@ -163,6 +207,9 @@ func Uninstall() error {
 // Installed reports whether the service definition exists.
 func Installed() bool {
 	unit, _ := Paths()
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+		unit = pidFile()
+	}
 	_, err := os.Stat(unit)
 	return err == nil
 }

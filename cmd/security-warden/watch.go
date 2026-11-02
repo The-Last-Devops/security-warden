@@ -14,6 +14,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/notify"
 	"github.com/The-Last-Devops/security-warden/internal/source"
+	"github.com/The-Last-Devops/security-warden/internal/web"
 )
 
 // findingKey identifies one problem across scans: the rule plus what it
@@ -150,6 +151,64 @@ func runAgent(lang string, args []string) int {
 		} else {
 			fmt.Println(t("agent.off"))
 		}
+	}
+	return 0
+}
+
+// runStart runs Security Warden as a background service (restarted at
+// login) and opens its window. If it already runs, it just opens it.
+func runStart(lang string) int {
+	t := func(k string) string { return i18n.T(lang, k) }
+	if !web.RunningHere(web.DefaultPort) {
+		if _, err := agent.Install(lang); err != nil {
+			fmt.Printf(t("fix.failed")+"\n", err)
+			return 2
+		}
+		for i := 0; i < 50 && !web.RunningHere(web.DefaultPort); i++ {
+			time.Sleep(200 * time.Millisecond)
+		}
+		if !web.RunningHere(web.DefaultPort) {
+			_, logPath := agent.Paths()
+			fmt.Printf(t("start.slow")+"\n", logPath)
+			return 1
+		}
+	}
+	url := web.StoredLoginURL()
+	if url == "" {
+		url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
+	}
+	fmt.Printf(t("start.ok")+"\n", web.DefaultPort)
+	_ = web.OpenApp(url)
+	return 0
+}
+
+func runStop(lang string) int {
+	t := func(k string) string { return i18n.T(lang, k) }
+	if err := agent.Uninstall(); err != nil {
+		fmt.Printf(t("fix.failed")+"\n", err)
+		return 2
+	}
+	for i := 0; i < 25 && web.RunningHere(web.DefaultPort); i++ {
+		time.Sleep(200 * time.Millisecond)
+	}
+	if web.RunningHere(web.DefaultPort) {
+		fmt.Println(t("stop.foreground"))
+		return 1
+	}
+	fmt.Println(t("stop.ok"))
+	return 0
+}
+
+func runStatus(lang string) int {
+	t := func(k string) string { return i18n.T(lang, k) }
+	switch {
+	case web.RunningHere(web.DefaultPort):
+		fmt.Printf(t("status.running")+"\n", web.DefaultPort)
+		if agent.Installed() {
+			fmt.Println(t("status.atlogin"))
+		}
+	default:
+		fmt.Println(t("status.stopped"))
 	}
 	return 0
 }

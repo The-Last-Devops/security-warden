@@ -101,8 +101,20 @@ func run(args []string) int {
 			*interval = 10 * time.Second
 		}
 		return runWatch(l, rs, *interval, *full)
-	case "agent":
-		return runAgent(l, subArgs)
+	case "start":
+		return runStart(l)
+	case "stop":
+		return runStop(l)
+	case "status":
+		return runStatus(l)
+	case "agent": // older name for start/stop
+		if len(subArgs) > 0 && subArgs[0] == "install" {
+			return runStart(l)
+		}
+		if len(subArgs) > 0 && subArgs[0] == "uninstall" {
+			return runStop(l)
+		}
+		return runStatus(l)
 	case "ignore":
 		return runIgnore(l, subArgs)
 	case "serve":

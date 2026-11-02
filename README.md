@@ -17,7 +17,7 @@ It only reads. It changes nothing and sends nothing.
 brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden
 brew trust the-last-devops/security-warden   # recent Homebrew asks you to trust third-party taps
 brew install security-warden
-security-warden serve      # opens Security Warden in its own window
+security-warden start      # runs in the background and opens Security Warden
 ```
 
 **macOS disk image**: download `security-warden-<version>-macos.dmg` from
@@ -30,7 +30,7 @@ Developer ID and notarized by Apple.
 ```sh
 # macOS (Apple silicon) example
 curl -LO https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-darwin-arm64
-chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 serve
+chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 start
 ```
 
 **From source** (needs only Docker): `docker build --target export --output dist .`
@@ -38,8 +38,11 @@ chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 serve
 ## Use
 
 ```sh
-security-warden serve        # web UI on http://localhost:7348, opens your browser
-security-warden              # scan and print a report
+security-warden start        # run in the background (web UI on http://localhost:7348) and open it
+security-warden stop         # stop it, and do not start at login
+security-warden status       # is it running?
+security-warden open         # open the window, signed in
+security-warden              # scan once and print a report
 security-warden --lang vi    # in Vietnamese
 security-warden --json       # machine-readable report
 security-warden rules        # list every rule
@@ -48,29 +51,22 @@ security-warden version
 
 `sudo security-warden` also sees ports held by other users' processes.
 
-### Web UI
+### Web UI and background service
 
-`security-warden serve` starts the web UI on `127.0.0.1:7348` and opens it in its own app window (Chrome,
-Edge, Brave or Chromium; a normal tab otherwise, or with `--tab`), already signed in. On first sign-in it offers to add a passkey (Touch ID, Windows Hello, security key), so next
-time you sign in with a touch. Double-clicking the app (not from a terminal) does the same.
+`security-warden start` runs Security Warden in the background (a LaunchAgent on macOS, a systemd user
+service on Linux, a background process on Windows), starts it again at login, and opens its window already
+signed in. It rescans every 10 minutes, sends a notification for new problems, and brings the window up
+for new high or critical problems (at most once an hour). `security-warden stop` stops it.
+With Homebrew you can also use `brew services start security-warden`.
 
-- Listens on one address only: loopback by default, or this machine's Tailscale IP
-  (`--listen 100.x.y.z:7348`). `0.0.0.0` and other "every network" addresses are always refused.
-- Sign-in: a one-time link printed in the terminal, or a passkey. Sessions survive restarts (stored
-  hashed), last 12 hours, and lock out after 5 failed attempts.
+- The window is an app-style window of Chrome, Edge, Brave or Chromium (a normal tab otherwise).
+- On first sign-in it offers to add a passkey (Touch ID, Windows Hello, security key).
+- Always on `127.0.0.1:7348`. `security-warden serve --listen 100.x.y.z:7348` serves this machine's
+  Tailscale address instead; `0.0.0.0` and other "every network" addresses are always refused.
+- Sign-in: a link kept in a file only you can read (`security-warden open` uses it), or a passkey.
+  Sessions survive restarts (stored hashed), last 12 hours, and lock out after 5 failed attempts.
 - Protected against cross-site requests and DNS rebinding (Origin, CSRF token, Host allow-list, strict CSP).
 - Snooze findings for 1, 7 or 30 days or for good (critical findings: 30 days at most).
-
-### Watch
-
-```sh
-security-warden watch                  # quick scan every minute, full scan every 30 minutes
-security-warden agent install          # run watch in the background at login (no admin rights)
-security-warden agent uninstall
-```
-
-When something new appears (a port opens, a tunnel starts, a login item is added, a key loses its
-passphrase…) you get a desktop notification. Fixed problems are logged as resolved.
 
 ### Fix
 

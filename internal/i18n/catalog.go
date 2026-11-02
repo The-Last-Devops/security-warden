@@ -59,10 +59,9 @@ var en = map[string]string{
 Usage:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
-  security-warden watch  [--interval 1m] [--full 30m]
-  security-warden open                  (open the window, signed in)
-  security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
+  security-warden start                 run in the background and open the window
+  security-warden stop                  stop it (and do not start at login)
+  security-warden status | open
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -84,6 +83,13 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"ignore.forever":    "for good",
 	"serve.open":        "Open this link in your browser (it signs you in):",
 	"serve.opened":      "Opened in your browser.",
+	"start.ok":          "Security Warden is running in the background (http://localhost:%d) and starts at login. Opening it…",
+	"start.slow":        "Security Warden did not answer yet. Check the log: %s",
+	"stop.ok":           "Security Warden stopped. It will not start at login until you run: security-warden start",
+	"stop.foreground":   "Another Security Warden still runs in a terminal (security-warden serve). Stop it with Ctrl+C there.",
+	"status.running":    "Running: http://localhost:%d",
+	"status.atlogin":    "Starts automatically at login.",
+	"status.stopped":    "Not running. Start it with: security-warden start",
 	"serve.background":  "Security Warden is running in the background on",
 	"serve.already":     "Security Warden is already running. Opening it:",
 	"serve.in_use":      "Address %s is used by another program. Choose another one with --listen 127.0.0.1:PORT.",
@@ -176,10 +182,9 @@ var vi = map[string]string{
 Cách dùng:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
-  security-warden watch  [--interval 1m] [--full 30m]
-  security-warden open                  (mở cửa sổ, đã đăng nhập)
-  security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
+  security-warden start                 chạy nền và mở cửa sổ
+  security-warden stop                  dừng (và không tự bật khi đăng nhập)
+  security-warden status | open
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -201,6 +206,13 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"ignore.forever":    "luôn luôn",
 	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
 	"serve.opened":      "Đã mở trong trình duyệt.",
+	"start.ok":          "Security Warden đang chạy nền (http://localhost:%d) và tự bật khi đăng nhập. Đang mở…",
+	"start.slow":        "Security Warden chưa phản hồi. Xem nhật ký: %s",
+	"stop.ok":           "Đã dừng Security Warden. Nó sẽ không tự bật khi đăng nhập cho tới khi bạn chạy: security-warden start",
+	"stop.foreground":   "Vẫn còn một Security Warden chạy trong terminal (security-warden serve). Dừng nó bằng Ctrl+C ở đó.",
+	"status.running":    "Đang chạy: http://localhost:%d",
+	"status.atlogin":    "Tự bật khi đăng nhập.",
+	"status.stopped":    "Chưa chạy. Bật bằng: security-warden start",
 	"serve.background":  "Security Warden đang chạy nền ở",
 	"serve.already":     "Security Warden đang chạy rồi. Mở lại cửa sổ:",
 	"serve.in_use":      "Địa chỉ %s đang bị chương trình khác dùng. Chọn địa chỉ khác bằng --listen 127.0.0.1:PORT.",
