@@ -321,10 +321,23 @@ func renderRemedy(r *Remedy, it Item) *Remedy {
 // Weights per severity: how much a check counts toward the score.
 var weight = map[string]int{"critical": 10, "high": 6, "medium": 3, "low": 1, "info": 0}
 
+// Ceiling is the highest score allowed while problems of these severities
+// remain open (distinct rules, not places).
+func Ceiling(critical, high int) int {
+	switch {
+	case critical > 0:
+		return 25
+	case high >= 3:
+		return 50
+	case high > 0:
+		return 75
+	}
+	return 100
+}
+
 // Score is the share of applicable checks that pass, weighted by
-// severity: a rule counts once however many places it fires. While a
-// critical problem remains the score stays below 70, so a leaked key never
-// reads as "good". Gain is how many points fixing each failing rule earns.
+// severity: a rule counts once however many places it fires. The worst open
+// problem caps it (see Ceiling), so a leaked key never reads as "good". Gain is how many points fixing each failing rule earns.
 func Score(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (score int, gain map[string]int) {
 	failing := map[string]string{} // rule -> severity
 	for _, f := range findings {
@@ -338,25 +351,30 @@ func Score(rules []*Rule, findings []Finding, ran map[string]bool, platform stri
 	}
 	// scoreWithout computes the score if the rule "skip" were fixed.
 	scoreWithout := func(skip string) int {
-		total, passed, critical := 0, 0, false
+		total, passed, critical, high := 0, 0, 0, 0
 		for _, r := range applicable {
 			w := weight[r.Severity]
 			total += w
 			sev, bad := failing[r.ID]
 			if !bad || r.ID == skip {
 				passed += w
-			} else if sev == "critical" {
-				critical = true
+				continue
+			}
+			switch sev {
+			case "critical":
+				critical++
+			case "high":
+				high++
 			}
 		}
 		if total == 0 {
 			return 100
 		}
 		s := (passed*100 + total/2) / total
-		if critical && s > 69 {
-			s = 69
-		}
-		return s
+		// The worst open problem sets the ceiling: passing many small checks
+		// must not hide a leaked key. Inside the ceiling the score still
+		// moves with progress, so every fix shows.
+		return (s*Ceiling(critical, high) + 50) / 100
 	}
 	score = scoreWithout("")
 	gain = map[string]int{}

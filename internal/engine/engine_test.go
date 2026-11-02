@@ -83,9 +83,13 @@ func TestScore(t *testing.T) {
 	if got != 85 || gain["b"] != 15 {
 		t.Errorf("score=%d gain=%v, want 85 and b:15", got, gain)
 	}
+	// one high problem caps at 80
+	if got, _ := engine.Score(rs, []engine.Finding{{RuleID: "a", Severity: "high"}}, ran, "macos"); got > 75 {
+		t.Errorf("score with a high finding = %d", got)
+	}
 	// a failing critical keeps the score below 80 even when most passes
 	got, _ = engine.Score(append(rs, mk("e", "high"), mk("f", "high"), mk("g", "high")), []engine.Finding{{RuleID: "d", Severity: "critical"}}, ran, "macos")
-	if got > 69 {
+	if got > 25 {
 		t.Errorf("score with a critical finding = %d", got)
 	}
 	if got, _ := engine.Score(rs, nil, ran, "macos"); got != 100 {
