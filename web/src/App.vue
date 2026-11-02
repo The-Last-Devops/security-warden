@@ -352,20 +352,21 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <div v-else>
           <p v-if="data && !groups.length && cat !== 'all'" class="px-5 py-10 text-center text-muted">{{ t.noIssues }}</p>
           <p v-if="data && !groups.length && cat === 'all'" class="mx-5 my-6 rounded-xl bg-ok-bg px-5 py-4 text-center text-[15px] font-semibold text-ok">{{ t.allClear }}</p>
-          <article v-if="nextGroup" class="m-3 mb-1 grid gap-3 rounded-2xl p-5 ring-1"
-            :class="{ critical: 'bg-crit-bg ring-crit/30', high: 'bg-high-bg ring-high/25', medium: 'bg-med-bg ring-med/25', low: 'bg-low-bg ring-low/25', info: 'bg-info-bg ring-line' }[nextGroup.first.severity]">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="caps" :class="{ critical: '!text-crit', high: '!text-high', medium: '!text-med', low: '!text-low', info: '' }[nextGroup.first.severity]">{{ t.nextUp }} · {{ t.sev[nextGroup.first.severity] }}</span>
-              <span v-if="nextGroup.first.gain" class="num ml-auto text-[13.5px] font-bold text-ok">{{ t.gain(nextGroup.first.gain) }}</span>
+          <article v-if="nextGroup" class="m-3 mb-1 overflow-hidden rounded-2xl bg-panel2 ring-1 ring-line">
+            <div class="flex flex-wrap items-center gap-2 px-5 py-2.5"
+              :class="{ critical: 'bg-rail-crit text-white', high: 'bg-rail-high text-white', medium: 'bg-rail-med text-[#1a1300]', low: 'bg-rail-low text-white', info: 'bg-rail-info text-white' }[nextGroup.first.severity]">
+              <span class="text-[12.5px] font-extrabold tracking-[.1em] uppercase">{{ t.nextUp }} · {{ t.sev[nextGroup.first.severity] }}</span>
+              <span v-if="nextGroup.first.gain" class="num ml-auto rounded-full bg-black/15 px-2.5 py-0.5 text-[13px] font-bold">{{ t.gain(nextGroup.first.gain) }}</span>
             </div>
+            <div class="grid gap-3 p-5">
             <h2 class="text-[21px] leading-snug font-extrabold tracking-tight">{{ nextGroup.first.title.split(': ')[0] }}</h2>
             <p class="max-w-[72ch] text-[15px] leading-relaxed text-fg/85">{{ nextGroup.first.explain }}</p>
-            <div class="rounded-xl bg-panel/70 px-4 py-3 ring-1 ring-line">
+            <div class="rounded-xl bg-panel px-4 py-3 ring-1 ring-line">
               <div class="caps mb-1">{{ t.howLabel }}</div>
               <div v-if="nextGroup.first.plan" class="font-mono text-[13.5px]">{{ nextGroup.first.plan.map(p => '$ ' + p).join('\n') }}</div>
               <p v-else class="text-[14.5px] leading-relaxed">{{ nextGroup.first.fix }}</p>
             </div>
-            <ul v-if="nextOpen" class="grid max-h-60 gap-1 overflow-y-auto rounded-xl bg-panel/70 px-4 py-3 font-mono text-[12.5px] text-muted ring-1 ring-line">
+            <ul v-if="nextOpen" class="grid max-h-60 gap-1 overflow-y-auto rounded-xl bg-panel px-4 py-3 font-mono text-[12.5px] text-muted ring-1 ring-line">
               <li v-for="x in [nextGroup.first, ...nextGroup.rest]" :key="x.key" class="break-all">{{ x.title.includes(': ') ? x.title.slice(x.title.indexOf(': ') + 2) : x.title }}</li>
             </ul>
             <div class="flex flex-wrap items-center gap-2">
@@ -373,15 +374,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               <button v-if="nextGroup.rest.length" class="rounded-xl border border-line bg-panel px-4 py-2.5 text-[14px] font-semibold hover:text-accent" @click="nextOpen = !nextOpen">{{ nextOpen ? t.showLess : t.seePlaces(nextGroup.rest.length + 1) }}</button>
               <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="ignoreFindings([nextGroup.first, ...nextGroup.rest], 7)">{{ t.later }}</button>
             </div>
+            </div>
           </article>
           <h2 v-if="nextGroup && sections.length" class="px-5 pt-5 text-[13px] font-bold tracking-[.1em] text-muted uppercase">{{ t.remaining }} · {{ listGroups.length }}</h2>
           <section v-for="sec in sections" :key="sec.sev">
-            <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
-              <span class="h-2.5 w-2.5 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[sec.sev]" />
-              <span class="caps !text-fg">{{ t.sev[sec.sev] }}</span>
-              <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
+            <h2 class="mx-3 mt-4 flex items-center gap-2.5 rounded-lg px-3.5 py-2"
+              :class="{ critical: 'bg-rail-crit text-white', high: 'bg-rail-high text-white', medium: 'bg-rail-med text-[#1a1300]', low: 'bg-rail-low text-white', info: 'bg-rail-info text-white' }[sec.sev]">
+              <span class="text-[12.5px] font-extrabold tracking-[.1em] uppercase">{{ t.sev[sec.sev] }}</span>
+              <span class="num rounded-full bg-black/15 px-2 text-[12.5px] font-bold">{{ sec.groups.length }}</span>
             </h2>
-            <div class="grid gap-2 p-3">
+            <div class="grid gap-2 px-3 pt-2 pb-1">
               <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="ignoreFindings" />
             </div>
           </section>

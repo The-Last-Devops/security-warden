@@ -10,7 +10,8 @@ const open = ref(false)
 const menu = ref(false)
 const f = computed(() => props.group.first)
 // Severity shows as a soft tint behind the whole row.
-const tint = { critical: 'bg-crit-bg ring-crit/25', high: 'bg-high-bg ring-high/20', medium: 'bg-med-bg ring-med/20', low: 'bg-low-bg ring-low/20', info: 'bg-info-bg ring-line' }
+// Rows stay neutral; colour lives in the section header above them.
+const tint = { critical: '', high: '', medium: '', low: '', info: '' }
 const all = computed(() => [props.group.first, ...props.group.rest])
 // Short headline: the problem without the specific file or name ("X: detail").
 const parts = computed(() => {
@@ -23,7 +24,7 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
 </script>
 
 <template>
-  <div class="rise rounded-xl ring-1" :class="tint[f.severity]" :style="{ animationDelay: `${Math.min(index, 14) * 28}ms` }">
+  <div class="rise rounded-xl bg-panel2 ring-1 ring-line transition-shadow hover:ring-accent/50" :class="tint[f.severity]" :style="{ animationDelay: `${Math.min(index, 14) * 28}ms` }">
     <div class="grid grid-cols-[1fr_auto] items-center gap-4 py-3.5 pr-3 pl-4">
       <button class="min-w-0 text-left" :aria-expanded="open" @click="open = !open">
         <span class="block text-[16px] leading-snug font-semibold break-words">{{ title }}</span>
