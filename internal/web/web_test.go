@@ -129,3 +129,16 @@ func TestPasskeyNeedsName(t *testing.T) {
 		t.Errorf("register without session = %d", w.Code)
 	}
 }
+
+func TestPasskeyUserIDStable(t *testing.T) {
+	p := newPasskeys()
+	p.path = t.TempDir() + "/passkeys.json"
+	a, err := p.load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := p.load()
+	if string(a.ID) != string(b.ID) {
+		t.Fatal("user id changed between loads; registration would fail")
+	}
+}

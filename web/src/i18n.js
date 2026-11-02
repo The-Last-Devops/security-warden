@@ -22,7 +22,7 @@ export const dict = {
     done: n => `Fixed ${n}.`, failed: 'Failed', undone: n => `Reverted ${n} changes.`, nothingUndo: 'Nothing to undo.',
     sameIssue: n => `Same issue in ${n} more places`, showAll: 'Show all', showLess: 'Show less',
     lastScan: t => `Scanned ${t}`, serving: a => `Serving on ${a}`, verdict: s => s >= 80 ? 'Looking good' : s >= 50 ? 'Needs attention' : 'Needs work now',
-    signedOut: 'Signed out. Open the link from the terminal to sign in again.', error: 'Something went wrong',
+    close: 'Close', signedOut: 'Signed out. Open the link from the terminal to sign in again.', error: 'Something went wrong',
   },
   vi: {
     all: 'Tất cả', groups: 'Nhóm', other: 'Khác',
@@ -46,6 +46,6 @@ export const dict = {
     done: n => `Đã sửa ${n} mục.`, failed: 'Lỗi', undone: n => `Đã hoàn tác ${n} thay đổi.`, nothingUndo: 'Không có gì để hoàn tác.',
     sameIssue: n => `Cùng lỗi này ở ${n} chỗ khác`, showAll: 'Xem hết', showLess: 'Thu gọn',
     lastScan: t => `Quét lúc ${t}`, serving: a => `Đang chạy ở ${a}`, verdict: s => s >= 80 ? 'Máy khá an toàn' : s >= 50 ? 'Cần để ý' : 'Cần xử lý gấp',
-    signedOut: 'Đã đăng xuất. Mở lại link trong terminal để đăng nhập.', error: 'Có lỗi xảy ra',
+    close: 'Đóng', signedOut: 'Đã đăng xuất. Mở lại link trong terminal để đăng nhập.', error: 'Có lỗi xảy ra',
   },
 }

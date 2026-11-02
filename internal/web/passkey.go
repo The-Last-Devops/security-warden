@@ -35,7 +35,8 @@ func (u *pkUser) WebAuthnCredentials() []webauthn.Credential { return u.Creds }
 
 type passkeys struct {
 	path    string
-	mu      sync.Mutex
+	mu      sync.Mutex                 // guards the file
+	pmu     sync.Mutex                 // guards pending
 	pending map[string]pendingCeremony // ceremony id -> state, short-lived
 }
 
@@ -53,9 +54,17 @@ func newPasskeys() *passkeys {
 }
 
 func (p *passkeys) load() (*pkUser, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	b, err := os.ReadFile(p.path)
 	if errors.Is(err, os.ErrNotExist) {
-		return &pkUser{ID: []byte(randomHex(16))}, nil
+		// Create the user id once and keep it: registration begin and finish
+		// must see the same id.
+		u := &pkUser{ID: []byte(randomHex(16))}
+		if err := p.saveLocked(u); err != nil {
+			return nil, err
+		}
+		return u, nil
 	}
 	if err != nil {
 		return nil, err
@@ -71,6 +80,12 @@ func (p *passkeys) load() (*pkUser, error) {
 }
 
 func (p *passkeys) save(u *pkUser) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.saveLocked(u)
+}
+
+func (p *passkeys) saveLocked(u *pkUser) error {
 	if err := os.MkdirAll(filepath.Dir(p.path), 0o700); err != nil {
 		return err
 	}
@@ -96,8 +111,8 @@ func (p *passkeys) save(u *pkUser) error {
 
 func (p *passkeys) put(d *webauthn.SessionData) string {
 	id := randomHex(16)
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.pmu.Lock()
+	defer p.pmu.Unlock()
 	now := time.Now()
 	for k, v := range p.pending {
 		if now.After(v.expires) {
@@ -109,8 +124,8 @@ func (p *passkeys) put(d *webauthn.SessionData) string {
 }
 
 func (p *passkeys) take(id string) (*webauthn.SessionData, bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.pmu.Lock()
+	defer p.pmu.Unlock()
 	c, ok := p.pending[id]
 	delete(p.pending, id)
 	if !ok || time.Now().After(c.expires) {

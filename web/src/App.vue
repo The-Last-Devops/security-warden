@@ -59,7 +59,13 @@ async function clearPasskeys() {
 const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 
-function say(msg) { toast.value = msg; setTimeout(() => { if (toast.value === msg) toast.value = '' }, 4500) }
+// Messages: success fades after a few seconds; errors stay until closed.
+const toastErr = ref(false)
+function say(msg, isError = /:/.test(msg)) {
+  toast.value = msg
+  toastErr.value = isError
+  if (!isError) setTimeout(() => { if (toast.value === msg) toast.value = '' }, 5000)
+}
 
 async function load(force = false) {
   busy.value = true
@@ -280,6 +286,10 @@ function onKey(e) { if (e.key === 'Escape') sheet.value = null }
       </section>
     </div>
 
-    <div v-if="toast" class="rise fixed right-4 bottom-4 left-4 z-20 mx-auto max-w-md rounded-xl bg-fg px-4 py-3 text-[13.5px] text-page shadow-xl sm:left-auto" role="status">{{ toast }}</div>
+    <div v-if="toast" class="rise fixed right-4 bottom-4 left-4 z-20 mx-auto flex max-w-md items-start gap-3 rounded-xl px-4 py-3 text-[14px] shadow-xl sm:left-auto"
+      :class="toastErr ? 'bg-crit text-white' : 'bg-fg text-page'" :role="toastErr ? 'alert' : 'status'">
+      <span class="flex-1 break-words">{{ toast }}</span>
+      <button class="-mr-1 rounded px-1.5 font-bold opacity-80 hover:opacity-100" :aria-label="t.close" @click="toast = ''">✕</button>
+    </div>
   </div>
 </template>
