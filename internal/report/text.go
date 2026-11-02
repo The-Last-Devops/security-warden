@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
@@ -18,7 +19,11 @@ type Scan struct {
 	Version  string           `json:"version"`
 	Lang     string           `json:"lang"`
 	Platform string           `json:"platform"`
+	Host     string           `json:"host"`
+	Time     string           `json:"time"`
 	Score    int              `json:"score"`
+	Checked  int              `json:"checked"`
+	Passed   []string         `json:"passed"`
 	Sources  []SourceStatus   `json:"sources"`
 	Findings []engine.Finding `json:"findings"`
 	Root     bool             `json:"root"`
@@ -52,14 +57,15 @@ func JSON(w io.Writer, s Scan) error {
 	return enc.Encode(s)
 }
 
-type palette struct{ bold, dim, reset string }
-
-var colors = map[string]string{
-	"critical": "\033[1;97;41m", "high": "\033[1;31m", "medium": "\033[1;33m", "low": "\033[36m", "info": "\033[37m",
+// Options changes how much the text report shows.
+type Options struct {
+	Verbose bool // details for every finding, and the list of passed checks
 }
 
-func useColor(w io.Writer) bool {
-	if os.Getenv("NO_COLOR") != "" {
+// IsTerminal reports whether w is an interactive terminal that may get
+// colors and live progress.
+func IsTerminal(w io.Writer) bool {
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
 		return false
 	}
 	f, ok := w.(*os.File)
@@ -70,60 +76,136 @@ func useColor(w io.Writer) bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
+// style wraps text in ANSI codes, or not at all when color is off.
+type style struct{ on bool }
+
+func (s style) wrap(code, text string) string {
+	if !s.on || code == "" {
+		return text
+	}
+	return "\033[" + code + "m" + text + "\033[0m"
+}
+func (s style) bold(t string) string { return s.wrap("1", t) }
+func (s style) dim(t string) string  { return s.wrap("2", t) }
+
+var sevColor = map[string]string{
+	"critical": "1;91", "high": "91", "medium": "33", "low": "36", "info": "37",
+}
+var sevPill = map[string]string{
+	"critical": "1;97;41", "high": "1;30;101", "medium": "1;30;43", "low": "1;30;46", "info": "1;30;47",
+}
+
+const green = "32"
+
+// tilde shortens the home folder in text meant for people.
+func tilde(s string) string {
+	if h, err := os.UserHomeDir(); err == nil && h != "" {
+		return strings.ReplaceAll(s, h, "~")
+	}
+	return s
+}
+
+// pad right-pads to n display columns (Vietnamese labels are multi-byte).
+func pad(s string, n int) string {
+	if k := utf8.RuneCountInString(s); k < n {
+		return s + strings.Repeat(" ", n-k)
+	}
+	return s
+}
+
 // Text writes the human report in s.Lang.
-func Text(w io.Writer, s Scan) {
+func Text(w io.Writer, s Scan, o Options) {
 	t := func(k string) string { return i18n.T(s.Lang, k) }
-	color := useColor(w)
-	p := palette{}
-	if color {
-		p = palette{"\033[1m", "\033[2m", "\033[0m"}
-	}
+	c := style{on: IsTerminal(w)}
 
-	fmt.Fprintf(w, "%s%s%s  %s\n\n", p.bold, t("report.title"), p.reset, s.Version)
-
-	fmt.Fprintf(w, "%s%s%s\n", p.bold, t("report.sources"), p.reset)
-	for _, st := range s.Sources {
-		var state string
-		switch {
-		case st.Error != "":
-			state = fmt.Sprintf(t("source.error"), st.Error)
-		case st.Skipped != "":
-			state = t(st.Skipped)
-		default:
-			state = fmt.Sprintf(t("source.ok"), st.Items)
-		}
-		fmt.Fprintf(w, "  %-34s %s%s%s\n", t("source."+st.Name), p.dim, state, p.reset)
+	shield := "🛡  "
+	if !c.on {
+		shield = ""
 	}
-	fmt.Fprintln(w)
+	fmt.Fprintf(w, "\n  %s%s %s\n\n", shield, c.bold("security-warden"),
+		c.dim(fmt.Sprintf("%s · %s · %s", s.Version, s.Host, s.Time)))
 
-	fmt.Fprintf(w, "%s%s%s\n", p.bold, t("report.findings"), p.reset)
-	if len(s.Findings) == 0 {
-		fmt.Fprintf(w, "  %s\n", t("report.none"))
-	}
-	for _, f := range s.Findings {
-		label := t("severity." + f.Severity)
-		if color {
-			label = colors[f.Severity] + " " + label + " " + p.reset
-		} else {
-			label = "[" + label + "]"
-		}
-		fmt.Fprintf(w, "\n  %s %s%s%s\n", label, p.bold, f.Title, p.reset)
-		fmt.Fprintf(w, "    %s\n", f.Explain)
-		fmt.Fprintf(w, "    %s%s:%s %s\n", p.bold, t("report.fix"), p.reset, f.Fix)
-		fmt.Fprintf(w, "    %s%s%s\n", p.dim, f.RuleID, p.reset)
-	}
-	fmt.Fprintln(w)
-
+	// Score bar and counts.
 	n := map[string]int{}
 	for _, f := range s.Findings {
 		n[f.Severity]++
 	}
-	fmt.Fprintf(w, "%s%s: %d/100%s  %s\n", p.bold, t("report.score"), s.Score, p.reset,
-		fmt.Sprintf(t("report.summary"), len(s.Findings), n["critical"], n["high"], n["medium"], n["low"]))
-	var notes []string
-	if !s.Root {
-		notes = append(notes, t("report.not_root"))
+	barColor := green
+	switch {
+	case s.Score < 50:
+		barColor = sevColor["high"]
+	case s.Score < 80:
+		barColor = sevColor["medium"]
 	}
-	notes = append(notes, t("report.private"))
-	fmt.Fprintf(w, "%s%s%s\n", p.dim, strings.Join(notes, "\n"), p.reset)
+	filled := s.Score / 5
+	bar := c.wrap(barColor, strings.Repeat("█", filled)) + c.dim(strings.Repeat("░", 20-filled))
+	if !c.on {
+		bar = "[" + strings.Repeat("#", filled) + strings.Repeat(".", 20-filled) + "]"
+	}
+	fmt.Fprintf(w, "  %s  %s  %s%s  ", c.bold(t("report.score")), bar, c.wrap(barColor+";1", fmt.Sprint(s.Score)), c.dim("/100"))
+	for _, sev := range engine.Severities {
+		if n[sev] > 0 && sev != "info" {
+			fmt.Fprintf(w, " %s", c.wrap(sevColor[sev], fmt.Sprintf("● %d %s", n[sev], t("count."+sev))))
+		}
+	}
+	fmt.Fprint(w, "\n\n")
+
+	if len(s.Findings) == 0 {
+		fmt.Fprintf(w, "  %s %s\n\n", c.wrap(green, "✓"), c.bold(t("report.none")))
+	}
+
+	// Findings, worst first. Low and info get one line unless --verbose.
+	width := 0
+	for _, f := range s.Findings {
+		width = max(width, utf8.RuneCountInString(t("severity."+f.Severity)))
+	}
+	for _, f := range s.Findings {
+		rail := c.wrap(sevColor[f.Severity], "┃")
+		if !c.on {
+			rail = "|"
+		}
+		label := t("severity." + f.Severity)
+		pill := c.wrap(sevPill[f.Severity], " "+pad(label, width)+" ")
+		if !c.on {
+			pill = pad("["+label+"]", width+2)
+		}
+		fmt.Fprintf(w, "  %s %s  %s\n", rail, pill, c.bold(tilde(f.Title)))
+		short := f.Severity == "low" || f.Severity == "info"
+		if short && !o.Verbose {
+			continue
+		}
+		indent := strings.Repeat(" ", width+4)
+		fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(tilde(f.Explain)))
+		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
+		if o.Verbose {
+			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(f.RuleID))
+		}
+		fmt.Fprintln(w)
+	}
+	if len(s.Findings) > 0 && !o.Verbose && (n["low"] > 0 || n["info"] > 0) {
+		fmt.Fprintln(w)
+	}
+
+	// What passed, and what could not be checked.
+	fmt.Fprintf(w, "  %s %s\n", c.wrap(green, "✓"), c.dim(fmt.Sprintf(t("report.passed"), len(s.Passed), s.Checked)))
+	if o.Verbose {
+		for _, id := range s.Passed {
+			fmt.Fprintf(w, "      %s\n", c.dim(id))
+		}
+	}
+	for _, st := range s.Sources {
+		switch {
+		case st.Error != "":
+			fmt.Fprintf(w, "  %s %s\n", c.wrap(sevColor["medium"], "!"), c.dim(t("source."+st.Name)+": "+fmt.Sprintf(t("source.error"), st.Error)))
+		case st.Skipped != "" && o.Verbose:
+			fmt.Fprintf(w, "  %s %s\n", c.dim("–"), c.dim(t("source."+st.Name)+": "+t(st.Skipped)))
+		}
+	}
+	if !o.Verbose {
+		fmt.Fprintf(w, "  %s\n", c.dim(t("report.more")))
+	}
+	if !s.Root {
+		fmt.Fprintf(w, "  %s\n", c.dim(t("report.not_root")))
+	}
+	fmt.Fprintf(w, "  %s\n\n", c.dim(t("report.private")))
 }

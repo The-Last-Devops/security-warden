@@ -38,12 +38,21 @@ var en = map[string]string{
 	"cli.usage": `security-warden: what doors does your machine leave open, and which secrets are lying around?
 
 Usage:
-  security-warden [scan] [--lang en|vi] [--json]
+  security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden rules  [--lang en|vi]
   security-warden version
 
-Language: --lang, else SW_LANG, else your system language.`,
+Language: --lang, else SW_LANG, else your system language.
+Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"cli.rules_header": "%d rules",
+
+	"count.critical":  "critical",
+	"count.high":      "high",
+	"count.medium":    "medium",
+	"count.low":       "low",
+	"report.passed":   "Passed %d of %d checks",
+	"report.more":     "Details for every item: security-warden --verbose",
+	"report.progress": "Checking",
 }
 
 var vi = map[string]string{
@@ -84,10 +93,19 @@ var vi = map[string]string{
 	"cli.usage": `security-warden: máy bạn đang mở những cửa nào, và secret nào đang nằm lộ ra?
 
 Cách dùng:
-  security-warden [scan] [--lang en|vi] [--json]
+  security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden rules  [--lang en|vi]
   security-warden version
 
-Ngôn ngữ: --lang, không có thì SW_LANG, không có nữa thì theo ngôn ngữ hệ thống.`,
+Ngôn ngữ: --lang, không có thì SW_LANG, không có nữa thì theo ngôn ngữ hệ thống.
+Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất một, 2 lỗi.`,
 	"cli.rules_header": "%d rule",
+
+	"count.critical":  "nghiêm trọng",
+	"count.high":      "cao",
+	"count.medium":    "vừa",
+	"count.low":       "thấp",
+	"report.passed":   "Đạt %d trên %d kiểm tra",
+	"report.more":     "Xem chi tiết từng mục: security-warden --verbose",
+	"report.progress": "Đang kiểm",
 }

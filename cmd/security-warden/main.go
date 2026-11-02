@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
+	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
@@ -40,6 +42,7 @@ func run(args []string) int {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	lang := fs.String("lang", "", "language: "+fmt.Sprint(i18n.Supported))
 	asJSON := fs.Bool("json", false, "print JSON")
+	verbose := fs.Bool("verbose", false, "show every detail")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -75,17 +78,37 @@ func run(args []string) int {
 		return 2
 	}
 
-	results := source.Run(context.Background(), source.All())
+	var prog *report.Progress
+	if !*asJSON {
+		prog = report.StartProgress(os.Stderr, l, names)
+	}
+	results := source.Run(context.Background(), source.All(), func(n string) {
+		if prog != nil {
+			prog.Done(n)
+		}
+	})
+	if prog != nil {
+		prog.Stop()
+	}
+
 	items := map[string][]engine.Item{}
+	ran := map[string]bool{}
 	for _, r := range results {
 		items[r.Name] = r.Items
+		ran[r.Name] = r.SkipKey == "" && r.Err == nil
 	}
 	findings := engine.Evaluate(rs, items, platform(), l)
+	checked, passed := engine.Coverage(rs, findings, ran, platform())
+	host, _ := os.Hostname()
 	s := report.Scan{
 		Version:  version,
 		Lang:     l,
 		Platform: platform(),
+		Host:     strings.TrimSuffix(host, ".local"),
+		Time:     time.Now().Format("2006-01-02 15:04"),
 		Score:    engine.Score(findings),
+		Checked:  checked,
+		Passed:   passed,
 		Sources:  report.Statuses(results),
 		Findings: findings,
 		Root:     os.Geteuid() == 0,
@@ -96,7 +119,12 @@ func run(args []string) int {
 			return 2
 		}
 	} else {
-		report.Text(os.Stdout, s)
+		report.Text(os.Stdout, s, report.Options{Verbose: *verbose})
+	}
+	for _, f := range findings {
+		if f.Severity == "critical" || f.Severity == "high" {
+			return 1
+		}
 	}
 	return 0
 }

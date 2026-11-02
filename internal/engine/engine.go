@@ -233,6 +233,25 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 	return out
 }
 
+// Coverage lists the rules that ran on platform against a source that
+// worked (ran is the set of such sources) and did not report anything.
+func Coverage(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (checked int, passed []string) {
+	hit := map[string]bool{}
+	for _, f := range findings {
+		hit[f.RuleID] = true
+	}
+	for _, r := range rules {
+		if r.Tier == "experimental" || !contains(r.Platforms, platform) || !ran[r.Source] {
+			continue
+		}
+		checked++
+		if !hit[r.ID] {
+			passed = append(passed, r.ID)
+		}
+	}
+	return checked, passed
+}
+
 // Score is 100 minus a penalty per finding, never below 0.
 func Score(fs []Finding) int {
 	s := 100

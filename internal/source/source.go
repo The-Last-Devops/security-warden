@@ -51,8 +51,9 @@ func All() []Collector {
 	}
 }
 
-// Run executes the collectors in parallel.
-func Run(ctx context.Context, cs []Collector) []Result {
+// Run executes the collectors in parallel. done, if not nil, is called with
+// each collector's name as it finishes.
+func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
 	out := make([]Result, len(cs))
 	var wg sync.WaitGroup
 	for i, c := range cs {
@@ -68,6 +69,9 @@ func Run(ctx context.Context, cs []Collector) []Result {
 				r.Err = err
 			}
 			out[i] = r
+			if done != nil {
+				done(c.Name)
+			}
 		}()
 	}
 	wg.Wait()

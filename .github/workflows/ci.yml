@@ -40,8 +40,9 @@ jobs:
           chmod +x security-warden-darwin-arm64
           ./security-warden-darwin-arm64 version
           ./security-warden-darwin-arm64 rules
-          ./security-warden-darwin-arm64 --lang vi
-          ./security-warden-darwin-arm64 --json > report.json
+          # Exit 1 means "found something high", which is fine on a runner.
+          ./security-warden-darwin-arm64 --lang vi || [ $? -eq 1 ]
+          ./security-warden-darwin-arm64 --json > report.json || [ $? -eq 1 ]
           python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
       - uses: actions/upload-artifact@v4
         with:
