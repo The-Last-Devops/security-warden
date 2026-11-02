@@ -1,0 +1,21 @@
+id: windows-guest-account-on
+severity: medium
+platforms: [windows]
+source: posture
+match: has(item.guest_enabled) && item.guest_enabled
+title:
+  en: "The Windows Guest account is enabled"
+  vi: "Tài khoản Guest của Windows đang bật"
+check:
+  en: "The Guest account is disabled"
+  vi: "Tài khoản Guest đang tắt"
+explain:
+  en: "The built-in Guest account ({guest_name}) has no password. Anyone at the keyboard, and on some setups anyone on the network, can sign in with it."
+  vi: "Tài khoản Guest có sẵn ({guest_name}) không có mật khẩu. Ai ngồi trước máy, và với một số cấu hình là cả người trong mạng, đều đăng nhập được bằng nó."
+fix:
+  en: "In a terminal opened with \"Run as administrator\": net user {guest_name} /active:no"
+  vi: "Trong cửa sổ lệnh mở bằng \"Run as administrator\": net user {guest_name} /active:no"
+author: the-last-devops
+tests:
+  - {item: {os: windows, guest_enabled: true, guest_name: Guest}, expect: true}
+  - {item: {os: windows, guest_enabled: false, guest_name: Guest}, expect: false}

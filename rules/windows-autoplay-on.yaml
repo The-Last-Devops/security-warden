@@ -1,0 +1,21 @@
+id: windows-autoplay-on
+severity: low
+platforms: [windows]
+source: posture
+match: has(item.autoplay_off) && !item.autoplay_off
+title:
+  en: "AutoPlay is on for USB drives and discs"
+  vi: "AutoPlay đang bật cho USB và đĩa"
+check:
+  en: "AutoPlay is off"
+  vi: "AutoPlay đang tắt"
+explain:
+  en: "Windows offers to open or run things as soon as a USB stick, phone or disc is plugged in. One careless click on a planted or infected drive is enough to start malware."
+  vi: "Vừa cắm USB, điện thoại hay đĩa là Windows đề nghị mở hoặc chạy ngay. Chỉ một cú bấm vội trên ổ bị cài sẵn hay nhiễm mã độc là đủ để mã độc chạy."
+fix:
+  en: "Settings > Bluetooth & devices > AutoPlay (Windows 10: Settings > Devices > AutoPlay) > \"Use AutoPlay for all media and devices\" > Off. No administrator needed."
+  vi: "Cài đặt > Bluetooth & thiết bị > AutoPlay (Windows 10: Cài đặt > Thiết bị > AutoPlay) > \"Use AutoPlay for all media and devices\" > Tắt. Không cần quyền quản trị."
+author: the-last-devops
+tests:
+  - {item: {os: windows, autoplay_off: false}, expect: true}
+  - {item: {os: windows, autoplay_off: true}, expect: false}

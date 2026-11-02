@@ -29,7 +29,7 @@ var en = map[string]string{
 	"source.credential_files":   "Credential files",
 	"source.services":           "Servers running on this machine",
 	"source.outdated_software":  "Out-of-date software",
-	"source.persistence":        "Login items, launchd and cron",
+	"source.persistence":        "Login items, scheduled tasks and cron",
 	"source.network_config":     "Proxy and hosts file",
 	"source.privilege":          "sudo and PATH",
 	"source.shell_rc":           "Shell startup files",
@@ -51,6 +51,7 @@ var en = map[string]string{
 	"source.git_remotes":        "Tokens in Git remote URLs",
 	"source.processes":          "Running programs",
 	"source.apps":               "App signatures",
+	"source.defender":           "Microsoft Defender",
 
 	"skip.platform":          "not supported on this OS yet",
 	"skip.lsof":              "lsof not available",
@@ -60,6 +61,8 @@ var en = map[string]string{
 	"skip.no_ssh_dir":        "no ~/.ssh folder",
 	"skip.homebrew":          "Homebrew not installed",
 	"skip.git":               "Git not installed",
+	"skip.defender":          "Microsoft Defender is not available",
+	"skip.packages":          "no Homebrew, apt or dnf package list found",
 
 	"cli.usage": `security-warden: what doors does your machine leave open, and which secrets are lying around?
 
@@ -169,7 +172,7 @@ var vi = map[string]string{
 	"source.credential_files":   "File chứa thông tin đăng nhập",
 	"source.services":           "Server chạy trên máy",
 	"source.outdated_software":  "Phần mềm cũ",
-	"source.persistence":        "Mục tự chạy: launchd và cron",
+	"source.persistence":        "Mục tự chạy, tác vụ hẹn giờ và cron",
 	"source.network_config":     "Proxy và file hosts",
 	"source.privilege":          "sudo và PATH",
 	"source.shell_rc":           "File khởi động shell",
@@ -191,6 +194,7 @@ var vi = map[string]string{
 	"source.git_remotes":        "Token trong URL remote của Git",
 	"source.processes":          "Chương trình đang chạy",
 	"source.apps":               "Chữ ký ứng dụng",
+	"source.defender":           "Microsoft Defender",
 
 	"skip.platform":          "chưa hỗ trợ hệ điều hành này",
 	"skip.lsof":              "không có lsof",
@@ -200,6 +204,8 @@ var vi = map[string]string{
 	"skip.no_ssh_dir":        "không có thư mục ~/.ssh",
 	"skip.homebrew":          "chưa cài Homebrew",
 	"skip.git":               "chưa cài Git",
+	"skip.defender":          "không có Microsoft Defender",
+	"skip.packages":          "không thấy danh sách gói của Homebrew, apt hay dnf",
 
 	"cli.usage": `security-warden: máy bạn đang mở những cửa nào, và secret nào đang nằm lộ ra?
 

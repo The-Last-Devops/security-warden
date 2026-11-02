@@ -1,0 +1,22 @@
+id: windows-firewall-off
+severity: high
+platforms: [windows]
+source: posture
+match: has(item.firewall_off_profiles) && item.firewall_off_profiles != ""
+title:
+  en: "Windows Firewall is off: {firewall_off_profiles}"
+  vi: "Tường lửa Windows đang tắt: {firewall_off_profiles}"
+check:
+  en: "Windows Firewall is on for every network type"
+  vi: "Tường lửa Windows bật cho mọi loại mạng"
+explain:
+  en: "With the firewall off for {firewall_off_profiles} networks, file sharing, remote procedure calls and any app's open port can be reached by every device on the same network, such as café or hotel Wi-Fi."
+  vi: "Tường lửa tắt cho mạng {firewall_off_profiles} thì chia sẻ file, dịch vụ RPC và port của bất kỳ app nào đều bị mọi thiết bị cùng mạng truy cập được, ví dụ Wi-Fi quán cà phê hay khách sạn."
+fix:
+  en: "Windows Security > Firewall & network protection > choose each network listed ({firewall_off_profiles}) > Microsoft Defender Firewall > On. Needs an administrator. If the switch is greyed out, your organisation sets it: ask IT."
+  vi: "Bảo mật Windows > Tường lửa & bảo vệ mạng > chọn từng mạng trong danh sách ({firewall_off_profiles}) > Tường lửa Microsoft Defender > Bật. Cần quyền quản trị. Nếu nút bị mờ là do tổ chức của bạn đặt: hỏi bộ phận IT."
+author: the-last-devops
+tests:
+  - {item: {os: windows, firewall_off_profiles: "Private, Public"}, expect: true}
+  - {item: {os: windows, firewall_off_profiles: ""}, expect: false}
+  - {item: {os: windows}, expect: false, note: standard user could not read the firewall}

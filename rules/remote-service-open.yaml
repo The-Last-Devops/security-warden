@@ -13,8 +13,8 @@ explain:
   en: "This machine accepts {service} logins from the network. If a password is weak or reused, someone can take over the machine."
   vi: "Máy này nhận đăng nhập {service} từ mạng. Mật khẩu yếu hoặc dùng lại ở nơi khác là người ngoài chiếm được máy."
 fix:
-  en: "Turn it off if you do not use it: System Settings > General > Sharing (Remote Login, Screen Sharing, Remote Management)."
-  vi: "Không dùng thì tắt: Cài đặt hệ thống > Cài đặt chung > Chia sẻ (Đăng nhập từ xa, Chia sẻ màn hình, Quản lý từ xa)."
+  en: "Turn it off if you do not use it: System Settings > General > Sharing (Remote Login, Screen Sharing, Remote Management). On Windows: services.msc > the service (for SSH, OpenSSH SSH Server) > Stop, and Startup type > Manual; needs an administrator."
+  vi: "Không dùng thì tắt: Cài đặt hệ thống > Cài đặt chung > Chia sẻ (Đăng nhập từ xa, Chia sẻ màn hình, Quản lý từ xa). Trên Windows: services.msc > dịch vụ đó (SSH là OpenSSH SSH Server) > Stop, và Startup type > Manual; cần quyền quản trị."
 author: the-last-devops
 tests:
   - {item: {service: ssh, port: 22, open: true}, expect: true}

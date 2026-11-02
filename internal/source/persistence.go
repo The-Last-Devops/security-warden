@@ -22,12 +22,17 @@ var (
 // kept, never script bodies.
 func persistence(ctx context.Context) ([]Item, error) {
 	var items []Item
-	items = append(items, cronItems(ctx)...)
+	if runtime.GOOS != "windows" {
+		items = append(items, cronItems(ctx)...)
+	}
 	if runtime.GOOS == "darwin" {
 		items = append(items, launchdItems(ctx)...)
 	}
 	if runtime.GOOS == "linux" {
 		items = append(items, systemdUserItems()...)
+	}
+	if runtime.GOOS == "windows" {
+		items = append(items, windowsAutostarts(ctx)...)
 	}
 	return items, nil
 }

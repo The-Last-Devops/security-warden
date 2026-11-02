@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-![Rules](https://img.shields.io/badge/rules-134-0b6e52)
+![Rules](https://img.shields.io/badge/rules-154-0b6e52)
 
 </div>
 
@@ -110,7 +110,7 @@ rm -rf ~/.config/security-warden ~/.local/state/security-warden
 
 ## What it checks
 
-134 rules over 33 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+154 rules over 34 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
@@ -123,7 +123,9 @@ sent: findings name only the file, the variable or the kind of secret.
 | 🔁 **Login items** | Cron jobs that download code, launchd items running from temp or writable files, unsigned or missing programs; running crypto miners or programs started from /tmp or Downloads; unsigned apps in /Applications |
 | 🤖 **AI agents** | Tokens written into MCP configs, MCP over plain HTTP, agents allowed to run commands without asking |
 | 🧰 **Developer tools** | VS Code/Cursor Workspace Trust off, auto-run tasks, secrets in settings, extensions installed from files or removed from the Marketplace (malware, impersonation); browser extensions Google flagged as malware or unwanted; SSH agent forwarding everywhere, Git TLS off, npm/pip without TLS, kubeconfig TLS skip or client certificates |
-| 📦 **Software** | Out-of-date programs that are running, especially those open to the network; servers better run in Docker |
+| 🪟 **Windows** | Windows Firewall off for a network type, BitLocker off, Microsoft Defender real-time protection or Tamper Protection off, definitions older than 7 days, exclusions of whole drives, the user folder, temp or Downloads; Remote Desktop on (worse without NLA), UAC off or set to never notify, automatic updates disabled by policy, SMBv1, Guest account, AutoPlay; Run keys, Startup folder and scheduled tasks starting from %TEMP%, Downloads or loose AppData files, or downloading and decoding scripts |
+| 🐧 **Linux** | LUKS disk encryption, firewall (ufw, firewalld, nftables), unattended upgrades, SELinux/AppArmor, screen lock, sshd root and password login, pending apt/dnf updates with security updates counted apart (from the local package cache, no refresh), systemd user units and autostart entries |
+| 📦 **Software** | Out-of-date programs that are running, especially those open to the network; Homebrew, apt and dnf updates waiting; servers better run in Docker |
 | 🌐 **Network & Tailscale** | System proxies, `/etc/hosts` redirects, Tailscale shields down, SSH, exit node, Funnel |
 
 <details>
@@ -208,7 +210,6 @@ repository is its own Homebrew tap).
 ## Roadmap
 
 - Signed rule updates without a new release; self-update for direct binary installs.
-- Full Windows checks (firewall, BitLocker, Defender, RDP).
 - Docker image vulnerability scanning.
 - Real-time process and network events (Endpoint Security on macOS, ETW on Windows).
 - Desktop app with a menu bar icon, sharing this web UI.

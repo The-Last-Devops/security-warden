@@ -30,6 +30,9 @@ func readListeners(ctx context.Context) ([]Item, error) {
 	if runtime.GOOS == "linux" {
 		return procListeners()
 	}
+	if runtime.GOOS == "windows" {
+		return windowsListeners(ctx)
+	}
 	out, err := run(ctx, "lsof", "-nP", "+c", "0", "-iTCP", "-sTCP:LISTEN", "-F", "pcLn")
 	if err != nil && out == "" {
 		// lsof exits 1 when nothing listens; only a missing lsof is a skip.
@@ -126,6 +129,9 @@ func remoteServices(ctx context.Context) ([]Item, error) {
 	}
 	var items []Item
 	for _, s := range services {
+		if runtime.GOOS == "windows" && s.name == "rdp" {
+			continue // posture reads the real setting (windows-rdp-* rules)
+		}
 		d := net.Dialer{Timeout: 500 * time.Millisecond}
 		c, err := d.DialContext(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", s.port))
 		open := err == nil
@@ -157,7 +163,7 @@ func remoteTools(ctx context.Context) ([]Item, error) {
 	seen := map[string]bool{}
 	var items []Item
 	for pid, path := range processPaths() {
-		name := path[strings.LastIndex(path, "/")+1:]
+		name := strings.TrimSuffix(winBase(path), ".exe")
 		kind, ok := known[name]
 		if !ok || seen[name] {
 			continue

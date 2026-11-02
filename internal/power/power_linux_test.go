@@ -3,14 +3,12 @@ package power
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
+// onBatteryIn is Linux only (sysfs), so this file builds on Linux only:
+// `GOOS=darwin go vet` and `GOOS=windows go vet` would not find it.
 func TestOnBatteryLinuxSysfs(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("sysfs layout is Linux only")
-	}
 	mk := func(dir, typ, file, val string) {
 		_ = os.MkdirAll(dir, 0o755)
 		_ = os.WriteFile(filepath.Join(dir, "type"), []byte(typ+"\n"), 0o644)

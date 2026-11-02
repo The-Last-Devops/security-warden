@@ -1,0 +1,22 @@
+id: windows-defender-tamper-off
+severity: medium
+platforms: [windows]
+source: defender
+match: item.kind == "status" && item.active && item.tamper_known && !item.tamper_protected
+title:
+  en: "Microsoft Defender Tamper Protection is off"
+  vi: "Tính năng chống can thiệp (Tamper Protection) của Microsoft Defender đang tắt"
+check:
+  en: "Microsoft Defender Tamper Protection is on"
+  vi: "Tamper Protection của Microsoft Defender đang bật"
+explain:
+  en: "Without Tamper Protection, a program running with administrator rights can quietly switch off Defender or add exclusions, which is the first thing most ransomware does."
+  vi: "Không có Tamper Protection thì chương trình chạy với quyền quản trị lặng lẽ tắt được Defender hoặc thêm vùng loại trừ, đó là việc đầu tiên phần lớn mã độc tống tiền làm."
+fix:
+  en: "Windows Security > Virus & threat protection > Virus & threat protection settings > Manage settings > Tamper Protection > On. Needs an administrator; on a managed PC IT sets it."
+  vi: "Bảo mật Windows > Bảo vệ khỏi virus & mối đe doạ > Cài đặt bảo vệ khỏi virus & mối đe doạ > Quản lý cài đặt > Tamper Protection > Bật. Cần quyền quản trị; máy do tổ chức quản lý thì IT đặt."
+author: the-last-devops
+tests:
+  - {item: {kind: status, active: true, tamper_known: true, tamper_protected: false}, expect: true}
+  - {item: {kind: status, active: true, tamper_known: true, tamper_protected: true}, expect: false}
+  - {item: {kind: status, active: true, tamper_known: false, tamper_protected: false}, expect: false, note: older Defender does not report it}
