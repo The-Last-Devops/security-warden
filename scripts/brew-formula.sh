@@ -17,6 +17,7 @@ cat <<RUBY
 class SecurityWarden < Formula
   desc "Checks your machine for open doors and secrets lying around"
   homepage "https://github.com/The-Last-Devops/security-warden"
+  license "Apache-2.0"
   version "${version}"
 
   on_macos do

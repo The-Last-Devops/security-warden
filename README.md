@@ -6,6 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 ![Rules](https://img.shields.io/badge/rules-119-0b6e52)
 
 </div>
@@ -213,3 +214,7 @@ repository is its own Homebrew tap).
 ## Acknowledgements
 
 Ideas on what to check were informed by [bordercheck](https://github.com/ptrinh/bordercheck) (MIT).
+
+## License
+
+[Apache License 2.0](LICENSE). Rules you contribute are under the same license.
