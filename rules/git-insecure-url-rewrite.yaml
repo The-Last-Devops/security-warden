@@ -13,8 +13,8 @@ explain:
   en: "A url.*.insteadOf rule sends Git traffic over http:// or git://, or protocol.file.allow is always."
   vi: "Rule url.*.insteadOf đưa lưu lượng Git qua http:// hoặc git://, hoặc protocol.file.allow đang là always."
 fix:
-  en: "Remove the rule: git config --global --list | grep -i insteadof"
-  vi: "Xoá rule đó: git config --global --list | grep -i insteadof"
+  en: "List the rules: git config --global --get-regexp \"^url\\.\" — then remove the one that points to http:// or file://: git config --global --remove-section url.<base>, with <base> copied exactly from the list (the part between url. and .insteadof). If protocol.file.allow is set to always: git config --global --unset protocol.file.allow"
+  vi: "Liệt kê các quy tắc: git config --global --get-regexp \"^url\\.\" — rồi xoá quy tắc trỏ tới http:// hoặc file://: git config --global --remove-section url.<base>, với <base> chép đúng từ danh sách (phần giữa url. và .insteadof). Nếu protocol.file.allow đang là always: git config --global --unset protocol.file.allow"
 author: the-last-devops
 tests:
   - {"item": {"credential_store": false, "ssl_verify_off": false, "safe_directory_all": false, "hooks_path": "", "insteadof_downgrade": true, "file_protocol_always": false}, "expect": true}

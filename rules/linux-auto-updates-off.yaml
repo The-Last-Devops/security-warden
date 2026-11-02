@@ -13,8 +13,8 @@ explain:
   en: Security fixes are only installed when someone remembers to run the package manager.
   vi: Bản vá bảo mật chỉ được cài khi có người nhớ chạy trình quản lý gói.
 fix:
-  en: "Ubuntu/Debian: sudo apt install unattended-upgrades && sudo dpkg-reconfigure -plow unattended-upgrades. Fedora: sudo dnf install dnf-automatic && sudo systemctl enable --now dnf-automatic-install.timer."
-  vi: "Ubuntu/Debian: sudo apt install unattended-upgrades && sudo dpkg-reconfigure -plow unattended-upgrades. Fedora: sudo dnf install dnf-automatic && sudo systemctl enable --now dnf-automatic-install.timer."
+  en: "Ubuntu/Debian: sudo apt install unattended-upgrades, then sudo dpkg-reconfigure -plow unattended-upgrades and answer Yes. Fedora/RHEL: sudo dnf install dnf-automatic, then sudo nano /etc/dnf/automatic.conf and set apply_updates = yes under [commands] (if the file is new, write those two lines), then sudo systemctl enable --now dnf-automatic.timer."
+  vi: "Ubuntu/Debian: sudo apt install unattended-upgrades, rồi sudo dpkg-reconfigure -plow unattended-upgrades và chọn Yes. Fedora/RHEL: sudo dnf install dnf-automatic, rồi sudo nano /etc/dnf/automatic.conf và đặt apply_updates = yes dưới [commands] (nếu tệp mới tạo thì viết đúng hai dòng đó), rồi sudo systemctl enable --now dnf-automatic.timer."
 author: the-last-devops
 tests:
   - {item: {auto_updates: false, container: false}, expect: true}

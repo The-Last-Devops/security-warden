@@ -13,8 +13,8 @@ explain:
   en: "A system proxy at {host} can read or change your web traffic. Make sure it is your company's or your own."
   vi: "Proxy hệ thống ở {host} đọc hoặc sửa được lưu lượng web của bạn. Hãy chắc nó là của công ty hoặc của bạn."
 fix:
-  en: "If you don't know it: System Settings > Network > Details > Proxies, turn it off."
-  vi: "Không biết nó là gì thì: Cài đặt hệ thống > Mạng > Chi tiết > Proxy, tắt đi."
+  en: "If you don't know {host}: macOS System Settings › Network › (your network) › Details › Proxies, turn the proxies off; Windows Settings › Network & internet › Proxy, turn off Use a proxy server; Linux GNOME Settings › Network › Network Proxy › Off. Also look for HTTP_PROXY / HTTPS_PROXY in your shell profile."
+  vi: "Nếu bạn không biết {host}: macOS Cài đặt hệ thống › Mạng › (mạng đang dùng) › Chi tiết › Proxy, tắt các proxy; Windows Settings › Network & internet › Proxy, tắt Use a proxy server; Linux GNOME Cài đặt › Mạng › Proxy mạng › Tắt. Kiểm tra thêm HTTP_PROXY / HTTPS_PROXY trong tệp cấu hình shell."
 author: the-last-devops
 tests:
   - {"item": {"kind": "proxy", "type": "http", "host": "proxy.example", "loopback": false}, "expect": true}

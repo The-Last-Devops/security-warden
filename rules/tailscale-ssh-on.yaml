@@ -13,8 +13,8 @@ explain:
   en: "Devices in tailnet {tailnet} that the ACL allows can open a shell on this machine without an SSH key."
   vi: "Thiết bị trong tailnet {tailnet} được ACL cho phép có thể mở shell vào máy này mà không cần khoá SSH."
 fix:
-  en: "Run: tailscale set --ssh=false (or restrict the ssh section of the tailnet ACL)."
-  vi: "Chạy: tailscale set --ssh=false (hoặc siết phần ssh trong ACL của tailnet)."
+  en: "Press Fix to do it automatically, or run: tailscale set --ssh=false (or restrict the ssh section of the tailnet ACL)."
+  vi: "Bấm Sửa để tự sửa, hoặc chạy: tailscale set --ssh=false (hoặc giới hạn phần ssh trong ACL của tailnet)."
 author: the-last-devops
 tests:
   - {item: {tailnet: example.com, ssh: true}, expect: true}

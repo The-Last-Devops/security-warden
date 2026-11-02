@@ -13,8 +13,8 @@ explain:
   en: "{file} line {line_no} enables legacy crypto ({value})."
   vi: "{file} dòng {line_no} bật mã hoá cũ ({value})."
 fix:
-  en: "Remove the setting unless an old server needs it, and then scope it to that Host."
-  vi: "Bỏ thiết lập đó, trừ khi server cũ cần; khi ấy chỉ đặt cho đúng Host đó."
+  en: "Open {file} and delete line {line_no} ({key} {value}). If one old server needs it, move it under a Host block for that server only (Host old.example.com)."
+  vi: "Mở {file} và xoá dòng {line_no} ({key} {value}). Nếu một máy chủ cũ cần nó, chuyển nó xuống khối Host của riêng máy đó (Host old.example.com)."
 author: the-last-devops
 tests:
   - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "hostkeyalgorithms", "value": "+ssh-dss", "weak_algorithm": true}, "expect": true}

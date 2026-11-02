@@ -13,8 +13,8 @@ explain:
   en: "{path} is shorter than the 3072 bits NIST recommends for use after 2030, and a 1024-bit key is within reach of a well-funded attacker today."
   vi: "{path} ngắn hơn mức 3072 bit NIST khuyến nghị cho sau năm 2030, còn khoá 1024 bit thì kẻ tấn công có tiền đã bẻ được ngay bây giờ."
 fix:
-  en: "Create a new key (ssh-keygen -t ed25519), add it to your servers and Git hosts, remove the old public key from them, then delete {path}."
-  vi: "Tạo khoá mới (ssh-keygen -t ed25519), thêm vào server và các dịch vụ Git, gỡ khoá công khai cũ ở đó, rồi xoá {path}."
+  en: "1. Create a new key: ssh-keygen -t ed25519 2. Add the new public key to your servers (ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server) and Git hosts. 3. In a new window, check you can log in with it: ssh -i ~/.ssh/id_ed25519 user@server 4. Only then remove the old public key from those servers and hosts, and move {path} out of ~/.ssh."
+  vi: "1. Tạo khoá mới: ssh-keygen -t ed25519 2. Thêm khoá công khai mới vào máy chủ (ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server) và trang Git. 3. Mở cửa sổ mới, thử đăng nhập bằng khoá mới: ssh -i ~/.ssh/id_ed25519 user@server 4. Chỉ khi đã vào được mới xoá khoá công khai cũ khỏi các máy chủ đó, và chuyển {path} ra khỏi ~/.ssh."
 author: the-last-devops
 tests:
   - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "encrypted": true, "key_type": "rsa", "bits": 2048}, "expect": true}

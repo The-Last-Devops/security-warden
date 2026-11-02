@@ -13,8 +13,8 @@ explain:
   en: "DSA keys are 1024-bit and considered broken; OpenSSH has disabled them by default since 2015 and removed them in 2024. {path} should not be trusted anywhere."
   vi: "Khoá DSA chỉ 1024 bit và bị coi là đã vỡ; OpenSSH tắt mặc định từ 2015 và gỡ hẳn từ 2024. Không nên để {path} được tin ở đâu cả."
 fix:
-  en: "Create a new key (ssh-keygen -t ed25519), add it to your servers and Git hosts, remove the old public key from them, then delete {path}."
-  vi: "Tạo khoá mới (ssh-keygen -t ed25519), thêm vào server và các dịch vụ Git, gỡ khoá công khai cũ ở đó, rồi xoá {path}."
+  en: "1. Create a new key: ssh-keygen -t ed25519 2. Add the new public key to your servers (ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server) and Git hosts. 3. In a new window, check you can log in with it: ssh -i ~/.ssh/id_ed25519 user@server 4. Only then remove the old public key from those servers and hosts, and move {path} out of ~/.ssh."
+  vi: "1. Tạo khoá mới: ssh-keygen -t ed25519 2. Thêm khoá công khai mới vào máy chủ (ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server) và trang Git. 3. Mở cửa sổ mới, thử đăng nhập bằng khoá mới: ssh -i ~/.ssh/id_ed25519 user@server 4. Chỉ khi đã vào được mới xoá khoá công khai cũ khỏi các máy chủ đó, và chuyển {path} ra khỏi ~/.ssh."
 author: the-last-devops
 tests:
   - {"item": {"name": "id_dsa", "path": "/Users/a/.ssh/id_dsa", "encrypted": true, "key_type": "dsa", "bits": 1024}, "expect": true}

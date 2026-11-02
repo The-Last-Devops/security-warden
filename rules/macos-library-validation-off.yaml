@@ -13,8 +13,8 @@ explain:
   en: "Any library can be loaded into other apps, a common way to inject code."
   vi: "Thư viện bất kỳ đều nạp được vào app khác, đây là cách chèn code phổ biến."
 fix:
-  en: "Run: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation"
-  vi: "Chạy: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation"
+  en: "Run: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation (asks for your password), then restart."
+  vi: "Chạy: sudo defaults delete /Library/Preferences/com.apple.security.libraryvalidation DisableLibraryValidation (sẽ hỏi mật khẩu máy), rồi khởi động lại."
 author: the-last-devops
 tests:
   - {"item": {"os": "macos", "library_validation_disabled": true}, "expect": true}

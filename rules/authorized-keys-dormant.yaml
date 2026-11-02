@@ -13,8 +13,8 @@ explain:
   en: "{path} is unused while Remote Login is off, but it becomes a way in the moment SSH is enabled."
   vi: "{path} chưa dùng tới khi Đăng nhập từ xa tắt, nhưng thành lối vào ngay khi bật SSH."
 fix:
-  en: "Delete {path} if you don't need it."
-  vi: "Xoá {path} nếu không cần."
+  en: "SSH is off, so these keys do nothing now, but they work again as soon as it is turned on. If you don't need them, rename the file so it is kept but not used: mv \"{path}\" \"{path}.disabled\" (rename it back to restore)."
+  vi: "SSH đang tắt nên các khoá này chưa có tác dụng, nhưng sẽ dùng được ngay khi SSH bật lại. Nếu không cần, đổi tên tệp để giữ lại mà không dùng: mv \"{path}\" \"{path}.disabled\" (đổi tên ngược lại để khôi phục)."
 author: the-last-devops
 tests:
   - {"item": {"path": "/h/.ssh/authorized_keys", "count": 2, "weak": 0, "restricted": 0, "ssh_on": false, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "Unpacked extensions skip the store's review and update checks. Malware installs itself this way."
   vi: "Extension cài tay bỏ qua bước duyệt và cập nhật của store. Mã độc hay tự cài theo cách này."
 fix:
-  en: "If you didn't load {name} yourself for development, remove it."
-  vi: "Nếu không phải bạn tự nạp {name} để phát triển thì gỡ nó."
+  en: "If you didn't load {name} yourself for development: in {browser} open chrome://extensions, find {name} and click Remove."
+  vi: "Nếu bạn không tự nạp {name} để phát triển: trong {browser} mở chrome://extensions, tìm {name} và bấm Remove (Xoá)."
 author: the-last-devops
 tests:
   - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": true, "from_webstore": true, "external": false, "all_urls": true, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}

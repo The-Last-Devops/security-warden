@@ -13,8 +13,8 @@ explain:
   en: "Workspace Trust is off in {file}. Opening a cloned repo can then run its tasks, debug configs and extension code without asking: a common way malware reaches developers."
   vi: "Workspace Trust đang tắt trong {file}. Khi đó mở một repo vừa clone là có thể chạy task, cấu hình debug và code extension của nó mà không hỏi: đường lây mã độc phổ biến nhắm vào dev."
 fix:
-  en: "Remove \"security.workspace.trust.enabled\": false from settings.json, or set it to true."
-  vi: "Xoá dòng \"security.workspace.trust.enabled\": false trong settings.json, hoặc đặt thành true."
+  en: "Open {file} (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and delete \"security.workspace.trust.enabled\": false (or set it to true), then restart {editor}."
+  vi: "Mở {file} (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và xoá \"security.workspace.trust.enabled\": false (hoặc đặt thành true), rồi khởi động lại {editor}."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": true, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "{path} has mode {mode}. Other accounts on this machine can copy the key."
   vi: "{path} đang có quyền {mode}. Tài khoản khác trên máy này chép được khoá."
 fix:
-  en: "Run: chmod 600 {path}"
-  vi: "Chạy: chmod 600 {path}"
+  en: "Press Fix to do it automatically, or run: chmod 600 {path}"
+  vi: "Bấm Sửa để tự sửa, hoặc chạy: chmod 600 {path}"
 author: the-last-devops
 tests:
   - {item: {name: id_rsa, path: /h/.ssh/id_rsa, mode: "0644", group_readable: true, world_readable: true}, expect: true}

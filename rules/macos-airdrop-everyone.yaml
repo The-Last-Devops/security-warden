@@ -13,8 +13,8 @@ explain:
   en: "Strangers nearby can see your Mac and send it files."
   vi: "Người lạ ở gần thấy được máy bạn và gửi file tới được."
 fix:
-  en: "Control Center > AirDrop > Contacts Only."
-  vi: "Trung tâm điều khiển > AirDrop > Chỉ danh bạ."
+  en: "Press Fix to do it automatically, or: Control Center › AirDrop › Contacts Only."
+  vi: "Bấm Sửa để tự sửa, hoặc: Trung tâm điều khiển › AirDrop › Chỉ danh bạ."
 author: the-last-devops
 tests:
   - {"item": {"os": "macos", "airdrop": "Everyone"}, "expect": true}

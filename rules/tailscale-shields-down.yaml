@@ -13,8 +13,8 @@ explain:
   en: "Any device in tailnet {tailnet} that the ACL allows can reach services on this machine. If one of those devices is hacked, it can reach you too."
   vi: "Thiết bị nào trong tailnet {tailnet} được ACL cho phép cũng truy cập được dịch vụ trên máy này. Một thiết bị trong đó bị hack là nó vào được máy bạn."
 fix:
-  en: "Tailscale menu > Settings > turn off \"Allow incoming connections\" (or run: tailscale set --shields-up)."
-  vi: "Menu Tailscale > Cài đặt > tắt \"Allow incoming connections\" (hoặc chạy: tailscale set --shields-up)."
+  en: "Press Fix to do it automatically, or: Tailscale menu › Settings › turn off Allow incoming connections (or run: tailscale set --shields-up)."
+  vi: "Bấm Sửa để tự sửa, hoặc: menu Tailscale › Settings › tắt Allow incoming connections (hoặc chạy: tailscale set --shields-up)."
 author: the-last-devops
 tests:
   - {item: {tailnet: t, shields_up: false}, expect: true}

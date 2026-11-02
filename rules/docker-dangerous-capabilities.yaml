@@ -13,8 +13,8 @@ explain:
   en: "These Linux capabilities let a container change the kernel, the network or other processes, which is close to running privileged."
   vi: "Các quyền Linux này cho container sửa kernel, mạng hoặc tiến trình khác, gần như chạy privileged."
 fix:
-  en: "Remove cap_add (or keep only what the image documents it needs)."
-  vi: "Bỏ cap_add (hoặc chỉ giữ đúng quyền image ghi rõ là cần)."
+  en: "In the compose file of {container}, remove cap_add (or keep only what the image's docs say it needs); with docker run, drop --cap-add. Then apply it: docker compose up -d (recreates only the changed containers)."
+  vi: "Trong tệp compose của {container}, bỏ cap_add (hoặc chỉ giữ quyền mà tài liệu của image yêu cầu); với docker run thì bỏ --cap-add. Rồi áp dụng: docker compose up -d (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "SYS_ADMIN", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false}, "expect": true}

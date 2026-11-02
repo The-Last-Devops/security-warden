@@ -13,8 +13,8 @@ explain:
   en: "ForwardAgent yes under Host * lets any server you log in to use your keys to reach other servers."
   vi: "ForwardAgent yes dưới Host * cho mọi server bạn đăng nhập dùng khoá của bạn để vào server khác."
 fix:
-  en: "Remove it from Host * in {file}; use ProxyJump, or enable ForwardAgent only for the hosts that need it."
-  vi: "Bỏ nó khỏi Host * trong {file}; dùng ProxyJump, hoặc chỉ bật ForwardAgent cho đúng host cần."
+  en: "Open {file}, delete ForwardAgent yes under Host *, and add it only under the hosts that need it (Host jump.example.com). To reach servers behind a jump host, use ProxyJump instead."
+  vi: "Mở {file}, xoá ForwardAgent yes dưới Host *, và chỉ thêm nó dưới các máy cần (Host jump.example.com). Muốn vào máy chủ phía sau máy trung gian, dùng ProxyJump."
 author: the-last-devops
 tests:
   - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "forwardagent", "value": "yes", "weak_algorithm": false}, "expect": true}

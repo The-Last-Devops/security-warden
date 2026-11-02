@@ -13,8 +13,8 @@ explain:
   en: "{formulae} formulae and {casks} apps have newer versions. Old libraries such as OpenSSL or curl carry known security bugs."
   vi: "{formulae} gói và {casks} app đã có bản mới. Thư viện cũ như OpenSSL hay curl mang theo lỗi bảo mật đã biết."
 fix:
-  en: "Run: brew upgrade"
-  vi: "Chạy: brew upgrade"
+  en: "Press Fix to update everything, or run: brew upgrade"
+  vi: "Bấm Sửa để cập nhật tất cả, hoặc chạy: brew upgrade"
 author: the-last-devops
 tests:
   - {item: {kind: summary, total: 42, formulae: 40, casks: 2}, expect: true}

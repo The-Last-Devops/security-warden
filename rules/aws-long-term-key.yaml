@@ -13,8 +13,8 @@ explain:
   en: "{path} holds an IAM user key (AKIA...). It never expires, so a leaked copy keeps working until someone revokes it."
   vi: "{path} chứa khoá IAM user (AKIA...). Khoá này không hết hạn, lộ một bản là dùng được mãi tới khi có người thu hồi."
 fix:
-  en: "Switch to AWS IAM Identity Center (aws configure sso) for short-lived credentials, then delete the key in IAM."
-  vi: "Chuyển sang AWS IAM Identity Center (aws configure sso) để dùng khoá ngắn hạn, rồi xoá khoá cũ trong IAM."
+  en: "1. Set up short-lived logins: aws configure sso (needs IAM Identity Center in your AWS account). 2. Check it works: aws sts get-caller-identity --profile <new profile>. 3. Deactivate the old key first, which can be undone: aws iam update-access-key --access-key-id <key id> --status Inactive, or IAM console › Users › Security credentials. 4. When nothing has broken for a few days, delete the key there and remove it from {path}."
+  vi: "1. Chuyển sang đăng nhập ngắn hạn: aws configure sso (cần bật IAM Identity Center trong tài khoản AWS). 2. Kiểm tra: aws sts get-caller-identity --profile <tên profile mới>. 3. Vô hiệu hoá khoá cũ trước, có thể bật lại: aws iam update-access-key --access-key-id <mã khoá> --status Inactive, hoặc IAM console › Users › Security credentials. 4. Sau vài ngày không có gì hỏng, xoá khoá ở đó và xoá nó khỏi {path}."
 author: the-last-devops
 tests:
   - {item: {path: /h/.aws/credentials, aws_long_term_key: true}, expect: true}

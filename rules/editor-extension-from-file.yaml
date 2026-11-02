@@ -13,8 +13,8 @@ explain:
   en: "{extension} {version} was installed from a .vsix file. Nobody reviewed it, it never updates, and it runs with your full permissions."
   vi: "{extension} {version} được cài từ file .vsix. Không ai duyệt, không bao giờ tự cập nhật, và chạy với toàn quyền của bạn."
 fix:
-  en: "If you do not know where it came from, uninstall it (Extensions panel). Otherwise reinstall it from the marketplace."
-  vi: "Không rõ nguồn gốc thì gỡ nó (bảng Extensions). Còn không, cài lại từ marketplace."
+  en: "Open the Extensions view (Cmd/Ctrl+Shift+X) and find {extension}. If you don't know where it came from, click Uninstall. If you need it, uninstall and install it again from the Marketplace so it gets updates."
+  vi: "Mở mục Extensions (Cmd/Ctrl+Shift+X) và tìm {extension}. Nếu không biết nó từ đâu, bấm Uninstall. Nếu cần dùng, gỡ rồi cài lại từ Marketplace để được cập nhật."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "extension": "acme.tool", "version": "1.0.0", "from_file": true}, "expect": true}

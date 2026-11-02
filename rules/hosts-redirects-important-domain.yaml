@@ -13,8 +13,8 @@ explain:
   en: "Requests for {name} go to {ip} instead of the real server. Malware does this to steal logins or block updates."
   vi: "Truy cập {name} bị đưa tới {ip} thay vì máy chủ thật. Mã độc làm vậy để lấy cắp đăng nhập hoặc chặn cập nhật."
 fix:
-  en: "Remove the line from /etc/hosts (sudo nano /etc/hosts) unless you added it on purpose."
-  vi: "Xoá dòng đó khỏi /etc/hosts (sudo nano /etc/hosts), trừ khi bạn cố ý thêm."
+  en: "Unless you added the {name} line on purpose (a test server, for example): macOS/Linux: sudo cp /etc/hosts /etc/hosts.bak, then sudo nano /etc/hosts, delete the line, save with Ctrl+O, Enter, Ctrl+X. Windows: run Notepad as administrator, open C:\\Windows\\System32\\drivers\\etc\\hosts, delete the line and save."
+  vi: "Trừ khi bạn cố ý thêm dòng {name} (ví dụ máy chủ thử nghiệm): macOS/Linux: sudo cp /etc/hosts /etc/hosts.bak, rồi sudo nano /etc/hosts, xoá dòng đó, lưu bằng Ctrl+O, Enter, Ctrl+X. Windows: chạy Notepad bằng quyền quản trị (Run as administrator), mở C:\\Windows\\System32\\drivers\\etc\\hosts, xoá dòng đó và lưu."
 author: the-last-devops
 tests:
   - {"item": {"kind": "hosts", "name": "github.com", "ip": "10.0.0.5", "blocks": false, "high_value": true}, "expect": true}

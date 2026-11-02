@@ -13,8 +13,8 @@ explain:
   en: "StrictHostKeyChecking no under Host * means a fake server can pose as yours and capture what you type."
   vi: "StrictHostKeyChecking no dưới Host * nghĩa là server giả có thể đóng vai server của bạn và lấy những gì bạn gõ."
 fix:
-  en: "Use StrictHostKeyChecking accept-new in {file}."
-  vi: "Dùng StrictHostKeyChecking accept-new trong {file}."
+  en: "Open {file} and change StrictHostKeyChecking no to StrictHostKeyChecking accept-new (also remove UserKnownHostsFile /dev/null if it is there)."
+  vi: "Mở {file} và đổi StrictHostKeyChecking no thành StrictHostKeyChecking accept-new (xoá luôn UserKnownHostsFile /dev/null nếu có)."
 author: the-last-devops
 tests:
   - {"item": {"file": "/h/.ssh/config", "line_no": 4, "host": "*", "all_hosts": true, "key": "stricthostkeychecking", "value": "no", "weak_algorithm": false}, "expect": true}

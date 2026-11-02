@@ -13,8 +13,8 @@ explain:
   en: "task.allowAutomaticTasks is on in {file}: a repo's .vscode/tasks.json with runOn folderOpen runs the moment you open it."
   vi: "task.allowAutomaticTasks đang bật trong {file}: repo có .vscode/tasks.json với runOn folderOpen sẽ chạy ngay khi bạn mở."
 fix:
-  en: "Set \"task.allowAutomaticTasks\": \"off\" in settings.json."
-  vi: "Đặt \"task.allowAutomaticTasks\": \"off\" trong settings.json."
+  en: "Open {file} (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and set \"task.allowAutomaticTasks\": \"off\"."
+  vi: "Mở {file} (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và đặt \"task.allowAutomaticTasks\": \"off\"."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": true, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "Blocking Apple hosts can stop security updates and XProtect from downloading."
   vi: "Chặn máy chủ của Apple có thể làm bản vá bảo mật và XProtect không tải về được."
 fix:
-  en: "Remove the {name} line from /etc/hosts."
-  vi: "Xoá dòng {name} khỏi /etc/hosts."
+  en: "1. Keep a copy: sudo cp /etc/hosts /etc/hosts.bak 2. Run sudo nano /etc/hosts, delete the line with {name}, save with Ctrl+O then Enter, quit with Ctrl+X. Both steps ask for your password."
+  vi: "1. Lưu bản sao: sudo cp /etc/hosts /etc/hosts.bak 2. Chạy sudo nano /etc/hosts, xoá dòng có {name}, lưu bằng Ctrl+O rồi Enter, thoát bằng Ctrl+X. Cả hai bước sẽ hỏi mật khẩu máy."
 author: the-last-devops
 tests:
   - {"item": {"kind": "hosts", "name": "swscan.apple.com", "ip": "0.0.0.0", "blocks": true, "high_value": true}, "expect": true}

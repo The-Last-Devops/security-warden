@@ -13,8 +13,8 @@ explain:
   en: "Line {line_no} disables certificate checks (for Node, Python, Git or npm) for every shell. Anyone on the network can intercept those connections."
   vi: "Dòng {line_no} tắt kiểm tra chứng chỉ (cho Node, Python, Git hoặc npm) ở mọi shell. Ai trong mạng cũng chặn được các kết nối đó."
 fix:
-  en: "Remove line {line_no}. If a corporate proxy needs it, trust its CA instead (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
-  vi: "Xoá dòng {line_no}. Nếu proxy công ty cần, hãy tin CA của nó thay vì tắt kiểm tra (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
+  en: "Open {file}, delete line {line_no}, save, and open a new terminal. If a company proxy needs it, trust its CA instead (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
+  vi: "Mở {file}, xoá dòng {line_no}, lưu lại rồi mở terminal mới. Nếu proxy công ty cần nó, hãy tin cậy chứng chỉ CA của proxy thay thế (NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE)."
 author: the-last-devops
 tests:
   - {"item": {"kind": "insecure_flag", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": true}

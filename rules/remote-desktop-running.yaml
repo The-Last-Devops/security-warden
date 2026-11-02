@@ -13,8 +13,8 @@ explain:
   en: "{tool} lets someone control this machine from outside. It is a common way scammers and attackers get in."
   vi: "{tool} cho người khác điều khiển máy này từ bên ngoài. Đây là đường vào quen thuộc của kẻ lừa đảo và tấn công."
 fix:
-  en: "Quit {tool} and remove it from login items if you do not need it. Otherwise require a strong password and confirm each session."
-  vi: "Không cần thì thoát {tool} và bỏ khỏi mục mở khi đăng nhập. Nếu cần thì đặt mật khẩu mạnh và bắt xác nhận mỗi phiên."
+  en: "If you don't use {tool}: 1. Quit it from its menu bar or tray icon. 2. Stop it starting at login: macOS System Settings › General › Login Items & Extensions; Windows Task Manager › Startup apps › Disable. 3. Uninstall it if you don't need it at all. If you do use it: set a strong password for unattended access and accept each session by hand. Chrome Remote Desktop: remove this computer at remotedesktop.google.com/access."
+  vi: "Nếu không dùng {tool}: 1. Thoát nó từ biểu tượng trên thanh menu hoặc khay hệ thống. 2. Không cho tự chạy khi đăng nhập: macOS Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng; Windows Task Manager › Startup apps › Disable. 3. Gỡ hẳn nếu không cần. Nếu có dùng: đặt mật khẩu mạnh cho truy cập không cần người trực và tự bấm chấp nhận từng phiên. Chrome Remote Desktop: xoá máy này ở remotedesktop.google.com/access."
 author: the-last-devops
 tests:
   - {item: {tool: AnyDesk, kind: remote_desktop}, expect: true}

@@ -13,8 +13,8 @@ explain:
   en: "Line {line_no} of your crontab pipes a download into a shell. Whoever controls {url_host} controls this machine."
   vi: "Dòng {line_no} trong crontab đưa thứ tải về thẳng vào shell. Ai nắm {url_host} là nắm máy này."
 fix:
-  en: "Check it with crontab -l. If you don't recognise it, remove it (crontab -e) and look for other persistence."
-  vi: "Xem bằng crontab -l. Không nhận ra thì xoá (crontab -e) và tìm thêm các mục tự chạy khác."
+  en: "Run crontab -l and look at line {line_no}. If you don't recognise it: 1. Save a copy: crontab -l > ~/crontab-backup.txt 2. Run crontab -e, delete that line, save and quit. 3. Look for other things that start on their own: macOS System Settings › General › Login Items & Extensions; Linux systemctl --user list-timers. To undo: crontab ~/crontab-backup.txt"
+  vi: "Chạy crontab -l và xem dòng {line_no}. Nếu không nhận ra: 1. Lưu bản sao: crontab -l > ~/crontab-backup.txt 2. Chạy crontab -e, xoá dòng đó, lưu và thoát. 3. Tìm thêm thứ tự khởi chạy khác: macOS Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng; Linux systemctl --user list-timers. Muốn hoàn tác: crontab ~/crontab-backup.txt"
 author: the-last-devops
 tests:
   - {"item": {"kind": "cron", "line_no": 3, "command": "curl", "url_host": "x.example", "fetches_network": false, "pipes_to_shell": true, "runs_every_minute": false}, "expect": true}

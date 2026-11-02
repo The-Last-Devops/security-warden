@@ -13,8 +13,8 @@ explain:
   en: "{path} has mode {mode}. sshd may refuse it, and others learn who can log in."
   vi: "{path} đang có quyền {mode}. sshd có thể từ chối file, và người khác biết được ai đăng nhập được."
 fix:
-  en: "Run: chmod 600 {path}"
-  vi: "Chạy: chmod 600 {path}"
+  en: "Press Fix to do it automatically, or run: chmod 600 {path}"
+  vi: "Bấm Sửa để tự sửa, hoặc chạy: chmod 600 {path}"
 author: the-last-devops
 tests:
   - {"item": {"path": "/h/.ssh/authorized_keys", "count": 2, "weak": 0, "restricted": 0, "ssh_on": true, "mode": "0644", "group_readable": true, "world_readable": true}, "expect": true}

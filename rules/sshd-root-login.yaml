@@ -13,8 +13,8 @@ explain:
   en: "PermitRootLogin yes in sshd_config lets anyone who guesses the root password take the whole machine."
   vi: "PermitRootLogin yes trong sshd_config cho phép ai đoán được mật khẩu root là chiếm cả máy."
 fix:
-  en: "Set PermitRootLogin no (or prohibit-password) in /etc/ssh/sshd_config, then: sudo systemctl reload ssh"
-  vi: "Đặt PermitRootLogin no (hoặc prohibit-password) trong /etc/ssh/sshd_config, rồi: sudo systemctl reload ssh"
+  en: "Keep your current session open the whole time. 1. In a new window, check you can log in as a normal user and run sudo. 2. sudo sshd -T | grep -i permitrootlogin shows the value in use; set PermitRootLogin no in /etc/ssh/sshd_config and in any file in /etc/ssh/sshd_config.d/ that sets it (sudo nano <file>; the first value found wins). 3. sudo sshd -t must print nothing. 4. sudo systemctl reload ssh (Fedora/RHEL: sshd), then test a new login."
+  vi: "Giữ phiên đang mở suốt quá trình. 1. Mở cửa sổ mới, thử đăng nhập bằng tài khoản thường và chạy được sudo. 2. sudo sshd -T | grep -i permitrootlogin cho biết giá trị đang dùng; đặt PermitRootLogin no trong /etc/ssh/sshd_config và trong mọi tệp ở /etc/ssh/sshd_config.d/ có đặt nó (sudo nano <tệp>; giá trị gặp trước được dùng). 3. sudo sshd -t phải không in ra gì. 4. sudo systemctl reload ssh (Fedora/RHEL: sshd), rồi thử đăng nhập mới."
 author: the-last-devops
 tests:
   - {item: {sshd_installed: true, sshd_permit_root_login: "yes"}, expect: true}

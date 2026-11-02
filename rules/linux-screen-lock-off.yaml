@@ -13,8 +13,8 @@ explain:
   en: Anyone walking past an unattended machine can use it as you.
   vi: Ai đi ngang máy đang bỏ không cũng dùng được nó dưới danh nghĩa bạn.
 fix:
-  en: "Settings > Privacy > Screen Lock: on (or: gsettings set org.gnome.desktop.screensaver lock-enabled true)."
-  vi: "Cài đặt > Quyền riêng tư > Khoá màn hình: bật (hoặc: gsettings set org.gnome.desktop.screensaver lock-enabled true)."
+  en: "Settings › Privacy & Security › Screen Lock (Privacy on older GNOME): turn on Automatic Screen Lock. Or run: gsettings set org.gnome.desktop.screensaver lock-enabled true"
+  vi: "Cài đặt › Quyền riêng tư & Bảo mật › Khoá màn hình (bản GNOME cũ: Quyền riêng tư): bật tự khoá màn hình. Hoặc chạy: gsettings set org.gnome.desktop.screensaver lock-enabled true"
 author: the-last-devops
 tests:
   - {item: {screen_lock: false}, expect: true}
