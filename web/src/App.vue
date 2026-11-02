@@ -351,7 +351,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               <text x="38" y="46" text-anchor="middle" font-size="24" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ sc.score }}</text>
             </svg>
             <button class="min-w-0 text-left" @click="cat = sc.cats[0] && sc.kinds ? sc.cats[0] : cat">
-              <span class="caps block">{{ t['scope_' + sc.id] }}</span>
+              <span class="caps flex items-center gap-1.5"><svg v-if="sc.id === 'machine'" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><rect x="4" y="5" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 19h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><svg v-else width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ t['scope_' + sc.id] }}</span>
               <span class="block text-[15.5px] leading-tight font-bold" :style="{ color: sc.color }">{{ data ? (sc.kinds ? t.toFix(sc.kinds) : t.allGood) : t.scanning }}</span>
               <span class="mt-0.5 block text-[12.5px] text-muted">{{ t['scope_' + sc.id + '_help'] }}</span>
             </button>
@@ -371,7 +371,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             {{ t.all }} <span class="num">{{ groupsAll }}</span>
           </button>
           <template v-for="sc in scopes" :key="sc.id">
-            <div class="caps px-3 pt-3 pb-1">{{ t['scope_' + sc.id] }}</div>
+            <div class="caps flex items-center gap-1.5 px-3 pt-3 pb-1"><svg v-if="sc.id === 'machine'" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><rect x="4" y="5" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 19h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><svg v-else width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ t['scope_' + sc.id] }}</div>
             <button v-for="c in sc.cats" :key="c" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[15px]"
               :class="cat === c ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = c">
               <i class="h-2 w-2 shrink-0 rounded-full" :class="counts[c] ? worstDot[worst[c]] : 'bg-line'" />
