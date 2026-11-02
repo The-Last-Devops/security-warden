@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
 	"log"
 	"net"
 	"net/http"
@@ -46,11 +47,7 @@ type pendingCeremony struct {
 }
 
 func newPasskeys() *passkeys {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return &passkeys{path: filepath.Join(base, "security-warden", "passkeys.json"), pending: map[string]pendingCeremony{}}
+	return &passkeys{path: appdir.File("passkeys.json"), pending: map[string]pendingCeremony{}}
 }
 
 func (p *passkeys) load() (*pkUser, error) {

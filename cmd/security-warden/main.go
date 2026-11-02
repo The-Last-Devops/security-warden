@@ -6,6 +6,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
+	"github.com/The-Last-Devops/security-warden/internal/web"
 	"os"
 	"runtime"
 	"strings"
@@ -37,6 +39,12 @@ func main() {
 }
 
 func run(args []string) int {
+	// Development builds keep their own port, data folder and service, so
+	// they never collide with an installed release.
+	if version == "dev" {
+		appdir.Dev = true
+		web.DefaultPort = appdir.Port()
+	}
 	cmd := "scan"
 	// Double-clicked (Finder, Explorer, a .command file): no terminal to read
 	// a report in, so open the web UI instead.

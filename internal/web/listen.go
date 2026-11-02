@@ -13,10 +13,10 @@ import (
 	"time"
 )
 
-// DefaultPort is where serve listens unless told otherwise. 7348 is not
-// claimed by any common app, sits below every OS's ephemeral port range,
-// and away from the usual dev ports (3000, 5000, 8000-8999, 9000).
-const DefaultPort = 7348
+// DefaultPort is where serve listens unless told otherwise: 7348 for
+// releases (not claimed by any common app, below every OS's ephemeral port
+// range, away from the usual dev ports), 7349 for development builds.
+var DefaultPort = 7348
 
 var (
 	tailscaleV4 = netip.MustParsePrefix("100.64.0.0/10")

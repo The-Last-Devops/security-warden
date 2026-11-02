@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
 	"io"
 	"net/http"
 	"os"
@@ -19,11 +20,7 @@ import (
 // browser opens signed in without the secret ever appearing in a URL.
 
 func tokenFile() string {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return filepath.Join(base, "security-warden", "server-token")
+	return appdir.File("server-token")
 }
 
 // SaveToken stores the server secret (0600, written exclusively).

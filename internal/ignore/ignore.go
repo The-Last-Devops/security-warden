@@ -6,6 +6,7 @@ package ignore
 import (
 	"encoding/json"
 	"errors"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
 	"os"
 	"path/filepath"
 	"sync"
@@ -38,11 +39,7 @@ type Store struct {
 
 // Default returns the store in the user's config folder.
 func Default() *Store {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return &Store{Path: filepath.Join(base, "security-warden", "ignores.json")}
+	return &Store{Path: appdir.File("ignores.json")}
 }
 
 func (s *Store) readLocked() ([]Entry, error) {

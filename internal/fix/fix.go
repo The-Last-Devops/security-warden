@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -282,13 +283,7 @@ type Entry struct {
 }
 
 // JournalPath is where applied changes are recorded.
-var JournalPath = func() string {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = filepath.Join(home(), ".config")
-	}
-	return filepath.Join(base, "security-warden", "fixes.jsonl")
-}
+var JournalPath = func() string { return appdir.File("fixes.jsonl") }
 
 func appendEntry(e Entry) error {
 	p := JournalPath()

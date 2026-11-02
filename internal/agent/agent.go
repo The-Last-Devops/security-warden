@@ -5,6 +5,7 @@ package agent
 
 import (
 	"fmt"
+	"github.com/The-Last-Devops/security-warden/internal/appdir"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,16 +14,18 @@ import (
 	"strings"
 )
 
-const label = "org.the-last-devops.security-warden"
+func label() string { return "org.the-last-devops." + appdir.Name() }
+
+func unitName() string { return appdir.Name() + ".service" }
 
 // Paths returns where the service definition and its log live.
 func Paths() (unit, log string) {
 	h, _ := os.UserHomeDir()
 	switch runtime.GOOS {
 	case "darwin":
-		return filepath.Join(h, "Library/LaunchAgents", label+".plist"), filepath.Join(h, "Library/Logs/security-warden.log")
+		return filepath.Join(h, "Library/LaunchAgents", label()+".plist"), filepath.Join(h, "Library/Logs/"+appdir.Name()+".log")
 	default:
-		return filepath.Join(h, ".config/systemd/user/security-warden.service"), filepath.Join(h, ".local/state/security-warden/watch.log")
+		return filepath.Join(h, ".config/systemd/user/"+unitName()), filepath.Join(h, ".local/state/"+appdir.Name()+"/watch.log")
 	}
 }
 
@@ -42,7 +45,7 @@ func Plist(bin, lang, logPath string) string {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Label</key><string>` + label + `</string>
+	<key>Label</key><string>` + label() + `</string>
 	<key>ProgramArguments</key>
 	<array>
 `)
@@ -109,7 +112,7 @@ func Install(lang string) (string, error) {
 			return "", err
 		}
 		domain := fmt.Sprintf("gui/%d", os.Getuid())
-		_ = exec.Command("launchctl", "bootout", domain+"/"+label).Run() // not loaded yet is fine
+		_ = exec.Command("launchctl", "bootout", domain+"/"+label()).Run() // not loaded yet is fine
 		if out, err := exec.Command("launchctl", "bootstrap", domain, unit).CombinedOutput(); err != nil {
 			return "", fmt.Errorf("launchctl bootstrap: %v: %s", err, out)
 		}
@@ -117,7 +120,7 @@ func Install(lang string) (string, error) {
 		if err := writeFresh(unit, Unit(bin, lang)); err != nil {
 			return "", err
 		}
-		for _, args := range [][]string{{"--user", "daemon-reload"}, {"--user", "enable", "--now", "security-warden.service"}} {
+		for _, args := range [][]string{{"--user", "daemon-reload"}, {"--user", "enable", "--now", unitName()}} {
 			if out, err := exec.Command("systemctl", args...).CombinedOutput(); err != nil {
 				return "", fmt.Errorf("systemctl %s: %v: %s", strings.Join(args, " "), err, out)
 			}
@@ -130,13 +133,7 @@ func Install(lang string) (string, error) {
 	return unit, nil
 }
 
-func pidFile() string {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = os.TempDir()
-	}
-	return filepath.Join(base, "security-warden", "service.pid")
-}
+func pidFile() string { return appdir.File("service.pid") }
 
 func startDetached(bin, lang string) (string, error) {
 	args := []string{"serve", "--background"}
@@ -192,9 +189,9 @@ func Uninstall() error {
 	unit, _ := Paths()
 	switch runtime.GOOS {
 	case "darwin":
-		_ = exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d/%s", os.Getuid(), label)).Run()
+		_ = exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d/%s", os.Getuid(), label())).Run()
 	case "linux":
-		_ = exec.Command("systemctl", "--user", "disable", "--now", "security-warden.service").Run()
+		_ = exec.Command("systemctl", "--user", "disable", "--now", unitName()).Run()
 	default:
 		return stopDetached()
 	}
