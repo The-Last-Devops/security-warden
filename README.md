@@ -7,57 +7,88 @@ listening on every network, a Docker port published to `0.0.0.0`, a tunnel left 
 accepting connections, an SSH key without a passphrase, a token in plain text. It explains each finding
 and how to fix it, in your language.
 
-It only reads. It changes nothing and sends nothing.
+Scanning only reads, and nothing is ever sent anywhere. Changes happen only when you press Fix, and can be undone.
 
 ## Install
 
-**Homebrew** (macOS, Linux)
+### Homebrew (macOS, Linux)
 
 ```sh
 brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden
-brew trust the-last-devops/security-warden   # recent Homebrew asks you to trust third-party taps
+brew trust the-last-devops/security-warden
 brew install security-warden
-security-warden start      # runs in the background and opens Security Warden
+security-warden start
 ```
 
-**macOS disk image**: download `security-warden-<version>-macos.dmg` from
-[Releases](https://github.com/The-Last-Devops/security-warden/releases/latest), open it and double-click
-`Install.command`: it installs to `/usr/local/bin` and opens Security Warden. The binary is signed with a
-Developer ID and notarized by Apple.
+`brew trust` is needed once: recent Homebrew asks before using a third-party tap.
+`start` runs Security Warden in the background and opens it in your browser.
 
-**Plain binaries** for macOS, Linux and Windows are on the same Releases page, with `SHA256SUMS`:
+### macOS disk image
+
+1. Download `security-warden-<version>-macos.dmg` from
+   [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest).
+2. Open it and double-click `Install.command`.
+3. It installs to `/usr/local/bin` and opens Security Warden.
+
+Or from Terminal:
 
 ```sh
-# macOS (Apple silicon) example
-curl -LO https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-darwin-arm64
-chmod +x security-warden-darwin-arm64 && ./security-warden-darwin-arm64 start
+curl -LO https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-v0.2.0-macos.dmg
+open security-warden-v0.2.0-macos.dmg
 ```
 
-**From source** (needs only Docker): `docker build --target export --output dist .`
+The binary is signed with a Developer ID and notarized by Apple.
 
-### Update
+### Plain binaries (macOS, Linux, Windows)
+
+Download from [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest) and check
+it against `SHA256SUMS`:
 
 ```sh
-brew update && brew upgrade security-warden   # Homebrew
-security-warden stop && security-warden start # restart the background service on the new version
+# macOS, Apple silicon
+curl -L https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-darwin-arm64.tar.gz | tar xz
+./security-warden start
 ```
 
-With the disk image, download the new `.dmg` and run `Install.command` again. Your passkeys, snoozed
+Other files: `darwin-amd64`, `linux-amd64`, `linux-arm64` (`.tar.gz`), `windows-amd64.exe`.
+
+### From source
+
+Needs only Docker:
+
+```sh
+docker build --target export --output dist .
+```
+
+## Update
+
+```sh
+brew update && brew upgrade security-warden
+security-warden stop && security-warden start
+```
+
+The second line restarts the background service on the new version. With the disk image, download the
+new `.dmg` and run `Install.command` again. Your passkeys, snoozed
 findings and settings are kept.
 
-### Uninstall
+## Uninstall
 
 ```sh
-security-warden stop                           # stop it and remove it from login items
-brew uninstall security-warden                 # Homebrew (or: sudo rm /usr/local/bin/security-warden)
-brew untap the-last-devops/security-warden     # optional
+security-warden stop
+brew uninstall security-warden
+brew untap the-last-devops/security-warden
 ```
+
+`stop` also removes it from login items. Installed from the disk image? Use
+`sudo rm /usr/local/bin/security-warden` instead of `brew uninstall`.
 
 To also delete its data (passkeys, sessions, snoozed findings, fix journal, logs):
 
 ```sh
-rm -rf ~/Library/Application\ Support/security-warden ~/Library/Logs/security-warden.log   # macOS
-rm -rf ~/.config/security-warden ~/.local/state/security-warden                             # Linux
+# macOS
+rm -rf ~/Library/Application\ Support/security-warden ~/Library/Logs/security-warden.log
+# Linux
+rm -rf ~/.config/security-warden ~/.local/state/security-warden
 ```
 
 Run `stop` before uninstalling, otherwise the login item stays behind pointing to a missing program.
