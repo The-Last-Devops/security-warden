@@ -106,18 +106,31 @@ func Listen(addr string) (net.Listener, error) {
 // RunningHere reports whether a Security Warden server already answers on
 // the loopback port, so a second launch can open it instead of failing.
 func RunningHere(port int) bool {
+	_, ok := runningInfo(port)
+	return ok
+}
+
+// RunningVersion is the version of the server on the loopback port, "" if
+// none answers (or it is older than v0.2.5 and does not say).
+func RunningVersion(port int) string {
+	v, _ := runningInfo(port)
+	return v
+}
+
+func runningInfo(port int) (string, bool) {
 	c := http.Client{Timeout: 800 * time.Millisecond}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("http://127.0.0.1:%d/api/passkey", port), nil)
 	req.Host = fmt.Sprintf("localhost:%d", port)
 	resp, err := c.Do(req)
 	if err != nil {
-		return false
+		return "", false
 	}
 	defer resp.Body.Close()
 	var v map[string]any
 	if json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&v) != nil {
-		return false
+		return "", false
 	}
 	_, ok := v["localhost"]
-	return ok
+	ver, _ := v["version"].(string)
+	return ver, ok
 }

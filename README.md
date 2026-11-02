@@ -71,10 +71,11 @@ Add `--lang vi` or `--lang en` to any command, or `--json` to the scan.
 
 Homebrew installs **update themselves**: the background service checks once a day and runs
 `brew upgrade security-warden`, then restarts on the new version. Turn it off with
-`security-warden update off` (or in ⚙ Settings). To update right away:
+`security-warden update off` (or in ⚙ Settings). To update right away, use either:
 
 ```sh
-security-warden update
+security-warden update                                  # upgrades and restarts the service
+brew upgrade security-warden && security-warden start   # the same, by hand
 ```
 
 With the disk image you get a notification; install the new `.dmg` the same way. Passkeys, snoozed findings

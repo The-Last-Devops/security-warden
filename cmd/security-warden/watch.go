@@ -159,6 +159,13 @@ func runAgent(lang string, args []string) int {
 // login) and opens its window. If it already runs, it just opens it.
 func runStart(lang string) int {
 	t := func(k string) string { return i18n.T(lang, k) }
+	// An older version still running (after brew upgrade): replace it.
+	if web.RunningHere(web.DefaultPort) && web.RunningVersion(web.DefaultPort) != version {
+		_ = agent.Uninstall()
+		for i := 0; i < 25 && web.RunningHere(web.DefaultPort); i++ {
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
 	if !web.RunningHere(web.DefaultPort) {
 		if _, err := agent.Install(lang); err != nil {
 			fmt.Printf(t("fix.failed")+"\n", err)

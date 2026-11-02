@@ -165,6 +165,7 @@ func (s *Server) handlePasskeyStatus(w http.ResponseWriter, r *http.Request) {
 		"count":     len(u.Creds),
 		"available": net.ParseIP(host) == nil,
 		"localhost": "http://localhost:" + s.port(),
+		"version":   s.Version,
 	})
 }
 
