@@ -1,0 +1,19 @@
+id: linux-no-mac
+severity: low
+platforms: [linux]
+source: posture
+match: item.lsm in ["none", "selinux-permissive"] && !item.container
+title:
+  en: "No mandatory access control is enforced ({lsm})"
+  vi: "Không có kiểm soát truy cập bắt buộc ({lsm})"
+explain:
+  en: AppArmor or SELinux limit what a compromised service can touch. Without them a bug in one program reaches all your files.
+  vi: AppArmor hoặc SELinux giới hạn những gì một dịch vụ bị chiếm có thể đụng tới. Không có chúng thì lỗi ở một chương trình là lan tới mọi file của bạn.
+fix:
+  en: "Ubuntu/Debian: sudo systemctl enable --now apparmor. Fedora/RHEL: set SELINUX=enforcing in /etc/selinux/config and reboot."
+  vi: "Ubuntu/Debian: sudo systemctl enable --now apparmor. Fedora/RHEL: đặt SELINUX=enforcing trong /etc/selinux/config rồi khởi động lại."
+author: the-last-devops
+tests:
+  - {item: {lsm: none, container: false}, expect: true}
+  - {item: {lsm: selinux-permissive, container: false}, expect: true}
+  - {item: {lsm: apparmor, container: false}, expect: false}

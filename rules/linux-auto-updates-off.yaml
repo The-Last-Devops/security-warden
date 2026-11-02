@@ -1,0 +1,18 @@
+id: linux-auto-updates-off
+severity: medium
+platforms: [linux]
+source: posture
+match: has(item.auto_updates) && !item.auto_updates && !item.container
+title:
+  en: Automatic security updates are off
+  vi: Tự động cập nhật bảo mật đang tắt
+explain:
+  en: Security fixes are only installed when someone remembers to run the package manager.
+  vi: Bản vá bảo mật chỉ được cài khi có người nhớ chạy trình quản lý gói.
+fix:
+  en: "Ubuntu/Debian: sudo apt install unattended-upgrades && sudo dpkg-reconfigure -plow unattended-upgrades. Fedora: sudo dnf install dnf-automatic && sudo systemctl enable --now dnf-automatic-install.timer."
+  vi: "Ubuntu/Debian: sudo apt install unattended-upgrades && sudo dpkg-reconfigure -plow unattended-upgrades. Fedora: sudo dnf install dnf-automatic && sudo systemctl enable --now dnf-automatic-install.timer."
+author: the-last-devops
+tests:
+  - {item: {auto_updates: false, container: false}, expect: true}
+  - {item: {auto_updates: true, container: false}, expect: false}

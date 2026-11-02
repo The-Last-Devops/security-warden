@@ -46,5 +46,23 @@ jobs:
           python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
       - uses: actions/upload-artifact@v4
         with:
-          name: smoke-report
+          name: smoke-report-macos
+          path: report.json
+
+  smoke-linux:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - name: Scan
+        run: |
+          chmod +x security-warden-linux-amd64
+          ./security-warden-linux-amd64 --lang vi || [ $? -eq 1 ]
+          ./security-warden-linux-amd64 --json > report.json || [ $? -eq 1 ]
+          python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-linux
           path: report.json

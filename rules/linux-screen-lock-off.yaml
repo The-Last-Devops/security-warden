@@ -1,0 +1,19 @@
+id: linux-screen-lock-off
+severity: high
+platforms: [linux]
+source: posture
+match: has(item.screen_lock) && !item.screen_lock
+title:
+  en: Screen lock is off
+  vi: Khoá màn hình đang tắt
+explain:
+  en: Anyone walking past an unattended machine can use it as you.
+  vi: Ai đi ngang máy đang bỏ không cũng dùng được nó dưới danh nghĩa bạn.
+fix:
+  en: "Settings > Privacy > Screen Lock: on (or: gsettings set org.gnome.desktop.screensaver lock-enabled true)."
+  vi: "Cài đặt > Quyền riêng tư > Khoá màn hình: bật (hoặc: gsettings set org.gnome.desktop.screensaver lock-enabled true)."
+author: the-last-devops
+tests:
+  - {item: {screen_lock: false}, expect: true}
+  - {item: {screen_lock: true}, expect: false}
+  - {item: {}, expect: false}

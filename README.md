@@ -42,7 +42,10 @@ The language comes from `--lang`, then `SW_LANG`, then your system language. Sup
 | Source | What | Platforms |
 |---|---|---|
 | Security settings | FileVault, firewall, SIP, Gatekeeper, automatic security updates, screen lock, guest account | macOS |
+| Security settings | LUKS disk encryption, ufw/firewalld/nftables, unattended upgrades, AppArmor/SELinux, sshd root login and password auth, screen lock | Linux |
 | Listening ports | Processes reachable from other machines (not only localhost) | macOS, Linux |
+| Servers on the host | PostgreSQL, MySQL, Redis, MongoDB, Elasticsearch, RabbitMQ, Kafka, Ollama… reachable from other machines, or better run in Docker | all |
+| Out-of-date software | Running Homebrew programs with a newer version (worse when they listen on the network), total outdated packages | macOS, Linux |
 | Remote access | SSH, Screen Sharing, Apple Remote Desktop, RDP turned on | all |
 | Tunnels and remote desktop | ngrok, cloudflared, VS Code tunnel, frp, AnyDesk, TeamViewer, RustDesk… running | all |
 | Docker | Ports published on every network, privileged containers, `docker.sock` mounted | all |
@@ -97,6 +100,8 @@ Releases: push a `v*` tag. GitHub Actions builds every platform, then signs, not
 `.dmg` on macOS, publishes the release, and updates the Homebrew formula.
 
 ## Roadmap
+
+- Planned next: `security-warden fix` to apply the safe fixes for you, after you choose which (with undo).
 
 - Live alerts: a background agent that notifies you when a new port, tunnel, container or login item
   appears (polling plus file events), then real-time process and network events through Endpoint

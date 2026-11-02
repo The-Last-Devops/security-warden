@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +25,9 @@ var lsofOnce = sync.OnceValues(func() ([]Item, error) {
 })
 
 func readListeners(ctx context.Context) ([]Item, error) {
+	if runtime.GOOS == "linux" {
+		return procListeners()
+	}
 	out, err := run(ctx, "lsof", "-nP", "+c", "0", "-iTCP", "-sTCP:LISTEN", "-F", "pcLn")
 	if err != nil && out == "" {
 		// lsof exits 1 when nothing listens; only a missing lsof is a skip.

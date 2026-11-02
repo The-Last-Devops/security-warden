@@ -1,0 +1,19 @@
+id: sshd-root-login
+severity: high
+platforms: [linux]
+source: posture
+match: item.sshd_installed && item.sshd_permit_root_login == "yes"
+title:
+  en: SSH allows root to log in with a password
+  vi: SSH cho phép đăng nhập root bằng mật khẩu
+explain:
+  en: "PermitRootLogin yes in sshd_config lets anyone who guesses the root password take the whole machine."
+  vi: "PermitRootLogin yes trong sshd_config cho phép ai đoán được mật khẩu root là chiếm cả máy."
+fix:
+  en: "Set PermitRootLogin no (or prohibit-password) in /etc/ssh/sshd_config, then: sudo systemctl reload ssh"
+  vi: "Đặt PermitRootLogin no (hoặc prohibit-password) trong /etc/ssh/sshd_config, rồi: sudo systemctl reload ssh"
+author: the-last-devops
+tests:
+  - {item: {sshd_installed: true, sshd_permit_root_login: "yes"}, expect: true}
+  - {item: {sshd_installed: true, sshd_permit_root_login: prohibit-password}, expect: false}
+  - {item: {sshd_installed: false, sshd_permit_root_login: ""}, expect: false}

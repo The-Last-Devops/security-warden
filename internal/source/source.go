@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -100,6 +101,9 @@ func runCombined(ctx context.Context, name string, args ...string) (string, erro
 
 // processPaths maps pid -> executable path for every process we can see.
 var processPaths = sync.OnceValue(func() map[int]string {
+	if runtime.GOOS == "linux" {
+		return procExePaths()
+	}
 	m := map[int]string{}
 	out, err := run(context.Background(), "ps", "-axo", "pid=,comm=")
 	if err != nil {
@@ -130,8 +134,13 @@ func atoi(s string) int {
 	return n
 }
 
-// systemBinary reports whether a path belongs to the OS itself.
+// systemBinary reports whether a path belongs to the OS itself. On Linux,
+// distribution packages also live in /usr/bin, so nothing counts as "part of
+// the OS" there: every listener is worth a look.
 func systemBinary(path string) bool {
+	if runtime.GOOS == "linux" {
+		return false
+	}
 	for _, p := range []string{"/System/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/"} {
 		if strings.HasPrefix(path, p) {
 			return true

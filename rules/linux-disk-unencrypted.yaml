@@ -1,0 +1,19 @@
+id: linux-disk-unencrypted
+severity: high
+platforms: [linux]
+source: posture
+match: has(item.disk_encrypted) && !item.disk_encrypted && !item.container
+title:
+  en: Disk is not encrypted
+  vi: Ổ đĩa không được mã hoá
+explain:
+  en: No LUKS-encrypted volume was found. Anyone who gets the laptop can read every file, including SSH keys and tokens.
+  vi: Không thấy phân vùng nào mã hoá LUKS. Ai cầm được máy là đọc được mọi file, kể cả khoá SSH và token.
+fix:
+  en: Encrypting an existing install means reinstalling with "Encrypt the new installation" (LUKS) selected. Back up first.
+  vi: Muốn mã hoá máy đang dùng thì phải cài lại và chọn "Encrypt the new installation" (LUKS). Sao lưu trước.
+author: the-last-devops
+tests:
+  - {item: {disk_encrypted: false, container: false}, expect: true}
+  - {item: {disk_encrypted: true, container: false}, expect: false}
+  - {item: {disk_encrypted: false, container: true}, expect: false, note: inside a container}
