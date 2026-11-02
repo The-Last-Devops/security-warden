@@ -208,11 +208,11 @@ func Render(s string, it Item) string {
 
 // Finding is one rule matching one item, rendered in one language.
 type Finding struct {
-	RuleID   string `json:"rule_id"`
-	Severity string `json:"severity"`
-	Source   string `json:"source"`
-	Title    string `json:"title"`
-	Explain  string `json:"explain"`
+	RuleID   string  `json:"rule_id"`
+	Severity string  `json:"severity"`
+	Source   string  `json:"source"`
+	Title    string  `json:"title"`
+	Explain  string  `json:"explain"`
 	Fix      string  `json:"fix"`
 	Remedy   *Remedy `json:"remedy,omitempty"`
 	Item     Item    `json:"item"`

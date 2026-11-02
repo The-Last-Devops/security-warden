@@ -69,13 +69,13 @@ func dockerContainers(ctx context.Context) ([]Item, error) {
 		}
 		user := c.Config.User
 		items = append(items, Item{
-			"container":         strings.TrimPrefix(c.Name, "/"),
-			"image":             c.Config.Image,
-			"privileged":        c.HostConfig.Privileged,
-			"host_network":      c.HostConfig.NetworkMode == "host",
+			"container":          strings.TrimPrefix(c.Name, "/"),
+			"image":              c.Config.Image,
+			"privileged":         c.HostConfig.Privileged,
+			"host_network":       c.HostConfig.NetworkMode == "host",
 			"mounts_docker_sock": sock,
-			"user":              user,
-			"runs_as_root":      user == "" || user == "root" || user == "0" || strings.HasPrefix(user, "0:"),
+			"user":               user,
+			"runs_as_root":       user == "" || user == "root" || user == "0" || strings.HasPrefix(user, "0:"),
 		})
 	}
 	return items, nil

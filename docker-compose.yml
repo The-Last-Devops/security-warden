@@ -30,7 +30,7 @@ services:
 
   test:
     <<: *go
-    command: sh -c "go vet ./... && go test ./..."
+    command: sh -c 'test -z "$$(gofmt -l .)" || { gofmt -l .; exit 1; }; go vet ./... && go test ./...'
 
   build:
     <<: *go

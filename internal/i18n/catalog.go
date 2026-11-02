@@ -71,7 +71,6 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"fix.undone":      "Reverted %d changes.",
 	"fix.nothing":     "There is nothing to undo.",
 	"fix.manual":      "Still to do by hand:",
-
 }
 
 var vi = map[string]string{
@@ -145,5 +144,4 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"fix.undone":      "Đã hoàn tác %d thay đổi.",
 	"fix.nothing":     "Không có gì để hoàn tác.",
 	"fix.manual":      "Còn phải tự làm:",
-
 }

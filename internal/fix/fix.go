@@ -142,9 +142,11 @@ func init() {
 	tsToggle := func(id string, on, off string) {
 		register(&Action{
 			ID: id, Undoable: true,
-			Plan:  func(map[string]string) []string { return []string{"tailscale set " + on} },
-			Apply: func(map[string]string) (map[string]string, error) { return map[string]string{}, Runner(tailscaleBin(), "set", on) },
-			Undo:  func(map[string]string) error { return Runner(tailscaleBin(), "set", off) },
+			Plan: func(map[string]string) []string { return []string{"tailscale set " + on} },
+			Apply: func(map[string]string) (map[string]string, error) {
+				return map[string]string{}, Runner(tailscaleBin(), "set", on)
+			},
+			Undo: func(map[string]string) error { return Runner(tailscaleBin(), "set", off) },
 		})
 	}
 	tsToggle("tailscale_shields_up", "--shields-up=true", "--shields-up=false")

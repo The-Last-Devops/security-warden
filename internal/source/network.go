@@ -137,18 +137,18 @@ func remoteServices(ctx context.Context) ([]Item, error) {
 // remoteTools finds running tunnels and remote desktop apps.
 func remoteTools(ctx context.Context) ([]Item, error) {
 	known := map[string]string{
-		"ngrok":       "tunnel",
-		"cloudflared": "tunnel",
-		"frpc":        "tunnel",
-		"bore":        "tunnel",
-		"code-tunnel": "tunnel",
-		"localtunnel": "tunnel",
-		"zrok":        "tunnel",
-		"AnyDesk":     "remote_desktop",
-		"TeamViewer":  "remote_desktop",
-		"rustdesk":    "remote_desktop",
-		"RustDesk":    "remote_desktop",
-		"parsecd":     "remote_desktop",
+		"ngrok":                      "tunnel",
+		"cloudflared":                "tunnel",
+		"frpc":                       "tunnel",
+		"bore":                       "tunnel",
+		"code-tunnel":                "tunnel",
+		"localtunnel":                "tunnel",
+		"zrok":                       "tunnel",
+		"AnyDesk":                    "remote_desktop",
+		"TeamViewer":                 "remote_desktop",
+		"rustdesk":                   "remote_desktop",
+		"RustDesk":                   "remote_desktop",
+		"parsecd":                    "remote_desktop",
 		"chrome-remote-desktop-host": "remote_desktop",
 	}
 	seen := map[string]bool{}

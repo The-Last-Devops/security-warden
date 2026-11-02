@@ -144,9 +144,9 @@ func credentialFiles(ctx context.Context) ([]Item, error) {
 			continue
 		}
 		it := Item{
-			"kind":            cf.kind,
-			"path":            path,
-			"plaintext_secret": cf.secret.Match(b),
+			"kind":              cf.kind,
+			"path":              path,
+			"plaintext_secret":  cf.secret.Match(b),
 			"aws_long_term_key": cf.kind == "aws" && awsLongTermKey.Match(b),
 		}
 		modeFields(it, fi)
