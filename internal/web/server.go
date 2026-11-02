@@ -14,6 +14,8 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -167,9 +169,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) loginPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><title>security-warden</title>
+	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><title>Security Warden</title>
 <body style="font:15px system-ui;max-width:34rem;margin:15vh auto;padding:0 16px;color:#19202b">
-<h1 style="font-size:20px">security-warden</h1>
+<h1 style="font-size:20px">Security Warden</h1>
 <p>Open the sign-in link printed in the terminal by <code>security-warden serve</code>.</p>
 <p>Mở link đăng nhập mà <code>security-warden serve</code> in ra trong terminal.</p></body>`))
 }
@@ -229,11 +231,13 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 	sc := s.Scanner.Evaluate(results, lang)
 	out := make([]apiFinding, 0, len(sc.Findings))
 	for _, f := range sc.Findings {
-		f.Title, f.Explain, f.Fix = engine.Clean(f.Title), engine.Clean(f.Explain), engine.Clean(f.Fix)
+		f.Title, f.Explain, f.Fix = tilde(engine.Clean(f.Title)), tilde(engine.Clean(f.Explain)), tilde(engine.Clean(f.Fix))
 		af := apiFinding{Finding: f, Key: FindingID(f), Category: report.Category(f.Source)}
 		if f.Remedy != nil {
 			if a, ok := fix.Get(f.Remedy.Action); ok {
-				af.Plan = a.Plan(f.Remedy.Params)
+				for _, p := range a.Plan(f.Remedy.Params) {
+					af.Plan = append(af.Plan, tilde(engine.Clean(p)))
+				}
 				af.NeedsRoot, af.Undoable = a.NeedsRoot, a.Undoable
 				af.CanFix = !a.NeedsRoot // admin fixes stay in the terminal
 			}
@@ -307,6 +311,14 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ 
 		msg = err.Error()
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"undone": len(done), "error": msg})
+}
+
+// tilde shows the home folder as ~, like the terminal report.
+func tilde(s string) string {
+	if h, err := os.UserHomeDir(); err == nil && h != "" {
+		return strings.ReplaceAll(s, h, "~")
+	}
+	return s
 }
 
 // FindingID names a finding by its rule and the facts it matched, so the
