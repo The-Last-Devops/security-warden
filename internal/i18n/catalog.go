@@ -60,6 +60,7 @@ Usage:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
+  security-warden open                  (open the window, signed in)
   security-warden agent  install|uninstall|status
   security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
   security-warden ignore list|clear
@@ -83,6 +84,7 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"ignore.forever":    "for good",
 	"serve.open":        "Open this link in your browser (it signs you in):",
 	"serve.opened":      "Opened in your browser.",
+	"serve.background":  "Security Warden is running in the background on",
 	"serve.already":     "Security Warden is already running. Opening it:",
 	"serve.in_use":      "Address %s is used by another program. Choose another one with --listen 127.0.0.1:PORT.",
 	"serve.secret":      "Keep the link private: it works until you stop the server (Ctrl+C).",
@@ -93,7 +95,7 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"watch.stop":        "Stopped.",
 	"watch.more_title":  "More new issues",
 	"watch.more":        "%d more new issues. Run security-warden to see them.",
-	"agent.installed":   "Installed: %s\nsecurity-warden now watches this machine in the background and starts at login.\nLog: %s\nRemove it with: security-warden agent uninstall",
+	"agent.installed":   "Installed: %s\nSecurity Warden now runs in the background and starts at login: http://localhost:7348 (security-warden open).\nLog: %s\nRemove it with: security-warden agent uninstall",
 	"agent.removed":     "Background agent removed.",
 	"agent.on":          "Background agent is installed: %s\nLog: %s",
 	"agent.off":         "Background agent is not installed. Start it with: security-warden agent install",
@@ -175,6 +177,7 @@ Cách dùng:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
+  security-warden open                  (mở cửa sổ, đã đăng nhập)
   security-warden agent  install|uninstall|status
   security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open] [--tab]
   security-warden ignore list|clear
@@ -198,6 +201,7 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"ignore.forever":    "luôn luôn",
 	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
 	"serve.opened":      "Đã mở trong trình duyệt.",
+	"serve.background":  "Security Warden đang chạy nền ở",
 	"serve.already":     "Security Warden đang chạy rồi. Mở lại cửa sổ:",
 	"serve.in_use":      "Địa chỉ %s đang bị chương trình khác dùng. Chọn địa chỉ khác bằng --listen 127.0.0.1:PORT.",
 	"serve.secret":      "Giữ kín link: nó dùng được tới khi bạn dừng server (Ctrl+C).",
@@ -208,7 +212,7 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"watch.stop":        "Đã dừng.",
 	"watch.more_title":  "Thêm vấn đề mới",
 	"watch.more":        "Còn %d vấn đề mới nữa. Chạy security-warden để xem.",
-	"agent.installed":   "Đã cài: %s\nsecurity-warden giờ canh máy này ở chế độ nền và tự chạy khi đăng nhập.\nNhật ký: %s\nGỡ bằng: security-warden agent uninstall",
+	"agent.installed":   "Đã cài: %s\nSecurity Warden giờ chạy nền và tự bật khi đăng nhập: http://localhost:7348 (security-warden open).\nNhật ký: %s\nGỡ bằng: security-warden agent uninstall",
 	"agent.removed":     "Đã gỡ chế độ chạy nền.",
 	"agent.on":          "Chế độ chạy nền đang được cài: %s\nNhật ký: %s",
 	"agent.off":         "Chưa cài chế độ chạy nền. Bật bằng: security-warden agent install",

@@ -1,5 +1,5 @@
 // Package agent installs security-warden as a per-user background service
-// that runs "security-warden watch": a LaunchAgent on macOS, a systemd user
+// that runs "security-warden serve --background" (web UI + periodic scans): a LaunchAgent on macOS, a systemd user
 // unit on Linux. No admin rights are needed and nothing runs as root.
 package agent
 
@@ -33,7 +33,7 @@ func xmlEscape(s string) string {
 
 // Plist renders the LaunchAgent for bin.
 func Plist(bin, lang, logPath string) string {
-	args := []string{bin, "watch"}
+	args := []string{bin, "serve", "--background"}
 	if lang != "" {
 		args = append(args, "--lang", lang)
 	}
@@ -65,12 +65,12 @@ func Plist(bin, lang, logPath string) string {
 
 // Unit renders the systemd user unit for bin.
 func Unit(bin, lang string) string {
-	cmd := strconv.Quote(bin) + " watch"
+	cmd := strconv.Quote(bin) + " serve --background"
 	if lang != "" {
 		cmd += " --lang " + lang
 	}
 	return `[Unit]
-Description=security-warden: watch this machine for new open doors and secrets
+Description=Security Warden: web UI on localhost:7348 and background checks
 
 [Service]
 ExecStart=` + cmd + `

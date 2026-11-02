@@ -45,6 +45,15 @@ class SecurityWarden < Formula
     bin.install Dir["security-warden-*"].first => "security-warden"
   end
 
+  # brew services start security-warden: web UI on localhost:7348, scans
+  # every 10 minutes, notifications for new problems.
+  service do
+    run [opt_bin/"security-warden", "serve", "--background"]
+    keep_alive true
+    log_path var/"log/security-warden.log"
+    error_log_path var/"log/security-warden.log"
+  end
+
   test do
     assert_match version.to_s, shell_output("#{bin}/security-warden version")
   end

@@ -8,16 +8,21 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/notify"
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/internal/web"
 	ui "github.com/The-Last-Devops/security-warden/web"
 )
 
-func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab bool) int {
+func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab, background bool, popup string) int {
+	if background {
+		open = false
+	}
 	t := func(k string) string { return i18n.T(lang, k) }
 	if os.Geteuid() == 0 {
 		fmt.Println(t("serve.root"))
@@ -39,9 +44,12 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	if errors.Is(err, web.ErrInUse) {
 		// Opened twice: show the one that is already running.
 		if kind == web.KindLoopback && web.RunningHere(web.DefaultPort) && strings.HasSuffix(addr, fmt.Sprintf(":%d", web.DefaultPort)) {
-			url := fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
-			fmt.Printf("  %s\n  %s\n", t("serve.already"), url)
-			if open {
+			url := web.StoredLoginURL()
+			if url == "" {
+				url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
+			}
+			fmt.Printf("  %s\n  http://localhost:%d/\n", t("serve.already"), web.DefaultPort)
+			if open || background {
 				_ = web.OpenApp(url)
 			}
 			return 0
@@ -64,6 +72,19 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if err := web.SaveLoginURL(srv.LoginURL()); err == nil {
+		defer web.ForgetLoginURL()
+	}
+	if background {
+		// Running as a service: no secret in the log; watch and notify.
+		fmt.Printf("%s  %s %s\n", time.Now().Format("2006-01-02 15:04:05"), t("serve.background"), addr)
+		go watchInBackground(ctx, srv, lang, popup)
+		if err := srv.Run(ctx, ln); err != nil {
+			fmt.Println(err)
+			return 2
+		}
+		return 0
+	}
 	fmt.Printf("\n  security-warden %s\n\n  %s\n  %s\n\n", version, t("serve.open"), srv.LoginURL())
 	if kind == web.KindLAN {
 		fmt.Println("  " + t("serve.lan_warning") + "\n")
@@ -85,4 +106,75 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		return 2
 	}
 	return 0
+}
+
+// watchInBackground rescans every 10 minutes and notifies about problems
+// that were not there before (medium and worse; snoozed ones are skipped
+// because they are not in the findings).
+func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string) {
+	rank := map[string]int{"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+	limit, popupOn := rank[popup]
+	var lastPopup time.Time
+	known := map[string]bool{}
+	for _, f := range srv.ScanNow(ctx) {
+		known[engine.FindingID(f)] = true
+	}
+	tick := time.NewTicker(10 * time.Minute)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		now := srv.ScanNow(ctx)
+		var added []engine.Finding
+		next := map[string]bool{}
+		for _, f := range now {
+			id := engine.FindingID(f)
+			next[id] = true
+			if !known[id] && alertLevels[f.Severity] {
+				added = append(added, f)
+			}
+		}
+		known = next
+		for i, f := range added {
+			fmt.Printf("%s  + [%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), f.Severity, engine.Clean(tilde(f.Title)))
+			if i < 3 {
+				notify.Send("Security Warden", i18n.T(lang, "severity."+f.Severity), tilde(f.Title))
+			}
+		}
+		if len(added) > 3 {
+			notify.Send("Security Warden", i18n.T(lang, "watch.more_title"), fmt.Sprintf(i18n.T(lang, "watch.more"), len(added)-3))
+		}
+		// Serious new problems also bring the window up, at most once an
+		// hour so it never turns into nagging.
+		serious := false
+		for _, f := range added {
+			if r, ok := rank[f.Severity]; ok && popupOn && r <= limit {
+				serious = true
+			}
+		}
+		if serious && time.Since(lastPopup) >= time.Hour {
+			if url := web.StoredLoginURL(); url != "" && web.OpenApp(url) == nil {
+				lastPopup = time.Now()
+			}
+		}
+	}
+}
+
+// runOpen opens the running Security Warden, signed in; starts it if needed.
+func runOpen(lang string, rs []*engine.Rule) int {
+	if web.RunningHere(web.DefaultPort) {
+		url := web.StoredLoginURL()
+		if url == "" {
+			url = fmt.Sprintf("http://localhost:%d/", web.DefaultPort)
+		}
+		if err := web.OpenApp(url); err != nil {
+			fmt.Println(err)
+			return 2
+		}
+		return 0
+	}
+	return runServe(lang, rs, "", false, true, false, false, "off")
 }

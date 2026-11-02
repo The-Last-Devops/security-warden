@@ -7,7 +7,7 @@ import (
 
 func TestPlistEscapesAndRunsWatch(t *testing.T) {
 	p := Plist("/Users/a&b/bin/security-warden", "vi", "/Users/a&b/Library/Logs/sw.log")
-	for _, want := range []string{"<string>/Users/a&amp;b/bin/security-warden</string>", "<string>watch</string>", "<string>vi</string>", "<key>KeepAlive</key><true/>"} {
+	for _, want := range []string{"<string>/Users/a&amp;b/bin/security-warden</string>", "<string>--background</string>", "<string>vi</string>", "<key>KeepAlive</key><true/>"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("plist missing %q", want)
 		}
@@ -19,7 +19,7 @@ func TestPlistEscapesAndRunsWatch(t *testing.T) {
 
 func TestUnitQuotesBinary(t *testing.T) {
 	u := Unit("/home/a b/security-warden", "")
-	if !strings.Contains(u, `ExecStart="/home/a b/security-warden" watch`) {
+	if !strings.Contains(u, `ExecStart="/home/a b/security-warden" serve --background`) {
 		t.Errorf("unit: %s", u)
 	}
 }

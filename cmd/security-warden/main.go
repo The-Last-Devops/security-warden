@@ -41,7 +41,7 @@ func run(args []string) int {
 	// Double-clicked (Finder, Explorer, a .command file): no terminal to read
 	// a report in, so open the web UI instead.
 	if len(args) == 0 && !report.IsTerminal(os.Stdout) && os.Getenv("SW_NO_AUTO_SERVE") == "" && launchedByUser() {
-		cmd = "serve"
+		cmd = "open"
 	}
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
@@ -59,6 +59,8 @@ func run(args []string) int {
 	allowLAN := fs.Bool("allow-lan", false, "serve: allow a LAN address (never 0.0.0.0)")
 	noOpen := fs.Bool("no-open", false, "serve: do not open the browser")
 	tab := fs.Bool("tab", false, "serve: open in a browser tab instead of an app window")
+	background := fs.Bool("background", false, "serve: run as a background service (no browser, scan and notify)")
+	popup := fs.String("popup", "high", "serve --background: open the window for new problems at this level or worse: critical|high|medium|off")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -104,7 +106,9 @@ func run(args []string) int {
 	case "ignore":
 		return runIgnore(l, subArgs)
 	case "serve":
-		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab)
+		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab, *background, *popup)
+	case "open":
+		return runOpen(l, rs)
 	case "help":
 		fs.Usage()
 		return 0
