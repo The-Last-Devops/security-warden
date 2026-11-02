@@ -1,9 +1,9 @@
 @import "tailwindcss";
-@import "@fontsource/be-vietnam-pro/400.css";
-@import "@fontsource/be-vietnam-pro/500.css";
-@import "@fontsource/be-vietnam-pro/600.css";
-@import "@fontsource/be-vietnam-pro/700.css";
-@import "@fontsource/be-vietnam-pro/800.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
 @import "@fontsource-variable/jetbrains-mono";
 
 /*
@@ -40,7 +40,7 @@
   --color-rail-med: #ca8a04;
   --color-rail-low: #2563eb;
   --color-rail-info: #64748b;
-  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, Consolas, monospace;
 }
 
@@ -111,7 +111,7 @@ html, body { min-height: 100%; }
 body {
   font-family: var(--font-sans);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--color-fg);
   background: radial-gradient(1100px 520px at 72% -12%, var(--color-glow) 0%, transparent 62%), var(--color-page);
   background-attachment: fixed;

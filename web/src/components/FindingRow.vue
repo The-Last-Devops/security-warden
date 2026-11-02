@@ -18,14 +18,14 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
 
 <template>
   <div class="rise border-t border-line first:border-t-0" :style="{ animationDelay: `${Math.min(index, 14) * 28}ms` }">
-    <div class="grid grid-cols-[4px_1fr_auto] items-center gap-4 py-3.5 pr-4">
+    <div class="grid grid-cols-[4px_1fr_auto] items-center gap-4 py-4 pr-4">
       <span class="self-stretch rounded-full" :class="rail[f.severity]" aria-hidden="true" />
       <button class="min-w-0 text-left" :aria-expanded="open" @click="open = !open">
         <span class="flex flex-wrap items-baseline gap-x-2">
-          <span class="text-[15.5px] leading-snug font-semibold break-words">{{ title }}</span>
+          <span class="text-[16.5px] leading-snug font-semibold break-words">{{ title }}</span>
           <span v-if="group.rest.length" class="num rounded-md bg-panel2 px-1.5 text-[12px] font-bold text-muted ring-1 ring-line">+{{ group.rest.length }}</span>
         </span>
-        <span class="mt-0.5 block truncate text-[13.5px] text-muted" :class="f.plan ? 'font-mono text-[12.5px]' : ''">{{ sub }}</span>
+        <span class="mt-1 block truncate text-[14px] text-muted" :class="f.plan ? 'font-mono text-[13px]' : ''">{{ sub }}</span>
       </button>
       <div class="flex items-center gap-2">
         <button v-if="group.fixable.length" class="rounded-[10px] bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50"
@@ -42,9 +42,9 @@ function ignore(days) { menu.value = false; emit('ignore', all.value, days) }
         <SevChip :sev="f.severity" :label="t.sev[f.severity]" />
         <span class="font-mono text-[12px] text-muted">{{ f.rule_id }}</span>
       </div>
-      <p class="max-w-[76ch] text-[14.5px] leading-relaxed">{{ f.explain }}</p>
+      <p class="max-w-[76ch] text-[15px] leading-relaxed">{{ f.explain }}</p>
       <div v-if="f.plan" class="overflow-x-auto rounded-xl border border-line bg-panel2 px-3.5 py-2.5 font-mono text-[13px] whitespace-pre">{{ f.plan.map(p => '$ ' + p).join('\n') }}</div>
-      <p v-else class="flex gap-2 rounded-xl bg-accent-soft px-3.5 py-2.5 text-[14px] font-medium"><span class="font-bold text-accent">→</span><span class="break-words">{{ f.fix }}</span></p>
+      <p v-else class="flex gap-2 rounded-xl bg-accent-soft px-3.5 py-2.5 text-[14.5px] font-medium"><span class="font-bold text-accent">→</span><span class="break-words">{{ f.fix }}</span></p>
       <div v-if="group.rest.length">
         <div class="caps mb-1.5">{{ t.sameIssue(group.rest.length) }}</div>
         <ul class="grid max-h-56 gap-1 overflow-y-auto border-l-2 border-line pl-3 text-[13.5px] text-muted">

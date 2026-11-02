@@ -38,6 +38,11 @@ func main() {
 
 func run(args []string) int {
 	cmd := "scan"
+	// Double-clicked (Finder, Explorer, a .command file): no terminal to read
+	// a report in, so open the web UI instead.
+	if len(args) == 0 && !report.IsTerminal(os.Stdout) && os.Getenv("SW_NO_AUTO_SERVE") == "" && launchedByUser() {
+		cmd = "serve"
+	}
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
 	}
@@ -50,8 +55,9 @@ func run(args []string) int {
 	undo := fs.Bool("undo", false, "fix: revert the last batch of fixes")
 	interval := fs.Duration("interval", time.Minute, "watch: time between quick scans")
 	full := fs.Duration("full", 30*time.Minute, "watch: time between full scans")
-	listen := fs.String("listen", "127.0.0.1:7878", "serve: one IP:PORT of this machine (loopback or Tailscale)")
+	listen := fs.String("listen", "", "serve: one IP:PORT of this machine (loopback or Tailscale); default 127.0.0.1:7348")
 	allowLAN := fs.Bool("allow-lan", false, "serve: allow a LAN address (never 0.0.0.0)")
+	noOpen := fs.Bool("no-open", false, "serve: do not open the browser")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -97,7 +103,7 @@ func run(args []string) int {
 	case "ignore":
 		return runIgnore(l, subArgs)
 	case "serve":
-		return runServe(l, rs, *listen, *allowLAN)
+		return runServe(l, rs, *listen, *allowLAN, !*noOpen)
 	case "help":
 		fs.Usage()
 		return 0
@@ -215,4 +221,23 @@ func runIgnore(l string, args []string) int {
 		}
 	}
 	return 0
+}
+
+// launchedByUser tells a double-click apart from a pipe or a script: the
+// process has a desktop session and stdin is not a pipe or file.
+func launchedByUser() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	piped := fi.Mode()&os.ModeNamedPipe != 0 || fi.Mode().IsRegular()
+	if piped {
+		return false
+	}
+	switch runtime.GOOS {
+	case "darwin", "windows":
+		return true
+	default:
+		return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
+	}
 }

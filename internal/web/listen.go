@@ -1,11 +1,18 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
+	"syscall"
 )
+
+// DefaultPort is where serve listens unless told otherwise. 7348 is not
+// claimed by any common app, sits below every OS's ephemeral port range,
+// and away from the usual dev ports (3000, 5000, 8000-8999, 9000).
+const DefaultPort = 7348
 
 var (
 	tailscaleV4 = netip.MustParsePrefix("100.64.0.0/10")
@@ -25,7 +32,7 @@ const (
 func ValidateListen(addr string, allowLAN bool, localIPs []netip.Addr) (string, string, error) {
 	host, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
-		return "", "", fmt.Errorf("listen address must be IP:PORT, e.g. 127.0.0.1:7878: %w", err)
+		return "", "", fmt.Errorf("listen address must be IP:PORT, e.g. 127.0.0.1:7348: %w", err)
 	}
 	port, err := strconv.Atoi(portStr)
 	if err != nil || port < 1 || port > 65535 {
@@ -77,4 +84,34 @@ func LocalIPs() []netip.Addr {
 		}
 	}
 	return out
+}
+
+// Listen opens addr. With fallback (the user did not pick a port), a busy
+// port moves on to the next ten; an explicit port that is busy is an error
+// that says so. It returns the address actually used.
+func Listen(addr string, fallback bool) (net.Listener, string, error) {
+	ap, err := netip.ParseAddrPort(addr)
+	if err != nil {
+		return nil, "", err
+	}
+	tries := 1
+	if fallback {
+		tries = 11
+	}
+	var last error
+	for i := 0; i < tries; i++ {
+		a := netip.AddrPortFrom(ap.Addr(), ap.Port()+uint16(i)).String()
+		ln, err := net.Listen("tcp", a)
+		if err == nil {
+			return ln, a, nil
+		}
+		last = err
+		if !errors.Is(err, syscall.EADDRINUSE) {
+			break
+		}
+	}
+	if errors.Is(last, syscall.EADDRINUSE) {
+		return nil, "", fmt.Errorf("port %d is already used by another program; pick another with --listen %s:PORT", ap.Port(), ap.Addr())
+	}
+	return nil, "", last
 }

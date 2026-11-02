@@ -61,7 +61,7 @@ Usage:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
+  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open]
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -82,6 +82,7 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"ignore.cleared":    "Ignore list cleared.",
 	"ignore.forever":    "for good",
 	"serve.open":        "Open this link in your browser (it signs you in):",
+	"serve.opened":      "Opened in your browser.",
 	"serve.secret":      "Keep the link private: it works until you stop the server (Ctrl+C).",
 	"serve.lan_warning": "Warning: this address is reachable by everyone on that network.",
 	"serve.root":        "Run security-warden serve as your normal user, not as root.",
@@ -173,7 +174,7 @@ Cách dùng:
   security-warden fix    [--yes] [--dry-run] [--undo]
   security-warden watch  [--interval 1m] [--full 30m]
   security-warden agent  install|uninstall|status
-  security-warden serve  [--listen 127.0.0.1:7878] [--allow-lan]
+  security-warden serve  [--listen 127.0.0.1:7348] [--allow-lan] [--no-open]
   security-warden ignore list|clear
   security-warden rules  [--lang en|vi]
   security-warden version
@@ -194,6 +195,7 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"ignore.cleared":    "Đã xoá danh sách bỏ qua.",
 	"ignore.forever":    "luôn luôn",
 	"serve.open":        "Mở link này trong trình duyệt (link tự đăng nhập):",
+	"serve.opened":      "Đã mở trong trình duyệt.",
 	"serve.secret":      "Giữ kín link: nó dùng được tới khi bạn dừng server (Ctrl+C).",
 	"serve.lan_warning": "Cảnh báo: mọi người trong mạng đó đều truy cập được địa chỉ này.",
 	"serve.root":        "Chạy security-warden serve bằng tài khoản thường, không chạy bằng root.",

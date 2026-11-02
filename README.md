@@ -26,6 +26,7 @@ brew install the-last-devops/tap/security-warden
 ## Use
 
 ```sh
+security-warden serve        # web UI on http://localhost:7348, opens your browser
 security-warden              # scan and print a report
 security-warden --lang vi    # in Vietnamese
 security-warden --json       # machine-readable report
@@ -34,6 +35,19 @@ security-warden version
 ```
 
 `sudo security-warden` also sees ports held by other users' processes.
+
+### Web UI
+
+`security-warden serve` starts the web UI on `127.0.0.1:7348` and opens it in your browser, already
+signed in. On first sign-in it offers to add a passkey (Touch ID, Windows Hello, security key), so next
+time you sign in with a touch. Double-clicking the app (not from a terminal) does the same.
+
+- Listens on one address only: loopback by default, or this machine's Tailscale IP
+  (`--listen 100.x.y.z:7348`). `0.0.0.0` and other "every network" addresses are always refused.
+- Sign-in: a one-time link printed in the terminal, or a passkey. Sessions survive restarts (stored
+  hashed), last 12 hours, and lock out after 5 failed attempts.
+- Protected against cross-site requests and DNS rebinding (Origin, CSRF token, Host allow-list, strict CSP).
+- Snooze findings for 1, 7 or 30 days or for good (critical findings: 30 days at most).
 
 ### Watch
 

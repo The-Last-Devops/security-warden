@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -16,22 +17,22 @@ import (
 
 func TestValidateListen(t *testing.T) {
 	local := []netip.Addr{netip.MustParseAddr("100.77.56.76"), netip.MustParseAddr("192.168.1.20")}
-	ok := []string{"127.0.0.1:7878", "[::1]:7878", "100.77.56.76:7878"}
+	ok := []string{"127.0.0.1:7348", "[::1]:7348", "100.77.56.76:7348"}
 	for _, a := range ok {
 		if _, _, err := ValidateListen(a, false, local); err != nil {
 			t.Errorf("%s refused: %v", a, err)
 		}
 	}
-	bad := []string{"0.0.0.0:7878", "[::]:7878", ":7878", "localhost:7878", "100.1.2.3:7878", "192.168.1.20:7878", "8.8.8.8:80", "127.0.0.1:0", "127.0.0.1"}
+	bad := []string{"0.0.0.0:7348", "[::]:7348", ":7348", "localhost:7348", "100.1.2.3:7348", "192.168.1.20:7348", "8.8.8.8:80", "127.0.0.1:0", "127.0.0.1"}
 	for _, a := range bad {
 		if _, _, err := ValidateListen(a, false, local); err == nil {
 			t.Errorf("%s accepted", a)
 		}
 	}
-	if _, kind, err := ValidateListen("192.168.1.20:7878", true, local); err != nil || kind != KindLAN {
+	if _, kind, err := ValidateListen("192.168.1.20:7348", true, local); err != nil || kind != KindLAN {
 		t.Errorf("LAN with --allow-lan: %v %s", err, kind)
 	}
-	if _, _, err := ValidateListen("0.0.0.0:7878", true, local); err == nil {
+	if _, _, err := ValidateListen("0.0.0.0:7348", true, local); err == nil {
 		t.Error("0.0.0.0 accepted with --allow-lan")
 	}
 }
@@ -44,12 +45,12 @@ func testServer() *Server {
 		Collect:  func(context.Context) []source.Result { return nil },
 		Evaluate: func([]source.Result, string) report.Scan { return report.Scan{} },
 	}
-	return New("127.0.0.1:7878", KindLoopback, "test", "en", ui, sc)
+	return New("127.0.0.1:7348", KindLoopback, "test", "en", ui, sc)
 }
 
 func do(h http.Handler, method, url string, hdr map[string]string) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, url, strings.NewReader(`{"keys":["x"]}`))
-	r.Host = "127.0.0.1:7878"
+	r.Host = "127.0.0.1:7348"
 	r.RemoteAddr = "127.0.0.1:5555"
 	for k, v := range hdr {
 		if k == "Host" {
@@ -73,7 +74,7 @@ func TestAuthFlow(t *testing.T) {
 	if w := do(h, "GET", "/api/scan", nil); w.Code != 401 {
 		t.Fatalf("scan without session = %d", w.Code)
 	}
-	if w := do(h, "GET", "/login?token="+s.Token(), map[string]string{"Host": "evil.example:7878"}); w.Code != http.StatusMisdirectedRequest {
+	if w := do(h, "GET", "/login?token="+s.Token(), map[string]string{"Host": "evil.example:7348"}); w.Code != http.StatusMisdirectedRequest {
 		t.Fatalf("rebinding host accepted: %d", w.Code)
 	}
 	w := do(h, "GET", "/login?token="+s.Token(), nil)
@@ -96,7 +97,7 @@ func TestAuthFlow(t *testing.T) {
 	if w := do(h, "POST", "/api/undo", map[string]string{"Cookie": ck, "Origin": "http://evil.example"}); w.Code != 403 {
 		t.Errorf("cross-origin POST = %d", w.Code)
 	}
-	if w := do(h, "POST", "/api/undo", map[string]string{"Cookie": ck, "Origin": "http://127.0.0.1:7878"}); w.Code != 403 {
+	if w := do(h, "POST", "/api/undo", map[string]string{"Cookie": ck, "Origin": "http://127.0.0.1:7348"}); w.Code != 403 {
 		t.Errorf("POST without CSRF = %d", w.Code)
 	}
 	if w := do(h, "GET", "/", map[string]string{"Cookie": ck}); w.Header().Get("Content-Security-Policy") == "" {
@@ -119,15 +120,15 @@ func TestPasskeyNeedsName(t *testing.T) {
 	s := testServer()
 	h := s.Handler()
 	// IP host: WebAuthn cannot use it, the server says so.
-	w := do(h, "POST", "/api/passkey/login/begin", map[string]string{"Origin": "http://127.0.0.1:7878"})
+	w := do(h, "POST", "/api/passkey/login/begin", map[string]string{"Origin": "http://127.0.0.1:7348"})
 	if w.Code != 400 || !strings.Contains(w.Body.String(), "localhost") {
 		t.Errorf("passkey on IP = %d %s", w.Code, w.Body.String())
 	}
-	if !strings.HasPrefix(s.LoginURL(), "http://localhost:7878/login?token=") {
+	if !strings.HasPrefix(s.LoginURL(), "http://localhost:7348/login?token=") {
 		t.Errorf("login URL = %s", s.LoginURL())
 	}
 	// Registration needs a session.
-	w = do(h, "POST", "/api/passkey/register/begin", map[string]string{"Host": "localhost:7878", "Origin": "http://localhost:7878"})
+	w = do(h, "POST", "/api/passkey/register/begin", map[string]string{"Host": "localhost:7348", "Origin": "http://localhost:7348"})
 	if w.Code != 401 {
 		t.Errorf("register without session = %d", w.Code)
 	}
@@ -167,5 +168,25 @@ func TestSessionsSurviveRestart(t *testing.T) {
 	c.loadSessions(path)
 	if _, s := c.session(r); s != nil {
 		t.Fatal("logged-out session came back")
+	}
+}
+
+func TestListenFallsBackWhenBusy(t *testing.T) {
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skip(err)
+	}
+	defer busy.Close()
+	addr := busy.Addr().String()
+	if _, _, err := Listen(addr, false); err == nil || !strings.Contains(err.Error(), "already used") {
+		t.Errorf("explicit busy port: %v", err)
+	}
+	ln, got, err := Listen(addr, true)
+	if err != nil {
+		t.Fatalf("fallback: %v", err)
+	}
+	ln.Close()
+	if got == addr {
+		t.Error("fallback returned the busy address")
 	}
 }

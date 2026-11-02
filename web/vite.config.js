@@ -7,5 +7,5 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   build: { outDir: 'dist', emptyOutDir: false, assetsInlineLimit: 0, sourcemap: false },
-  server: { proxy: { '/api': 'http://127.0.0.1:7878', '/login': 'http://127.0.0.1:7878' } },
+  server: { proxy: { '/api': 'http://127.0.0.1:7348', '/login': 'http://127.0.0.1:7348' } },
 })

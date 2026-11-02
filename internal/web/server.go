@@ -437,16 +437,12 @@ func tilde(s string) string {
 	return s
 }
 
-// Run serves until ctx ends.
-func (s *Server) Run(ctx context.Context) error {
+// Run serves on ln until ctx ends.
+func (s *Server) Run(ctx context.Context, ln net.Listener) error {
 	srv := &http.Server{
 		Addr: s.Addr, Handler: s.Handler(),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second,
 		WriteTimeout: 90 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10,
-	}
-	ln, err := net.Listen("tcp", s.Addr)
-	if err != nil {
-		return err
 	}
 	go func() {
 		<-ctx.Done()

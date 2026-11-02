@@ -37,8 +37,10 @@ here=$(cd "$(dirname "$0")" && pwd)
 sudo mkdir -p /usr/local/bin
 sudo cp "$here/security-warden" /usr/local/bin/security-warden
 echo
-echo "Installed. Open Terminal and run: security-warden"
-echo "Đã cài. Mở Terminal và chạy: security-warden"
+echo "Installed. Opening Security Warden in your browser…"
+echo "Đã cài. Đang mở Security Warden trong trình duyệt…"
+echo "(Keep this window open while you use it / Giữ cửa sổ này mở khi đang dùng)"
+exec /usr/local/bin/security-warden serve
 SH
 chmod +x "$stage/Install.command"
 

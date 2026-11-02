@@ -15,11 +15,15 @@ import (
 	ui "github.com/The-Last-Devops/security-warden/web"
 )
 
-func runServe(lang string, rs []*engine.Rule, listen string, allowLAN bool) int {
+func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open bool) int {
 	t := func(k string) string { return i18n.T(lang, k) }
 	if os.Geteuid() == 0 {
 		fmt.Println(t("serve.root"))
 		return 2
+	}
+	fallback := listen == ""
+	if fallback {
+		listen = fmt.Sprintf("127.0.0.1:%d", web.DefaultPort)
 	}
 	addr, kind, err := web.ValidateListen(listen, allowLAN, web.LocalIPs())
 	if err != nil {
@@ -28,6 +32,11 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN bool) int 
 	}
 	if !web.HasUI(ui.UI()) {
 		fmt.Println(t("serve.no_ui"))
+		return 2
+	}
+	ln, addr, err := web.Listen(addr, fallback)
+	if err != nil {
+		fmt.Println(err)
 		return 2
 	}
 	srv := web.New(addr, kind, version, lang, ui.UI(), web.Scanner{
@@ -43,7 +52,14 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN bool) int 
 		fmt.Println("  " + t("serve.lan_warning") + "\n")
 	}
 	fmt.Println("  " + t("serve.secret") + "\n")
-	if err := srv.Run(ctx); err != nil {
+	// Open the browser for the person at this machine; a Tailscale address is
+	// for another device, so only print the link then.
+	if open && kind == web.KindLoopback {
+		if err := web.OpenBrowser(srv.LoginURL()); err == nil {
+			fmt.Println("  " + t("serve.opened") + "\n")
+		}
+	}
+	if err := srv.Run(ctx, ln); err != nil {
 		fmt.Println(err)
 		return 2
 	}
