@@ -80,6 +80,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		srv.Watching = true
 		go watchInBackground(ctx, srv, lang, popup)
 		go autoUpdate(ctx, lang, stop)
+		go vulnDBLoop(ctx)
 		if err := srv.Run(ctx, ln); err != nil {
 			fmt.Println(err)
 			return 2

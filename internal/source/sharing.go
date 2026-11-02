@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/The-Last-Devops/security-warden/internal/vulndb"
 )
 
 func portOpen(ctx context.Context, port int) bool {
@@ -315,6 +317,9 @@ func localizedName(dir, msg string) string {
 	return key
 }
 
+// maxLocks bounds how many dependency lock files one scan reads.
+const maxLocks = 3000
+
 var codeRoots = []string{"Code", "code", "src", "dev", "Projects", "projects", "work", "workspace", "repos", "git", "go/src", "Developer"}
 
 var skipDirs = map[string]bool{"node_modules": true, ".git": true, "vendor": true, "dist": true, "build": true,
@@ -331,6 +336,7 @@ type codeCand struct{ path, rel, kind string }
 type codeWalkResult struct {
 	byRepo    map[string][]codeCand
 	repos     []string
+	locks     []string // dependency lock files (package-lock.json, go.mod…)
 	truncated bool
 }
 
@@ -384,6 +390,12 @@ func load_codeWalk() codeWalkResult {
 				return nil
 			}
 			name := d.Name()
+			if d.Type().IsRegular() && vulndb.LockKind(name) != "" {
+				if len(res.locks) < maxLocks {
+					res.locks = append(res.locks, path)
+				}
+				return nil
+			}
 			if !d.Type().IsRegular() || !envName.MatchString(name) || envTemplate.MatchString(name) {
 				return nil
 			}
