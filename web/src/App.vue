@@ -42,14 +42,20 @@ const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 async function load(force = false) {
   if (force) return rescan()
   busy.value = true
-  try { data.value = await api.scan(lang.value) } catch (e) { fail(e) } finally { busy.value = false }
+  try {
+    // Show the last scan right away; with none yet, scan with the progress modal.
+    const cached = await api.cached(lang.value)
+    if (cached) { data.value = cached; return }
+    busy.value = false
+    return rescan(true)
+  } catch (e) { fail(e) } finally { if (!prog.value) busy.value = false }
 }
 
 // Rescan with visible progress: start, poll which sources are done, then
 // load the result and say what changed.
 const prog = ref(null)
 const sleep = ms => new Promise(r => setTimeout(r, ms))
-async function rescan() {
+async function rescan(first = false) {
   if (prog.value) return
   const before = new Set(findings.value.map(f => f.key))
   busy.value = true
@@ -73,7 +79,7 @@ async function rescan() {
     let added = 0, gone = 0
     for (const k of after) if (!before.has(k)) added++
     for (const k of before) if (!after.has(k)) gone++
-    say(t.value.scanDone(after.size, added, gone))
+    if (!first) say(t.value.scanDone(after.size, added, gone))
   } catch (e) { fail(e) } finally { prog.value = null; busy.value = false }
 }
 const progPct = computed(() => (prog.value?.total ? Math.round((prog.value.done.length / prog.value.total) * 100) : 4))

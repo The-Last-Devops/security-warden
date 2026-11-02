@@ -14,6 +14,12 @@ async function call(method, path, body) {
 export const api = {
   async meta() { const m = await call('GET', '/api/meta'); csrf = m.csrf; return m },
   scan: lang => call('GET', `/api/scan?lang=${lang}`),
+  cached: async lang => {
+    const res = await fetch(`/api/scan?lang=${lang}&cached=1`, { credentials: 'same-origin' })
+    if (res.status === 204) return null
+    if (!res.ok) throw Object.assign(new Error(res.statusText), { status: res.status })
+    return res.json()
+  },
   rescan: lang => call('POST', `/api/scan?lang=${lang}`),
   startScan: () => call('POST', '/api/scan/start'),
   progress: lang => call('GET', `/api/scan/progress?lang=${lang}`),

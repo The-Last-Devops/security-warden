@@ -388,6 +388,19 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	// ?cached=1: answer only from an earlier scan (the background service
+	// keeps one fresh); 204 tells the UI to run a scan with progress.
+	if r.URL.Query().Get("cached") == "1" {
+		s.mu.Lock()
+		res := s.results
+		s.mu.Unlock()
+		if res == nil {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		writeJSON(w, http.StatusOK, s.render(res, langOf(r, s.Lang)))
+		return
+	}
 	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang)))
 }
 
