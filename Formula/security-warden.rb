@@ -2,27 +2,27 @@ class SecurityWarden < Formula
   desc "Checks your machine for open doors and secrets lying around"
   homepage "https://github.com/The-Last-Devops/security-warden"
   license "Apache-2.0"
-  version "1.2.1"
+  version "1.3.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.2.1/security-warden-darwin-arm64.tar.gz"
-      sha256 "39829e844a7951416e96973fba92eb3bc6c073e1f550032536e3030d7aedcc23"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.3.0/security-warden-darwin-arm64.tar.gz"
+      sha256 "5dcfe0767d22a879869e3068f1bb85f075bafef1594ff75a478b579a1a911d08"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.2.1/security-warden-darwin-amd64.tar.gz"
-      sha256 "a5b2bcc082065ce78d73b4eac697de0ddd735186bebb893c481f3be378a8ed24"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.3.0/security-warden-darwin-amd64.tar.gz"
+      sha256 "d6595036150402323379ae2d1338e0d745cc5505217d11ef40dde8ed3b5243b5"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.2.1/security-warden-linux-arm64.tar.gz"
-      sha256 "780d2fe97db95d99b01e32f945f489708d506e3541592617ecf2837477d96b17"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.3.0/security-warden-linux-arm64.tar.gz"
+      sha256 "e340e645aa40a2b533bf7b8e39afd21e2ea9639126d421c815e7d12dbdfe027d"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.2.1/security-warden-linux-amd64.tar.gz"
-      sha256 "47b64f6cebeaadb4d4ba6edfe7e357afbe547058eb53aab39c4f5d3b9ea1f622"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.3.0/security-warden-linux-amd64.tar.gz"
+      sha256 "1cd1025322074372a8fc726dc1ce990b2dd079cc0a26b1fac96ec4ce423742e0"
     end
   end
 
