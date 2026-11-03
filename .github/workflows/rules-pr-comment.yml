@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request'
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: rules-check
           path: rules-check
