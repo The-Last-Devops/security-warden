@@ -1,0 +1,26 @@
+id: ssh-key-old-format
+severity: low
+platforms: [macos, windows, linux]
+source: ssh_keys
+tier: experimental
+match: "item.format == \"pem\" && item.encrypted"
+title:
+  en: "SSH key {name} is saved in the old PEM format"
+  vi: "Khoá SSH {name} được lưu ở định dạng PEM cũ"
+check:
+  en: "Encrypted SSH keys use the OpenSSH format"
+  vi: "Khoá SSH có mã hoá dùng định dạng OpenSSH"
+explain:
+  en: "{path} is an old PEM key (BEGIN RSA, EC or DSA PRIVATE KEY). Its passphrase is protected with a single fast MD5 step, so a stolen copy can be guessed far faster than a key in the OpenSSH format, which uses bcrypt."
+  vi: "{path} là khoá PEM kiểu cũ (BEGIN RSA, EC hoặc DSA PRIVATE KEY). Passphrase của nó chỉ được bảo vệ bằng một bước MD5 nhanh, nên bản sao bị đánh cắp dò ra nhanh hơn nhiều so với khoá định dạng OpenSSH, vốn dùng bcrypt."
+fix:
+  en: "1. Rewrite it in the OpenSSH format: `ssh-keygen -p -f {path}` (type the current passphrase, then a new one; OpenSSH 7.8 and later save in the new format). The key itself does not change, so servers need no update. 2. Check it: `ssh-keygen -y -f {path}` asks for the passphrase and prints the public key. If an old tool can only read PEM keys, keep this one as it is."
+  vi: "1. Lưu lại ở định dạng OpenSSH: `ssh-keygen -p -f {path}` (gõ passphrase hiện tại, rồi passphrase mới; OpenSSH 7.8 trở lên lưu theo định dạng mới). Bản thân khoá không đổi nên không phải cập nhật gì trên máy chủ. 2. Kiểm tra: `ssh-keygen -y -f {path}` sẽ hỏi passphrase và in ra khoá công khai. Nếu một công cụ cũ chỉ đọc được khoá PEM thì cứ giữ nguyên khoá này."
+references:
+  - https://www.openssh.com/txt/release-7.8
+  - https://man.openbsd.org/ssh-keygen.1
+author: the-last-devops
+tests:
+  - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "format": "pem", "encrypted": true, "key_type": "rsa", "bits": 3072}, "expect": true}
+  - {"item": {"name": "id_ed25519", "path": "/Users/a/.ssh/id_ed25519", "format": "openssh", "encrypted": true, "key_type": "ed25519", "bits": 256}, "expect": false}
+  - {"item": {"name": "id_rsa", "path": "/Users/a/.ssh/id_rsa", "format": "pem", "encrypted": false, "key_type": "rsa", "bits": 3072}, "expect": false, "note": "ssh-key-no-passphrase covers it"}

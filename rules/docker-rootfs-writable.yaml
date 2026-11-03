@@ -1,0 +1,26 @@
+id: docker-rootfs-writable
+severity: low
+platforms: [macos, windows, linux]
+source: docker_containers
+tier: experimental
+match: "!item.read_only_rootfs && item.runs_as_root && !item.privileged"
+title:
+  en: "Container {container} runs as root with a writable file system"
+  vi: "Container {container} chạy bằng root với hệ thống tệp ghi được"
+check:
+  en: "Containers that run as root have a read-only file system"
+  vi: "Container chạy bằng root có hệ thống tệp chỉ đọc"
+explain:
+  en: "If {image} has a bug, an attacker who is root inside {container} can replace its programs and plant tools that stay until the container is recreated. A read-only root file system blocks that."
+  vi: "Nếu {image} có lỗi, kẻ tấn công là root trong {container} có thể thay chương trình bên trong và cài công cụ, nằm đó tới khi container được tạo lại. Hệ thống tệp gốc chỉ đọc chặn được việc này."
+fix:
+  en: "1. Add `read_only: true` to {container} in compose (or `docker run --read-only`). 2. Give it the folders it must write to: `tmpfs: [/tmp]` or a volume. 3. Apply it: `docker compose up -d` (recreates only the changed containers), and check the app still works; if not, remove `read_only` again."
+  vi: "1. Thêm `read_only: true` cho {container} trong compose (hoặc `docker run --read-only`). 2. Cấp cho nó các thư mục cần ghi: `tmpfs: [/tmp]` hoặc một volume. 3. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi), rồi kiểm tra ứng dụng còn chạy; nếu không, bỏ `read_only` đi."
+references:
+  - https://docs.docker.com/reference/cli/docker/container/run/#read-only
+  - https://docs.docker.com/reference/compose-file/services/#read_only
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "", "runs_as_root": true, "read_only_rootfs": false}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "", "runs_as_root": true, "read_only_rootfs": true}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "read_only_rootfs": false}, "expect": false, "note": "runs as a normal user"}

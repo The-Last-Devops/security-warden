@@ -1,0 +1,26 @@
+id: cloud-static-token
+severity: high
+platforms: [macos, windows, linux]
+source: cloud_config
+tier: experimental
+match: "item.kind == \"kubeconfig\" && item.static_token"
+title:
+  en: "kubectl logs in with a fixed token stored in {file}"
+  vi: "kubectl đăng nhập bằng một token cố định lưu trong {file}"
+check:
+  en: "kubectl does not use fixed tokens"
+  vi: "kubectl không dùng token cố định"
+explain:
+  en: "A user in {file} has a bearer token written into the file. These tokens often never expire, so anyone who gets a copy of the file can use the cluster as you until an admin revokes the token."
+  vi: "Một user trong {file} có bearer token ghi thẳng vào tệp. Loại token này thường không hết hạn, nên ai lấy được bản sao tệp là dùng được cluster dưới tên bạn cho tới khi người quản trị thu hồi token."
+fix:
+  en: "1. `kubectl config get-users` shows the user names. 2. Ask your cluster admin for a short-lived login, or use your provider's command, which sets up a login plugin instead of a token: GKE `gcloud container clusters get-credentials <cluster>`, EKS `aws eks update-kubeconfig --name <cluster>`, AKS `az aks get-credentials --name <cluster> --resource-group <group>`. 3. Check it works: `kubectl get ns`. 4. Only then remove the old token: `kubectl config unset users.<user>.token`, and ask the admin to revoke it."
+  vi: "1. `kubectl config get-users` để xem tên user. 2. Nhờ người quản trị cluster cấp cách đăng nhập ngắn hạn, hoặc dùng lệnh của nhà cung cấp, lệnh này cài plugin đăng nhập thay cho token: GKE `gcloud container clusters get-credentials <cluster>`, EKS `aws eks update-kubeconfig --name <cluster>`, AKS `az aks get-credentials --name <cluster> --resource-group <group>`. 3. Kiểm tra vẫn dùng được: `kubectl get ns`. 4. Khi đã chạy được mới xoá token cũ: `kubectl config unset users.<user>.token`, rồi nhờ người quản trị thu hồi nó."
+references:
+  - https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_config/kubectl_config_unset/
+author: the-last-devops
+tests:
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": true, "current_context": "dev", "current_is_prod": false, "sa_type": "", "client_cert": false, "client_cert_context": ""}, "expect": true}
+  - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": false, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": "", "client_cert": false, "client_cert_context": ""}, "expect": false}
+  - {"item": {"kind": "vault_token", "file": "/h/.vault-token", "insecure_skip_tls": false, "static_token": true, "current_context": "", "current_is_prod": false, "sa_type": "", "client_cert": false, "client_cert_context": ""}, "expect": false, "note": "only kubeconfig files"}

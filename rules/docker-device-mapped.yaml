@@ -1,0 +1,26 @@
+id: docker-device-mapped
+severity: medium
+platforms: [macos, windows, linux]
+source: docker_containers
+tier: experimental
+match: "item.devices > 0 && !item.privileged"
+title:
+  en: "Container {container} has {devices} host devices passed in"
+  vi: "Container {container} được gắn {devices} thiết bị của máy chủ"
+check:
+  en: "No containers have host devices passed in"
+  vi: "Không container nào được gắn thiết bị của máy chủ"
+explain:
+  en: "A device passed in (a disk, USB, serial port or GPU under /dev) lets {container} talk to that hardware directly. If {image} is compromised, a raw disk device can be read or written past every file permission on the host."
+  vi: "Thiết bị được gắn vào (ổ đĩa, USB, cổng serial hay GPU trong /dev) cho phép {container} làm việc thẳng với phần cứng đó. Nếu {image} bị chiếm, kẻ tấn công có thể đọc hoặc ghi thẳng vào ổ đĩa, vượt qua mọi quyền truy cập tệp trên máy chủ."
+fix:
+  en: "1. See which devices: `docker inspect {container}` and look under `HostConfig` › `Devices`. 2. If {container} does not need one, remove it from `devices:` in the compose file (or drop `--device` from `docker run`). 3. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Xem đó là thiết bị nào: `docker inspect {container}`, tìm trong `HostConfig` › `Devices`. 2. Nếu {container} không cần, bỏ thiết bị đó khỏi `devices:` trong tệp compose (hoặc bỏ `--device` khỏi `docker run`). 3. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
+references:
+  - https://docs.docker.com/reference/cli/docker/container/run/#device
+  - https://docs.docker.com/reference/compose-file/services/#devices
+author: the-last-devops
+tests:
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "devices": 1, "user": "", "runs_as_root": true}, "expect": true}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "devices": 0, "user": "", "runs_as_root": true}, "expect": false}
+  - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": true, "devices": 2, "user": "", "runs_as_root": true}, "expect": false, "note": "docker-privileged covers it"}

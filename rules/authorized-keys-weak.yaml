@@ -1,0 +1,26 @@
+id: authorized-keys-weak
+severity: medium
+platforms: [macos, windows, linux]
+source: authorized_keys
+tier: experimental
+match: "item.weak > 0 && item.ssh_on"
+title:
+  en: "{weak} DSA keys can log in to this account over SSH"
+  vi: "{weak} khoá DSA đăng nhập được vào tài khoản này qua SSH"
+check:
+  en: "No DSA keys can log in over SSH"
+  vi: "Không khoá DSA nào đăng nhập được qua SSH"
+explain:
+  en: "Remote Login is on and {path} lists {weak} keys of type ssh-dss (DSA). DSA keys are only 1024 bits and no longer considered safe; OpenSSH has refused them by default since version 7.0."
+  vi: "Đăng nhập từ xa đang bật và {path} có {weak} khoá loại ssh-dss (DSA). Khoá DSA chỉ dài 1024 bit và không còn được coi là an toàn; OpenSSH đã từ chối chúng theo mặc định từ bản 7.0."
+fix:
+  en: "1. Open `{path}` in a text editor and find the lines that contain `ssh-dss`; the comment at the end usually names the owner. 2. If someone still needs that access, have them make a new key (`ssh-keygen -t ed25519`) and add its public key as a new line first; if you reach this machine over SSH with a DSA key, log in with the new key in a new window before going on. 3. Put `#` at the start of each `ssh-dss` line to turn it off (remove the `#` to undo) and save."
+  vi: "1. Mở `{path}` bằng trình soạn thảo, tìm các dòng có `ssh-dss`; phần ghi chú cuối dòng thường là tên chủ khoá. 2. Nếu người đó vẫn cần vào máy, nhờ họ tạo khoá mới (`ssh-keygen -t ed25519`) và thêm khoá công khai mới thành một dòng mới trước; nếu chính bạn đang vào máy này qua SSH bằng khoá DSA, hãy thử đăng nhập bằng khoá mới ở cửa sổ khác rồi mới làm tiếp. 3. Thêm `#` ở đầu mỗi dòng `ssh-dss` để tắt nó (bỏ `#` để khôi phục) rồi lưu."
+references:
+  - https://www.openssh.com/txt/release-7.0
+  - https://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT
+author: the-last-devops
+tests:
+  - {"item": {"path": "/h/.ssh/authorized_keys", "count": 3, "weak": 1, "restricted": 0, "ssh_on": true, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": true}
+  - {"item": {"path": "/h/.ssh/authorized_keys", "count": 3, "weak": 0, "restricted": 0, "ssh_on": true, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": false}
+  - {"item": {"path": "/h/.ssh/authorized_keys", "count": 3, "weak": 1, "restricted": 0, "ssh_on": false, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": false, "note": "SSH is off"}
