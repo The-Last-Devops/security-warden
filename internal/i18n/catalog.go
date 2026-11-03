@@ -88,6 +88,8 @@ Usage:
   security-warden rules sources [NAME] [--json]        what each source collects: fields for rules
   security-warden rules new ID --source NAME [--severity S] [--platforms macos,linux] [--dir DIR]
   security-warden rules check FILE... [--strict] [--new] [--json]   validate, test and lint rule files
+  security-warden feedback RULE|KEY [--open]     report a wrong finding or fix (a GitHub link you submit)
+  security-warden feedback --idea "TEXT" [--open]  suggest a new check (a GitHub link you submit)
   security-warden version
 
 --experimental also runs new community rules still waiting for review; they are
@@ -100,13 +102,25 @@ ids and the keys [in brackets] that ignore add accepts.
 
 Language: --lang, else SW_LANG, else your system language.
 Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
-	"cli.rules_header": "%d rules",
+	"cli.rules_header":      "%d rules",
+	"rules.by":              "by @%s (github.com/%s)",
+	"feedback.usage":        "Usage:\n  security-warden feedback RULE|KEY [--open]       report a wrong finding or a fix that does not work\n  security-warden feedback --idea \"TEXT\" [--open]  suggest a new check\nIt prints a GitHub link and exactly what it fills in. Nothing is sent: you open the link and submit it yourself.",
+	"feedback.preview":      "What the link fills in (home folder, user and host names, repositories, emails, addresses and tokens already taken out):",
+	"feedback.nothing_sent": "Nothing has been sent. Open the link, read and edit the text, and submit it yourself on GitHub.",
+	"feedback.link":         "Link:",
+	"feedback.open_hint":    "To open it in the browser: add --open.",
+	"feedback.opened":       "Opened in the browser. Nothing is sent until you submit it on GitHub.",
+	"feedback.open_failed":  "Could not open the browser (%v): copy the link above.",
+	"feedback.shortened":    "Some text was shortened to fit in the link.",
+	"feedback.not_failing":  "%s does not fail on this machine: the report is about the rule itself (for example a wrong fix text).",
+	"feedback.empty_idea":   "The idea is empty. Example: security-warden feedback --idea \"check ~/.npmrc for auth tokens\"",
 	"mcp.usage": `security-warden mcp: serve Security Warden to AI agents (Claude, Cursor, …) over MCP on stdin/stdout.
 
 Usage:
   security-warden mcp                    read-only tools: scan, list_problems, get_fix,
                                          explain_rule, list_safe, status,
-                                         list_sources, check_rule (writing rules)
+                                         list_sources, check_rule, draft_rule (writing rules),
+                                         report_false_positive, suggest_rule (links the user opens)
   security-warden mcp --allow-changes    also apply_fix, undo_fix, hide, restore
 
 An AI app starts this command itself; add it to the app's MCP settings, for example:
@@ -266,6 +280,8 @@ it only in an app that asks you before each tool call. Logs go to stderr.`,
 	"check.backticks":                       "unbalanced backticks: every command needs an opening and a closing `",
 	"check.braces":                          "unbalanced { }",
 	"check.todo":                            "still says TODO",
+	"check.author":                          "author must be your GitHub handle, without @ (letters, digits and single hyphens): %q",
+	"check.no_author":                       "add author: your GitHub handle, so the rule is credited to you",
 	"check.untranslated":                    "the Vietnamese text is the same as the English one",
 	"check.test_unknown_field":              "%s is not a field of source %s",
 	"check.field_type":                      "%s is a %s, source %s declares %s",
@@ -370,6 +386,8 @@ Cách dùng:
   security-warden rules sources [TÊN] [--json]         mỗi nguồn thu thập gì: các trường dùng trong rule
   security-warden rules new ID --source TÊN [--severity S] [--platforms macos,linux] [--dir THƯ_MỤC]
   security-warden rules check TỆP... [--strict] [--new] [--json]   kiểm tra, chạy test và soát lệnh của rule
+  security-warden feedback RULE|KEY [--open]     báo kết quả sai hoặc cách sửa sai (link GitHub bạn tự gửi)
+  security-warden feedback --idea "NỘI DUNG" [--open]  đề xuất kiểm tra mới (link GitHub bạn tự gửi)
   security-warden version
 
 --experimental chạy thêm các rule cộng đồng mới đang chờ duyệt; chúng được gắn nhãn
@@ -382,13 +400,25 @@ và mã [trong ngoặc vuông] để dùng với ignore add.
 
 Ngôn ngữ: --lang, không có thì SW_LANG, không có nữa thì theo ngôn ngữ hệ thống.
 Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất một, 2 lỗi.`,
-	"cli.rules_header": "%d rule",
+	"cli.rules_header":      "%d rule",
+	"rules.by":              "đóng góp bởi @%s (github.com/%s)",
+	"feedback.usage":        "Cách dùng:\n  security-warden feedback RULE|KEY [--open]           báo một kết quả sai hoặc cách sửa không đúng\n  security-warden feedback --idea \"NỘI DUNG\" [--open]  đề xuất một kiểm tra mới\nLệnh in ra một link GitHub và đúng nội dung link điền sẵn. Không gì được gửi đi: bạn tự mở link và tự gửi.",
+	"feedback.preview":      "Nội dung link điền sẵn (đã bỏ thư mục home, tên người dùng và tên máy, repo, email, địa chỉ IP và token):",
+	"feedback.nothing_sent": "Chưa có gì được gửi đi. Mở link, đọc và sửa nội dung, rồi tự gửi trên GitHub.",
+	"feedback.link":         "Link:",
+	"feedback.open_hint":    "Để mở trong trình duyệt: thêm --open.",
+	"feedback.opened":       "Đã mở trong trình duyệt. Chưa có gì được gửi cho tới khi bạn bấm gửi trên GitHub.",
+	"feedback.open_failed":  "Không mở được trình duyệt (%v): hãy chép link ở trên.",
+	"feedback.shortened":    "Một phần nội dung đã được rút gọn cho vừa link.",
+	"feedback.not_failing":  "%s không báo lỗi trên máy này: báo cáo sẽ nói về chính rule đó (ví dụ cách sửa bị sai).",
+	"feedback.empty_idea":   "Ý tưởng đang trống. Ví dụ: security-warden feedback --idea \"kiểm tra token trong ~/.npmrc\"",
 	"mcp.usage": `security-warden mcp: cho AI agent (Claude, Cursor, …) dùng Security Warden qua MCP trên stdin/stdout.
 
 Cách dùng:
   security-warden mcp                    công cụ chỉ đọc: scan, list_problems, get_fix,
                                          explain_rule, list_safe, status,
-                                         list_sources, check_rule (viết rule)
+                                         list_sources, check_rule, draft_rule (viết rule),
+                                         report_false_positive, suggest_rule (link để người dùng tự mở)
   security-warden mcp --allow-changes    thêm apply_fix, undo_fix, hide, restore
 
 Ứng dụng AI tự chạy lệnh này; thêm nó vào phần cài đặt MCP của ứng dụng, ví dụ:
@@ -548,6 +578,8 @@ cách sửa có sẵn (không bao giờ là cách cần quyền admin) và ẩn 
 	"check.backticks":                       "dấu ` không cân: mỗi lệnh cần một dấu mở và một dấu đóng",
 	"check.braces":                          "dấu { } không cân",
 	"check.todo":                            "vẫn còn TODO",
+	"check.author":                          "author phải là tên GitHub của bạn, không có @ (chữ, số và dấu gạch nối đơn): %q",
+	"check.no_author":                       "thêm author: tên GitHub của bạn, để rule ghi công cho bạn",
 	"check.untranslated":                    "bản tiếng Việt giống hệt bản tiếng Anh",
 	"check.test_unknown_field":              "%s không phải trường của nguồn %s",
 	"check.field_type":                      "%s là %s, nguồn %s khai là %s",

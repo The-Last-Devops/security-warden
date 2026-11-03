@@ -26,7 +26,7 @@ const sevRank = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
 const rules = computed(() => {
   const all = [...(data.value?.rules || [])].sort((a, b) => (sevRank[a.severity] - sevRank[b.severity]) || a.id.localeCompare(b.id))
   if (!needle.value) return all
-  return all.filter(r => has(r.id, r.title, r.check, r.source, r.severity, r.tier, r.category))
+  return all.filter(r => has(r.id, r.title, r.check, r.source, r.severity, r.tier, r.category, r.author))
 })
 const sources = computed(() => {
   const all = data.value?.sources || []
@@ -74,7 +74,7 @@ const isOpen = s => open.value[s.name] || (needle.value && (s.fields || []).some
             </div>
             <span class="text-[15px] font-semibold break-words">{{ r.title }}</span>
             <span class="text-[13.5px] text-muted break-words">✓ {{ r.check }}</span>
-            <span class="text-[12.5px] text-muted"><span class="font-mono">{{ r.source }}</span> · {{ plat(r.platforms) }}</span>
+            <span class="text-[12.5px] text-muted"><span class="font-mono">{{ r.source }}</span> · {{ plat(r.platforms) }}<template v-if="r.author"> · <a :href="`https://github.com/${r.author}`" target="_blank" rel="noopener noreferrer" class="hover:text-accent hover:underline">{{ t.byAuthor(r.author) }}</a></template></span>
           </li>
         </ul>
       </template>

@@ -121,6 +121,9 @@ and what goes over the network: [docs/security-model.md](docs/security-model.md)
 New checks are one YAML file each, and people and AI agents are both welcome to send them. Start with
 [CONTRIBUTING.md](CONTRIBUTING.md) and [Contributing a rule](docs/contributing-rules.md); every pull request
 is reviewed and merged by hand ([review guide](docs/review-guide.md)).
+A wrong finding or a missing check? `security-warden feedback RULE|KEY` or `feedback --idea "…"` prints a
+GitHub issue link with identifying details taken out; nothing is sent until you submit it yourself.
+Contributed rules are credited in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## License
 

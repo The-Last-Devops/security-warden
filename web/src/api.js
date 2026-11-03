@@ -44,6 +44,9 @@ export const api = {
   undo: () => call('POST', '/api/undo'),
   ignore: (keys, days) => call('POST', '/api/ignore', { keys, days }),
   unignore: keys => call('POST', '/api/unignore', { keys }),
+  // Feedback drafts: the server only builds a GitHub link; nothing is sent.
+  feedback: key => call('GET', `/api/feedback?key=${encodeURIComponent(key)}`),
+  feedbackIdea: text => call('POST', '/api/feedback/idea', { text }),
   logout: () => call('POST', '/api/logout'),
   passkeyStatus: () => call('GET', '/api/passkey'),
   updateStatus: () => call('GET', '/api/update'),

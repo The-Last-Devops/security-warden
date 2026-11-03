@@ -88,6 +88,8 @@ func run(args []string) int {
 	dir := fs.String("dir", "rules", "rules new: folder to write the rule in")
 	strict := fs.Bool("strict", false, "rules check: warnings fail too")
 	isNew := fs.Bool("new", false, "rules check: the files are new rules (must start experimental)")
+	idea := fs.String("idea", "", "feedback: suggest a new check, in your words")
+	openLink := fs.Bool("open", false, "feedback: open the link in the browser")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -157,6 +159,13 @@ func run(args []string) int {
 		return runStatus(l)
 	case "ignore":
 		return runIgnore(l, rs, subArgs, *days)
+	case "feedback", "report":
+		ideaSet := false
+		fs.Visit(func(f *flag.Flag) { ideaSet = ideaSet || f.Name == "idea" })
+		return runFeedback(os.Stdout, l, rs, subArgs, *idea, ideaSet, *openLink, func() []engine.Finding {
+			s := scanNow(rs, "en", true, true)
+			return append(s.Findings, s.Ignored...)
+		})
 	case "passkey", "passkeys":
 		return runPasskey(l, subArgs, *yes)
 	case "logout":

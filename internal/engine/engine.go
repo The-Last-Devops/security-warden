@@ -333,6 +333,20 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 // the user asked for them.
 func (r *Rule) Runs(experimental bool) bool { return r.Tier != "experimental" || experimental }
 
+// CoreAuthor is the maintainers' GitHub handle: their rules carry no
+// "by @…" credit line.
+const CoreAuthor = "the-last-devops"
+
+// Credit is the GitHub handle of the person who contributed the rule, ""
+// for the maintainers' own rules (and rules with no author).
+func (r *Rule) Credit() string {
+	a := strings.TrimPrefix(strings.TrimSpace(r.Author), "@")
+	if a == "" || strings.EqualFold(a, CoreAuthor) {
+		return ""
+	}
+	return a
+}
+
 // TierLabel is the tier shown next to a finding: empty for stable.
 func (r *Rule) TierLabel() string {
 	if r.Tier == "stable" || r.Tier == "" {

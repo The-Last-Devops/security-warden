@@ -39,6 +39,14 @@ https://github.com/The-Last-Devops/security-warden/blob/main/docs/ai-agents.md
 
 5. After changes, scan again and report what improved.
 
+If the user says a finding is wrong, or asks about a risk that is not checked,
+you may offer once to report it: `security-warden feedback <rule_id or key>` or
+`security-warden feedback --idea "what to check and why"`. It only prints a
+preview (identifying details already taken out) and a GitHub link. Show the
+preview; the user opens the link and submits it. Never open, post or submit it
+yourself. To write the rule with them, use the `security-warden-rule-author`
+skill.
+
 To hide a problem the user accepts for now: `security-warden ignore add <rule_id or key> --days 7`
 (1, 7 or 30 days; `ignore restore` shows it again). Mention `ignored`
 findings only if asked.

@@ -73,6 +73,9 @@ var (
 	itemRef     = regexp.MustCompile(`\bitem\s*\.\s*([A-Za-z0-9_]+)|\bitem\s*\[\s*["']([^"']+)["']\s*\]`)
 	placeholder = regexp.MustCompile(`\{([a-z0-9_]+)(\|sh)?\}`)
 	todo        = regexp.MustCompile(`\bTODO\b`)
+	// Handle is a GitHub user name: letters, digits and single hyphens,
+	// at most 39 characters, no leading or trailing hyphen, no "@".
+	Handle = regexp.MustCompile(`^[A-Za-z0-9](?:-?[A-Za-z0-9]){0,38}$`)
 )
 
 // SourceNames lists every source a rule may read.
@@ -172,8 +175,15 @@ func Check(name string, data []byte, o Options) Result {
 			errf(fmt.Sprintf("references[%d]", i+1), "todo")
 		}
 	}
-	if todo.MatchString(r.Author) {
+	switch a := strings.TrimSpace(r.Author); {
+	case todo.MatchString(a):
 		errf("author", "todo")
+	case a == "":
+		if o.New {
+			warnf("author", "no_author")
+		}
+	case !Handle.MatchString(a):
+		errf("author", "author", a)
 	}
 	// A TODO left in a comment (the skeleton's hints) also counts.
 	if todo.Match(data) && !hasCode(res.Errors, "todo") {

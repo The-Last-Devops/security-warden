@@ -9,6 +9,23 @@ You need only the `security-warden` binary ([install](install.md)): the commands
 rules and sources built into it. These steps are the same for people and for AI agents; agents can
 also use the ready-made skill [`skills/security-warden-rule-author`](../skills/security-warden-rule-author/SKILL.md).
 
+## Not ready to write a rule?
+
+Reports help too. If a finding is wrong (a false positive, or a fix that does not work), or a check is
+missing:
+
+```sh
+security-warden feedback RULE|KEY             # a wrong finding or fix (KEY from security-warden --verbose)
+security-warden feedback --idea "check ~/.npmrc for auth tokens in plain text"
+```
+
+Each prints a GitHub "new issue" link with the form filled in, and the exact text it fills in. The home
+folder, user and host names, repositories and code paths, emails, IP addresses and anything that looks
+like a token are taken out first. Nothing is sent: you open the link (or add `--open`), read and edit
+the text, and submit it yourself. The web UI has the same as "Report a false positive" in an opened
+finding and "Suggest a new check" at the end of the list; MCP clients have `report_false_positive` and
+`suggest_rule`.
+
 ## 1. Find a gap
 
 Look through [What it checks](what-it-checks.md) or `security-warden rules`, and make sure no rule
@@ -35,8 +52,8 @@ security-warden rules new tailscale-example --source tailscale --severity medium
 ```
 
 This writes `rules/tailscale-example.yaml` with every field filled with a placeholder: `tier:
-experimental`, English and Vietnamese texts marked `TODO`, and two tests built from the source's
-fields. Options: `--platforms macos,linux` (default: where the source runs), `--dir DIR` (default
+experimental`, English and Vietnamese texts marked `TODO`, `author` (your GitHub handle, without `@`),
+and two tests built from the source's fields. Options: `--platforms macos,linux` (default: where the source runs), `--dir DIR` (default
 `rules`). It never overwrites a file, and the id must be kebab-case.
 
 ## 4. Write the rule
@@ -51,6 +68,9 @@ Follow [Writing rules](writing-rules.md):
   destructive, say when admin rights are needed. See [Fix text](writing-rules.md#fix-text).
 - `tests`: realistic samples, at least one that must report and one that must not.
 - `references`: where the risk and the fix are documented.
+- `author`: your GitHub handle, without `@`. Contributed rules show "by @handle" (linking to your
+  profile) in the terminal, the web UI and the MCP server, and you are listed in
+  [CONTRIBUTORS.md](../CONTRIBUTORS.md), generated from these fields.
 - Keep `tier: experimental`. The maintainer promotes it after review ([Tiers](writing-rules.md#tiers)).
 
 ## 5. Check it
@@ -64,9 +84,9 @@ It loads the file exactly as the scanner does and reports, with the file and the
 - **Errors** (exit 1): unknown fields, bad severity or platforms, a missing translation, CEL that does
   not compile or is not boolean, failing tests, placeholders left unfilled, fields that the source
   does not have (or with the wrong type), platforms the source does not run on, unbalanced
-  `` ` `` or `{ }`, `TODO` left in a text.
+  `` ` `` or `{ }`, `TODO` left in a text, an `author` that is not a GitHub handle.
 - **Warnings** (exit 0, or 1 with `--strict`): the fix-text safety lint (below), a Vietnamese text
-  identical to the English one, and with `--new` a tier other than `experimental`.
+  identical to the English one, and with `--new` a tier other than `experimental` or no `author`.
 
 | Lint code | Flags a command that |
 |---|---|
@@ -81,7 +101,7 @@ It loads the file exactly as the scanner does and reports, with the file and the
 
 `--json` prints the same results for scripts. Building from source is optional; if you have Docker,
 `docker compose run --rm test` runs every check CI runs, and `docker compose run --rm docs` updates
-[What it checks](what-it-checks.md) (commit it with the rule).
+[What it checks](what-it-checks.md) and [CONTRIBUTORS.md](../CONTRIBUTORS.md) (commit them with the rule).
 
 ## 6. Open a pull request
 

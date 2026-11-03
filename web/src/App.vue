@@ -13,6 +13,7 @@ import { perPlace, placeOf } from './fixgroup.js'
 import FindingRow from './components/FindingRow.vue'
 import RulesPage from './components/RulesPage.vue'
 import TierBadge from './components/TierBadge.vue'
+import FeedbackDialog from './components/FeedbackDialog.vue'
 
 // Per-viewer preferences: "auto" follows the browser / system.
 const pref = key => { try { return localStorage.getItem(key) } catch { return null } }
@@ -268,6 +269,8 @@ async function restore(keys) { try { await api.unignore(keys); say(t.value.resto
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
 const menuOpen = ref(false)
 const rulesOpen = ref(false)
+// Feedback dialog: { key } for a wrong finding, { key: '' } for a new idea.
+const feedbackAsk = ref(null)
 // Experimental checks: per viewer; the cached scan is evaluated again with them.
 const experimental = ref(experimentalOn())
 watch(experimental, v => { setExperimental(v); if (meta.value) load() })
@@ -279,7 +282,7 @@ async function toggleAuto() {
   try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
 }
 onMounted(refreshUpdate)
-function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false; rulesOpen.value = false } }
+function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false; rulesOpen.value = false; feedbackAsk.value = null } }
 onMounted(() => document.addEventListener('click', () => { watchOpen.value = false }))
 </script>
 
@@ -449,6 +452,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             </div>
             <div class="grid gap-4 p-5">
               <h2 class="text-[21px] leading-snug font-extrabold tracking-tight text-balance">{{ nextGroup.first.title.split(': ')[0] }}</h2>
+              <p v-if="nextGroup.first.author" class="-mt-3 text-[12.5px] text-muted"><a :href="`https://github.com/${nextGroup.first.author}`" target="_blank" rel="noopener noreferrer" class="hover:text-accent hover:underline">{{ t.byAuthor(nextGroup.first.author) }}</a></p>
               <p class="max-w-[75ch] text-[15px] leading-relaxed text-muted">{{ nextGroup.first.explain }}</p>
               <div v-if="nextGroup.rest.length" class="flex flex-wrap gap-1.5">
                 <span v-for="x in (nextOpen ? [nextGroup.first, ...nextGroup.rest] : [nextGroup.first, ...nextGroup.rest].slice(0, 2))" :key="x.key"
@@ -466,7 +470,8 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>
-                <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="askHide([nextGroup.first, ...nextGroup.rest])">{{ t.ignore }}…</button>
+                <button class="ml-auto rounded-lg px-2 py-2.5 text-[13px] text-muted hover:text-accent hover:underline" @click="feedbackAsk = { key: nextGroup.first.key }">{{ t.reportFp }}</button>
+                <button class="rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="askHide([nextGroup.first, ...nextGroup.rest])">{{ t.ignore }}…</button>
               </div>
             </div>
           </article>
@@ -477,7 +482,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               <span class="num text-[13px] font-bold text-muted">{{ rs.groups.length }}</span>
             </h2>
             <div class="grid gap-2 px-3 pt-2 pb-1">
-              <FindingRow v-for="(g, i) in rs.groups" :key="rs.repo + g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" />
+              <FindingRow v-for="(g, i) in rs.groups" :key="rs.repo + g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" @report="k => (feedbackAsk = { key: k })" />
             </div>
           </section>
           <section v-for="sec in (view === 'sev' ? sections : [])" :key="sec.sev">
@@ -487,7 +492,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
             </h2>
             <div class="grid gap-2 px-3 pt-2 pb-1">
-              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" />
+              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" @report="k => (feedbackAsk = { key: k })" />
             </div>
           </section>
           <section v-if="hiddenGroups.length" class="mx-3 mt-4 mb-1 rounded-2xl bg-panel2/60 px-4 py-3.5 ring-1 ring-line">
@@ -502,6 +507,10 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
               <button class="shrink-0 rounded-lg border border-line bg-panel px-2.5 py-1 text-[13px] font-semibold hover:text-accent" @click="restore(g.keys)">{{ t.restore }}</button>
             </div>
           </section>
+          <div v-if="data" class="mx-3 mt-4 mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-[13px] text-muted">
+            <span>{{ t.suggestCheckHelp }}</span>
+            <button class="font-semibold text-accent hover:underline" @click="feedbackAsk = { key: '' }">{{ t.suggestCheck }}</button>
+          </div>
           <section v-if="data && cat !== 'all' && catPassed.length" class="px-5 pt-5 pb-4">
             <h2 class="caps mb-3">{{ t.safeView }} · <span class="num">{{ catPassed.length }}</span></h2>
             <ul v-if="catPassed.length" class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -560,6 +569,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
       @close="menuOpen = false" @add-passkey="menuOpen = false; addPasskey()" @clear-passkeys="menuOpen = false; clearPasskeys()"
       @toggle-auto="toggleAuto" @undo="menuOpen = false; undo()" @logout="menuOpen = false; logout()" @rules="menuOpen = false; rulesOpen = true" />
     <RulesPage v-if="rulesOpen" :t="t" :lang="lang" @close="rulesOpen = false" />
+    <FeedbackDialog v-if="feedbackAsk" :t="t" :finding-key="feedbackAsk.key" @close="feedbackAsk = null" />
 
     <!-- hide confirmation -->
     <div v-if="hideAsk" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="hideAsk = null">

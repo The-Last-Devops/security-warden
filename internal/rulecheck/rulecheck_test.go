@@ -75,6 +75,7 @@ explain:
 fix:
   en: "Turn it off: ` + "`tailscale funnel reset`" + `."
   vi: "Tắt đi: ` + "`tailscale funnel reset`" + `."
+author: octo-cat
 tests:
   - {item: {tailnet: t, funnel: true}, expect: true}
   - {item: {tailnet: t, funnel: false}, expect: false}
@@ -88,6 +89,22 @@ func TestCheckGoodRule(t *testing.T) {
 	// MCP passes no file name.
 	if r := Check("", []byte(good), Options{}); !r.OK(true) {
 		t.Fatalf("without a file name: %+v", r)
+	}
+}
+
+func TestCheckAuthor(t *testing.T) {
+	for author, code := range map[string]string{"": "no_author", "@octocat": "author", "octo--cat": "author", "-octo": "author",
+		"octo cat": "author", strings.Repeat("a", 40): "author", "TODO: you": "todo"} {
+		y := strings.Replace(good, "author: octo-cat", "author: \""+author+"\"", 1)
+		r := Check("", []byte(y), Options{New: true})
+		if !codes(r.Errors)[code] && !codes(r.Warnings)[code] {
+			t.Errorf("author %q: want %s, got %+v %+v", author, code, r.Errors, r.Warnings)
+		}
+	}
+	for _, ok := range []string{"octocat", "Octo-Cat-2", strings.Repeat("a", 39)} {
+		if !Handle.MatchString(ok) {
+			t.Errorf("%q refused", ok)
+		}
 	}
 }
 

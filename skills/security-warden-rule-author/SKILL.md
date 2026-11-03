@@ -39,7 +39,9 @@ passing pull request that says it was written with AI.
    state, no placeholders), `explain` and `fix` in plain English and natural
    Vietnamese (not word for word). Tests: at least one realistic sample that
    must report and one that must not, each with every field the match and
-   texts use; add a `note` for edge cases.
+   texts use; add a `note` for edge cases. `author` is the user's GitHub
+   handle without `@` (ask them); the rule is credited to them as "by @handle"
+   and in `CONTRIBUTORS.md`.
 5. **Fix text safety.** Verified commands only, in `` `backticks` ``,
    multi-step as `1. … 2. …`. Never pipe a download to a shell, `rm -rf`,
    `chmod 777`, turn off a security feature, force-push or rewrite Git history
@@ -53,8 +55,8 @@ passing pull request that says it was written with AI.
    ```
 
    If Docker is available, also run `docker compose run --rm test` and
-   `docker compose run --rm docs` (it regenerates `docs/what-it-checks.md`;
-   commit that file too).
+   `docker compose run --rm docs` (it regenerates `docs/what-it-checks.md` and
+   `CONTRIBUTORS.md`; commit those files too).
 7. **Open the pull request.** Touch only the rule file (and the regenerated
    docs). Commit, push, and create the PR with the template filled in:
 

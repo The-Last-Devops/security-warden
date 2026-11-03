@@ -10,7 +10,7 @@ import { perPlace, placeOf } from '../fixgroup.js'
 // One problem (a rule, with every place it was found). Collapsed: the line
 // you scan. Open: why, how to fix, where else, and the actions.
 const props = defineProps({ group: Object, t: Object, busy: Boolean, index: Number })
-const emit = defineEmits(['fix', 'ignore'])
+const emit = defineEmits(['fix', 'ignore', 'report'])
 const open = ref(false)
 const f = computed(() => props.group.first)
 // Severity is a thin bar at the left edge; the row itself stays neutral, so
@@ -64,7 +64,7 @@ const chip = computed(() => {
     <div v-if="open" class="grid gap-4 border-t border-line px-5 pt-4 pb-5">
       <div class="flex flex-wrap items-center gap-2">
         <SevChip :sev="f.severity" :label="t.sev[f.severity]" />
-        <span class="ml-auto font-mono text-[12px] text-muted">{{ f.rule_id }}</span>
+        <span class="ml-auto font-mono text-[12px] text-muted">{{ f.rule_id }}<template v-if="f.author"> · <a :href="`https://github.com/${f.author}`" target="_blank" rel="noopener noreferrer" class="hover:text-accent hover:underline">{{ t.byAuthor(f.author) }}</a></template></span>
       </div>
       <p class="max-w-[76ch] text-[15px] leading-relaxed text-muted">{{ f.explain }}</p>
       <div class="grid gap-3 rounded-xl bg-panel2 px-4 py-3.5 ring-1 ring-line">
@@ -85,7 +85,8 @@ const chip = computed(() => {
       <div class="flex flex-wrap items-center gap-2">
         <span v-if="f.needs_root" class="text-[13px] text-muted">{{ t.needsAdmin }}</span>
         <span v-else-if="f.plan" class="text-[13px] text-muted">{{ f.undoable ? t.undoable : t.noUndo }}</span>
-        <button class="ml-auto rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="emit('ignore', all)">{{ t.ignore }}…</button>
+        <button class="ml-auto rounded-lg px-2 py-1.5 text-[12.5px] text-muted hover:text-accent hover:underline" @click="emit('report', f.key)">{{ t.reportFp }}</button>
+        <button class="rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="emit('ignore', all)">{{ t.ignore }}…</button>
       </div>
     </div>
   </div>

@@ -14,7 +14,7 @@ import (
 // the TODOs the author must fill in.
 func TestSkeletonForEverySource(t *testing.T) {
 	for _, c := range source.All() {
-		b := Skeleton("demo-"+strings.ReplaceAll(c.Name, "_", "-"), c.Name, "medium", source.Schema[c.Name].Platforms, nil)
+		b := rulecheck.Skeleton("demo-"+strings.ReplaceAll(c.Name, "_", "-"), c.Name, "medium", source.Schema[c.Name].Platforms, nil)
 		r := rulecheck.Check("", b, rulecheck.Options{New: true})
 		for _, e := range r.Errors {
 			if e.Code != "todo" {
@@ -62,6 +62,7 @@ title: {en: "Funnel is on for {tailnet}", vi: "Funnel đang bật cho {tailnet}"
 check: {en: Funnel is off, vi: Funnel đang tắt}
 explain: {en: Anyone can reach it., vi: Ai cũng vào được.}
 fix: {en: "Run ` + "`tailscale funnel reset`" + `.", vi: "Chạy ` + "`tailscale funnel reset`" + `."}
+author: octocat
 tests:
   - {item: {tailnet: t, funnel: true}, expect: true}
   - {item: {tailnet: t, funnel: false}, expect: false}

@@ -253,6 +253,10 @@ func (s *Server) handle(ctx context.Context, req request) (map[string]any, *rpcE
 		res = map[string]any{"tools": s.toolList()}
 	case "tools/call":
 		res, rerr = s.callTool(ctx, params)
+	case "prompts/list":
+		res = map[string]any{"prompts": s.promptList()}
+	case "prompts/get":
+		res, rerr = s.getPrompt(params)
 	default:
 		return nil, &rpcError{Code: codeNoMethod, Message: "method not found: " + clip(req.Method, 80)}
 	}
@@ -308,7 +312,7 @@ func (s *Server) initialize(params map[string]json.RawMessage) map[string]any {
 }
 
 func (s *Server) capabilities() map[string]any {
-	return map[string]any{"tools": map[string]any{"listChanged": false}}
+	return map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}}
 }
 
 func (s *Server) serverInfo() map[string]any {
@@ -319,7 +323,8 @@ func instructions(changes bool) string {
 	s := "Security Warden checks this machine and the code folders for security problems. " +
 		"Scanning is safe: it only reads, needs no admin rights and sends nothing off the machine; run scan first, then get_fix for the problems to explain. " +
 		"Never change anything without the user's explicit approval. " +
-		"For leaked keys and tokens, tell the user to revoke or rotate the credential first: cleaning up files or Git history alone does not make a leaked secret safe."
+		"For leaked keys and tokens, tell the user to revoke or rotate the credential first: cleaning up files or Git history alone does not make a leaked secret safe. " +
+		"When a finding looks wrong or a check is missing, you may offer report_false_positive or suggest_rule: they only draft a GitHub link; show the user the preview and let them open and submit it themselves."
 	if changes {
 		s += " Changing tools (apply_fix, undo_fix, hide, restore) are enabled: describe exactly what will change and wait for the user's yes before calling them."
 	} else {

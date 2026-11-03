@@ -12,7 +12,8 @@ The app starts the command itself and talks to it over stdin/stdout (JSON-RPC
 
 - **Read-only by default.** Without flags the server offers only tools that
   read: `scan`, `list_problems`, `get_fix`, `explain_rule`, `list_safe`,
-  `status`, `list_sources`, `check_rule`. They are marked `readOnlyHint: true`. A scan needs no admin rights,
+  `status`, `list_sources`, `check_rule`, `draft_rule`, `report_false_positive`, `suggest_rule`.
+  They are marked `readOnlyHint: true`. A scan needs no admin rights,
   opens no permission prompt and sends nothing off the machine (3–6 seconds).
 - **Changes are opt-in.** `apply_fix`, `undo_fix`, `hide` and `restore` exist
   only when the server is started with `--allow-changes`; otherwise they are not
@@ -31,6 +32,12 @@ The app starts the command itself and talks to it over stdin/stdout (JSON-RPC
 - **Leaked secrets: rotate first.** The server instructions and `get_fix` remind
   the model that revoking or rotating a leaked key is the real fix; deleting a
   file or cleaning Git history alone does not make it safe again.
+- **Feedback is a link, never a request.** `report_false_positive` and `suggest_rule` only build a
+  GitHub new-issue link plus a preview of exactly what it fills in, with the home folder, user and host
+  names, repositories and code paths, emails, IP addresses and token-shaped strings taken out. The
+  server makes no network call; the tool result tells the model to show the preview and let the user
+  open and submit the link. The first `scan` or `get_fix` with findings in a session ends with one line
+  saying this is possible; later calls do not repeat it.
 - **stdout carries only protocol messages.** Logs go to stderr.
 
 ## Tools
@@ -55,6 +62,9 @@ default and never counted in the score ([tiers](writing-rules.md#tiers)).
 | `list_sources` | `name?`, `lang?` | Every source a rule can read (or one): category, platforms, fields with type, description and an example value. Same as `security-warden rules sources`. |
 | `check_rule` | `yaml` (the rule file's content), `lang?` | Checks a rule without writing it anywhere, like `security-warden rules check`: `ok`, `rule_id`, `tier`, `tests` (`passed`, `total`), `errors` and `warnings` (each `field`, `code`, `message`; `lint.*` codes flag unsafe fix commands). See [Contributing a rule](contributing-rules.md). |
 | `status` | none | Version, background service running, vulnerability data age per ecosystem, whether changes are allowed, age of the cached scan. |
+| `draft_rule` | `id`, `source`, `severity?`, `idea?` | The skeleton of a new rule (`yaml`, the same as `security-warden rules new`, with the idea as a comment), the `path` it belongs at and `next_steps` (fill in the TODOs, `check_rule` with `new: true`, a pull request the maintainers merge by hand). Writes nothing. |
+| `report_false_positive` | `key` or `rule_id`, `experimental?` | A GitHub issue draft for a wrong finding or fix: `preview` (the exact, scrubbed text), `url` (a new-issue link with the form filled in), `instructions`. For a rule that does not fail here, the draft is about the rule itself. Sends nothing. |
+| `suggest_rule` | `idea` | The same for a new check: a rule request from the idea, scrubbed, marked as drafted by an AI agent. Sends nothing. |
 
 ### Changing (only with `--allow-changes`)
 
@@ -66,6 +76,18 @@ default and never counted in the score ([tiers](writing-rules.md#tiers)).
 | `restore` | `rule_id`, `key` or `all: true` | Shows hidden problems again. |
 
 Keys come from `list_problems` (any unique prefix of 6+ characters works).
+
+`explain_rule` and `get_fix` name the author of a contributed rule (`author`, and "Contributed by
+@handle" in the text); rules by the maintainers carry no credit line.
+
+## Prompts
+
+Ready-made instructions the client can offer its user (`prompts/list`, `prompts/get`):
+
+| Prompt | Arguments | What it asks the agent to do |
+|---|---|---|
+| `security-checkup` | `scope?` (`machine` or `code`) | Scan, summarize by severity, explain the worst problems with `get_fix`, propose fixes and change nothing without a yes; offer to report a wrong finding or a missing check. |
+| `contribute-rule` | `idea?` | Write a rule with the user: check no rule covers it, find the facts (`list_sources`), start with `draft_rule`, fill in every TODO (author = their GitHub handle), pass `check_rule` with `new: true`, ask before writing files, open a pull request that discloses AI authorship. Merging is always manual. |
 
 ## Set it up
 
@@ -163,9 +185,10 @@ claude mcp add --transport stdio --scope user security-warden -- security-warden
   the `initialize` handshake of `2025-11-25`, `2025-06-18`, `2025-03-26` and
   `2024-11-05`.
 - Methods: `initialize`, `notifications/initialized`, `server/discover`,
-  `ping`, `tools/list`, `tools/call`, `notifications/cancelled`.
+  `ping`, `tools/list`, `tools/call`, `prompts/list`, `prompts/get`, `notifications/cancelled`.
+  Capabilities: `tools` and `prompts` (both `listChanged: false`).
 - Errors: unknown method `-32601`; unparsable JSON `-32700`; invalid request
   (wrong `jsonrpc`, bad `id`, batches) `-32600`; unknown or disabled tool, bad
-  params `-32602`; unsupported protocol version `-32022`. Problems the model can
+  params, unknown prompt `-32602`; unsupported protocol version `-32022`. Problems the model can
   correct (bad argument values, a rule that is not failing) come back as a tool
   result with `isError: true`.

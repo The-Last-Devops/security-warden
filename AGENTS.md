@@ -23,6 +23,7 @@ or in a small web UI (Vue) served on `127.0.0.1:7348`.
 | `internal/web/` | HTTP server, auth (passkeys, one-time tickets, sessions, CSRF), JSON API for the UI |
 | `internal/i18n/catalog.go` | Every user-facing string of the Go side, in `en` and `vi` |
 | `internal/vulndb/` | Offline OSV vulnerability index for project dependencies |
+| `internal/feedback/` | GitHub issue links for wrong findings and new-check ideas, with identifying details scrubbed out (never sent by Security Warden) |
 | `web/src/` | Vue 3 + Tailwind UI (`App.vue`, `components/`, `i18n.js`) |
 | `tools/` | Generators for embedded data (gitleaks patterns, removed VS Code extensions) |
 | `packaging/`, `scripts/`, `Formula/` | .deb/.rpm, .dmg, Homebrew formula (updated by the release workflow) |

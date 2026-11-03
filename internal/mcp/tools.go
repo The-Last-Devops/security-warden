@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
@@ -52,6 +53,8 @@ type Server struct {
 	scanned time.Time
 
 	changeMu sync.Mutex // changing tools run one at a time
+
+	hinted atomic.Bool // the "report it" hint was given this session
 }
 
 // New returns a server for cfg.
@@ -195,6 +198,35 @@ var tools = []tool{
 		InputSchema: obj(map[string]any{"yaml": str("The rule file content (YAML)."), "new": map[string]any{"type": "boolean", "description": "The rule is new: it must start as experimental."}, "lang": langProp}, "yaml"),
 		Annotations: readOnly("Check a rule file"),
 		run:         (*Server).toolCheckRule,
+	},
+	{
+		Name:  "report_false_positive",
+		Title: "Draft a report about a wrong finding",
+		Description: "When a finding looks wrong (a false positive, or a fix that does not work), draft a GitHub issue for it: returns preview (exactly the text the link fills in, with the home folder, user and host names, repositories, emails, addresses and tokens taken out) and url (a GitHub new-issue link). " +
+			"Nothing is sent: show the preview to the user and let them open the link and submit it themselves. Do not open or submit the link yourself. Give key (one place, from list_problems) or rule_id. Read-only.",
+		InputSchema: obj(map[string]any{"key": str("A finding key (or a unique prefix of 6+ characters) from list_problems."),
+			"rule_id": str("A rule id; its first place is used, or the rule itself when it does not fail here."), "experimental": expProp}),
+		Annotations: readOnly("Draft a report about a wrong finding"),
+		run:         (*Server).toolReportFalsePositive,
+	},
+	{
+		Name:  "suggest_rule",
+		Title: "Draft a request for a new check",
+		Description: "When the user (or you, with their agreement) thinks Security Warden misses a risk, draft a GitHub rule request from a short description: returns preview (scrubbed of identifying details) and url. " +
+			"Nothing is sent: show the preview to the user and let them open the link and submit it themselves. Do not open or submit it yourself. To write the rule instead, use draft_rule. Read-only.",
+		InputSchema: obj(map[string]any{"idea": str("What should be checked and why, in a few sentences. No secret values, paths or names from the machine.")}, "idea"),
+		Annotations: readOnly("Draft a request for a new check"),
+		run:         (*Server).toolSuggestRule,
+	},
+	{
+		Name:  "draft_rule",
+		Title: "Start a new rule file",
+		Description: "Return the skeleton of a new rule (the same YAML as `security-warden rules new`): every field, TODO texts in en and vi, two tests from the source's fields, tier experimental. Writes nothing. " +
+			"Next: fill in every TODO (author is the user's GitHub handle), check it with check_rule (new=true) until it passes, then the user opens a pull request (see the contribute-rule prompt). Read-only.",
+		InputSchema: obj(map[string]any{"id": str("The new rule id, kebab-case, e.g. npmrc-token-plaintext."), "source": str("The source the rule reads (list_sources)."),
+			"severity": str("Default medium.", "critical", "high", "medium", "low"), "idea": str("What the rule should catch; written as a comment at the top.")}, "id", "source"),
+		Annotations: readOnly("Start a new rule file"),
+		run:         (*Server).toolDraftRule,
 	},
 	{
 		Name:  "apply_fix",
@@ -511,6 +543,7 @@ func (s *Server) toolScan(ctx context.Context, a args) (any, string, error) {
 	}
 	if len(problems) > 0 {
 		b.WriteString("\nNext: get_fix {rule_id} for the steps.")
+		b.WriteString(s.hintOnce())
 	}
 	return out, b.String(), nil
 }
@@ -695,6 +728,11 @@ func (s *Server) toolGetFix(ctx context.Context, a args) (any, string, error) {
 	if f.Remedy != nil {
 		fmt.Fprintf(&b, "\nBuilt-in fix: %v", remedy["how"])
 	}
+	if r := s.rule(id); r != nil && r.Credit() != "" {
+		out["author"] = r.Credit()
+		fmt.Fprintf(&b, "\nRule contributed by @%s (https://github.com/%s).", r.Credit(), r.Credit())
+	}
+	b.WriteString(s.hintOnce())
 	return out, b.String(), nil
 }
 
@@ -715,7 +753,7 @@ func (s *Server) toolExplainRule(_ context.Context, a args) (any, string, error)
 		"rule_id": r.ID, "severity": r.Severity, "tier": r.Tier, "platforms": r.Platforms,
 		"source": r.Source, "category": report.Category(r.Source), "scope": report.Scope(r.Source),
 		"title": r.Title.Get(l), "check": r.Check.Get(l), "explain": r.Explain.Get(l), "fix": r.Fix.Get(l),
-		"references": r.References,
+		"references": r.References, "author": r.Author,
 	}
 	if r.Remedy != nil {
 		rem := map[string]any{"action": r.Remedy.Action}
@@ -753,6 +791,9 @@ func (s *Server) toolExplainRule(_ context.Context, a args) (any, string, error)
 	out["last_scan"] = state
 	text := fmt.Sprintf("%s [%s] %s\nChecks: %s\nWhy: %s\nFix: %s\nPlatforms: %s · last scan: %s",
 		r.ID, r.Severity, r.Title.Get(l), r.Check.Get(l), r.Explain.Get(l), r.Fix.Get(l), strings.Join(r.Platforms, ", "), state)
+	if a := r.Credit(); a != "" {
+		text += fmt.Sprintf("\nContributed by @%s (https://github.com/%s).", a, a)
+	}
 	return out, text, nil
 }
 
