@@ -96,7 +96,9 @@ func Install(lang string) (string, error) {
 		return "", err
 	}
 	// The agent runs this file at every login; refuse one others can replace.
-	if fi, err := os.Stat(bin); err == nil && fi.Mode().Perm()&0o022 != 0 {
+	// Windows has no Unix permission bits (Go reports 0666 for any writable
+	// file), so the check only means something elsewhere.
+	if fi, err := os.Stat(bin); err == nil && runtime.GOOS != "windows" && fi.Mode().Perm()&0o022 != 0 {
 		return "", fmt.Errorf("%s is writable by other users; install security-warden somewhere only you or root can write", bin)
 	}
 	unit, logPath := Paths()
