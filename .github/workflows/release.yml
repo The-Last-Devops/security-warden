@@ -27,7 +27,7 @@ jobs:
             --cache-to type=gha,scope=release-mac,mode=max .
           rm dist/SHA256SUMS
           ls -l dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-mac
           path: dist/
@@ -50,7 +50,7 @@ jobs:
         run: |
           scripts/make-packages.sh "$GITHUB_REF_NAME"
           ls -l dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-rest
           path: dist/
@@ -76,7 +76,7 @@ jobs:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: scripts/make-dmg.sh "$GITHUB_REF_NAME" dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dmg
           path: dist/*.dmg

@@ -21,7 +21,7 @@ jobs:
           docker buildx build --target export --output dist \
             --build-arg VERSION=ci-${GITHUB_SHA::7} \
             --cache-from type=gha --cache-to type=gha,mode=max .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -44,7 +44,7 @@ jobs:
           ./security-warden-darwin-arm64 --lang vi || [ $? -eq 1 ]
           ./security-warden-darwin-arm64 --json > report.json || [ $? -eq 1 ]
           python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: smoke-report-macos
           path: report.json
@@ -62,7 +62,7 @@ jobs:
           ./security-warden-linux-amd64 --lang vi || [ $? -eq 1 ]
           ./security-warden-linux-amd64 --json > report.json || [ $? -eq 1 ]
           python3 -c "import json; r=json.load(open('report.json')); print(r['score'], len(r['findings']))"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: smoke-report-linux
           path: report.json
@@ -102,7 +102,7 @@ jobs:
           $r = Invoke-WebRequest -UseBasicParsing -Headers @{ Host = "localhost:7348" } http://127.0.0.1:7348/api/passkey
           if ($r.StatusCode -ne 200) { throw "service did not answer" }
           .\security-warden-windows-amd64.exe stop
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: smoke-report-windows
           path: report.json

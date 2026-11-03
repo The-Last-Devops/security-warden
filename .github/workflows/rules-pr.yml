@@ -77,7 +77,7 @@ jobs:
             "$PR_NUMBER" "$HEAD_SHA" "$(printf '%s' "$PR_AUTHOR" | tr -cd 'A-Za-z0-9[]_-')" \
             "$(printf '%s' "$PR_AUTHOR_TYPE" | tr -cd 'A-Za-z')" "$ai" > out/meta.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: rules-check
