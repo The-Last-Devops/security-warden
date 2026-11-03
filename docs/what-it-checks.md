@@ -2,7 +2,7 @@
 
 # What it checks
 
-158 rules over 36 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+168 rules over 36 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
@@ -56,12 +56,12 @@ is doing.
 Grouped as in the report and the web UI. `{field}` is filled in from the place that was found.
 Severity: critical, high, medium, low. Platforms: macOS, Linux, Windows.
 
-- [Passwords & keys](#secrets) (18)
-- [Open doors](#exposure) (21)
+- [Passwords & keys](#secrets) (20)
+- [Open doors](#exposure) (24)
 - [System settings](#settings) (47)
-- [Programs that start by themselves](#persistence) (13)
+- [Programs that start by themselves](#persistence) (14)
 - [AI agents & MCP](#ai) (4)
-- [Developer tools](#devtools) (41)
+- [Developer tools](#devtools) (45)
 - [Out-of-date software](#software) (6)
 - [Keys & secrets in Git](#code_secrets) (5)
 - [Vulnerable libraries](#code_deps) (3)
@@ -70,11 +70,12 @@ Severity: critical, high, medium, low. Platforms: macOS, Linux, Windows.
 
 ### Passwords & keys
 
-Category `secrets`, 18 rules. Sources: `cloud_config`, `credential_files`, `shell_history`, `shell_rc`, `ssh_keys`.
+Category `secrets`, 20 rules. Sources: `cloud_config`, `credential_files`, `shell_history`, `shell_rc`, `ssh_keys`.
 
 | Rule | Severity | Platforms | Problem | Passes when |
 |---|---|---|---|---|
 | `cloud-service-account-key` | high | macOS, Linux, Windows | Long-lived cloud service account key on disk: {file} | No cloud service account keys on disk |
+| `cloud-static-token` (experimental) | high | macOS, Linux, Windows | kubectl logs in with a fixed token stored in {file} | kubectl does not use fixed tokens |
 | `credential-file-readable-by-others` | high | macOS, Linux | Credential file readable by other users: {path} | Credential files are private |
 | `history-has-secrets` | high | macOS, Linux | {count} secrets ({kind}) in {file} | No tokens or keys in shell history |
 | `kube-skip-tls` | high | macOS, Linux, Windows | kubectl skips TLS checks for a cluster | kubectl verifies cluster certificates |
@@ -92,12 +93,13 @@ Category `secrets`, 18 rules. Sources: `cloud_config`, `credential_files`, `shel
 | `ssh-key-no-passphrase` | medium | macOS, Linux, Windows | SSH key {name} has no passphrase | SSH keys have passphrases |
 | `ssh-key-rsa-short` | medium | macOS, Linux, Windows | SSH key {name} is a {bits}-bit RSA key | RSA SSH keys are at least 3072 bits |
 | `credential-plaintext` | low | macOS, Linux, Windows | Secret stored in plain text: {path} | No plain-text tokens in tool configs |
+| `ssh-key-old-format` (experimental) | low | macOS, Linux, Windows | SSH key {name} is saved in the old PEM format | Encrypted SSH keys use the OpenSSH format |
 
 <a id="exposure"></a>
 
 ### Open doors
 
-Category `exposure`, 21 rules. Sources: `authorized_keys`, `listening_ports`, `network_config`, `remote_services`, `remote_tools`, `services`, `sharing`, `tailscale`.
+Category `exposure`, 24 rules. Sources: `authorized_keys`, `listening_ports`, `network_config`, `remote_services`, `remote_tools`, `services`, `sharing`, `tailscale`.
 
 | Rule | Severity | Platforms | Problem | Passes when |
 |---|---|---|---|---|
@@ -110,6 +112,7 @@ Category `exposure`, 21 rules. Sources: `authorized_keys`, `listening_ports`, `n
 | `tailscale-funnel` | high | macOS, Linux, Windows | Tailscale Funnel publishes this machine to the internet | Tailscale Funnel is off |
 | `tunnel-running` | high | macOS, Linux, Windows | Tunnel is running: {tool} | No tunnels to the internet running |
 | `authorized-keys-active` | medium | macOS, Linux, Windows | {count} keys can log in to this account over SSH | No keys can log in over SSH |
+| `authorized-keys-weak` (experimental) | medium | macOS, Linux, Windows | {weak} DSA keys can log in to this account over SSH | No DSA keys can log in over SSH |
 | `file-sharing-on` | medium | macOS | File Sharing shares {name} | File Sharing is off |
 | `hosts-blocks-security-updates` | medium | macOS | /etc/hosts blocks {name} | /etc/hosts does not block Apple updates |
 | `internet-sharing-on` | medium | macOS | Internet Sharing is on | Internet Sharing is off |
@@ -119,7 +122,9 @@ Category `exposure`, 21 rules. Sources: `authorized_keys`, `listening_ports`, `n
 | `tailscale-exit-node` | medium | macOS, Linux, Windows | This machine routes traffic for the tailnet | This machine does not route tailnet traffic |
 | `tailscale-shields-down` | medium | macOS, Linux, Windows | Tailscale accepts incoming connections | Tailscale blocks incoming connections |
 | `tailscale-ssh-on` | medium | macOS, Linux, Windows | Tailscale SSH is on | Tailscale SSH is off |
+| `tailscale-web-client-on` (experimental) | medium | macOS, Linux, Windows | The Tailscale web client is open to your tailnet | The Tailscale web client is off |
 | `printer-sharing-on` | low | macOS | Printer sharing is on | Printer sharing is off |
+| `tailscale-serve-on` (experimental) | low | macOS, Linux, Windows | Tailscale Serve shares a service from this machine with your tailnet | Tailscale Serve shares nothing |
 | `authorized-keys-dormant` | info | macOS, Linux, Windows | {count} SSH keys are allowed to log in if Remote Login is turned on | No dormant SSH login keys |
 | `service-run-in-docker` | info | macOS, Windows | {product} runs directly on this machine | Databases run in containers |
 
@@ -183,7 +188,7 @@ Category `settings`, 47 rules. Sources: `backup`, `defender`, `posture`, `privil
 
 ### Programs that start by themselves
 
-Category `persistence`, 13 rules. Sources: `apps`, `persistence`, `processes`.
+Category `persistence`, 14 rules. Sources: `apps`, `persistence`, `processes`.
 
 | Rule | Severity | Platforms | Problem | Passes when |
 |---|---|---|---|---|
@@ -200,6 +205,7 @@ Category `persistence`, 13 rules. Sources: `apps`, `persistence`, `processes`.
 | `process-from-downloads` | medium | macOS, Linux, Windows | A program is running from Downloads: {name} | No programs run straight from Downloads |
 | `windows-autostart-appdata-root` | medium | Windows | A startup item runs a loose file in AppData or ProgramData: {name} | No startup items run loose files from AppData or ProgramData |
 | `launchd-missing-program` | low | macOS | Login item points to a missing program: {label} | No login items point to missing programs |
+| `persistence-every-minute` (experimental) | low | macOS, Linux | A cron job runs {command} every minute | No cron jobs run every minute |
 
 <a id="ai"></a>
 
@@ -218,7 +224,7 @@ Category `ai`, 4 rules. Sources: `ai_agents`.
 
 ### Developer tools
 
-Category `devtools`, 41 rules. Sources: `browser_extensions`, `browser_settings`, `docker_config`, `docker_containers`, `docker_ports`, `editor_extensions`, `editor_settings`, `git_config`, `pkg_config`, `ssh_config`.
+Category `devtools`, 45 rules. Sources: `browser_extensions`, `browser_settings`, `docker_config`, `docker_containers`, `docker_ports`, `editor_extensions`, `editor_settings`, `git_config`, `pkg_config`, `ssh_config`.
 
 | Rule | Severity | Platforms | Problem | Passes when |
 |---|---|---|---|---|
@@ -241,7 +247,9 @@ Category `devtools`, 41 rules. Sources: `browser_extensions`, `browser_settings`
 | `pkg-tls-off` | high | macOS, Linux, Windows | {tool} installs packages without verifying the server | Package managers verify their servers |
 | `ssh-forward-agent-everywhere` | high | macOS, Linux, Windows | SSH agent is forwarded to every server | SSH agent is not forwarded everywhere |
 | `browser-extension-external` | medium | macOS, Linux, Windows | {browser} extension added by another program: {name} | No browser extension was slipped in by another program |
+| `browser-extension-native-messaging` (experimental) | medium | macOS, Linux, Windows | {browser} extension {name} can talk to a program on your computer | No extension talks to programs outside the browser |
 | `browser-extension-unpacked` | medium | macOS, Linux, Windows | {browser} runs an unpacked extension: {name} | No unpacked browser extensions |
+| `docker-device-mapped` (experimental) | medium | macOS, Linux, Windows | Container {container} has {devices} host devices passed in | No containers have host devices passed in |
 | `docker-host-uts-userns` | medium | macOS, Linux, Windows | Container {container} shares the host's hostname or user namespace | No container shares the host's hostname or user namespace |
 | `docker-image-old` | medium | macOS, Linux, Windows | Container {container} runs an image built {image_age_days} days ago | Running containers use images built in the last 6 months |
 | `docker-insecure-registries` | medium | macOS, Linux, Windows | Docker pulls images from {insecure_registries} insecure registries | Docker pulls only over TLS |
@@ -251,6 +259,7 @@ Category `devtools`, 41 rules. Sources: `browser_extensions`, `browser_settings`
 | `editor-extension-from-file` | medium | macOS, Linux, Windows | {editor} extension installed from a file: {extension} | Every VS Code and Cursor extension comes from the marketplace |
 | `editor-proxy-tls-off` | medium | macOS, Linux, Windows | {editor} does not check proxy certificates | VS Code and Cursor check certificates through proxies |
 | `git-credential-store` | medium | macOS, Linux, Windows | Git saves passwords in plain text | Git does not store passwords in plain text |
+| `git-hooks-path-global` (experimental) | medium | macOS, Linux, Windows | Git runs hooks from one folder for every repository | Global Git config does not set core.hooksPath |
 | `git-insecure-url-rewrite` | medium | macOS, Linux, Windows | Git rewrites URLs to an unencrypted protocol | Git never downgrades to unencrypted URLs |
 | `git-safe-directory-all` | medium | macOS, Linux, Windows | Git trusts every repository owner (safe.directory *) | Git does not trust every repository |
 | `pip-extra-index-url` | medium | macOS, Linux, Windows | pip mixes a private and a public index | pip uses a single package index |
@@ -259,6 +268,7 @@ Category `devtools`, 41 rules. Sources: `browser_extensions`, `browser_settings`
 | `docker-image-latest` | low | macOS, Linux, Windows | Container {container} uses an unpinned image: {image} | Containers use pinned image versions |
 | `docker-no-new-privileges` | low | macOS, Linux, Windows | Container {container} can still gain privileges | Containers that run as a normal user cannot gain privileges |
 | `docker-no-resource-limits` | low | macOS, Linux, Windows | Container {container} is open to the network with no memory or process limit | Containers open to the network have memory and process limits |
+| `docker-rootfs-writable` (experimental) | low | macOS, Linux, Windows | Container {container} runs as root with a writable file system | Containers that run as root have a read-only file system |
 | `docker-runs-as-root` | low | macOS, Linux, Windows | Container {container} runs as root | Containers run as normal users |
 | `editor-extension-updates-off` | low | macOS, Linux, Windows | {editor} does not update extensions | Extensions update themselves |
 | `editor-untrusted-files-open` | low | macOS, Linux, Windows | {editor} opens loose files as trusted without asking | VS Code and Cursor ask before trusting a loose file |

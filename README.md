@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/The-Last-Devops/security-warden)](https://github.com/The-Last-Devops/security-warden/releases/latest)
 ![Platforms](https://img.shields.io/badge/macOS%20·%20Linux%20·%20Windows-555)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-![Rules](https://img.shields.io/badge/rules-158-0b6e52)
+![Rules](https://img.shields.io/badge/rules-168-0b6e52)
 
 </div>
 
@@ -109,7 +109,7 @@ the user's yes.
 
 ## What it checks
 
-158 rules over 36 sources: leaked secrets and keys, open ports and tunnels, Docker, system settings, login
+168 rules over 36 sources: leaked secrets and keys, open ports and tunnels, Docker, system settings, login
 items, AI agent configs, developer tools, out-of-date software and vulnerable dependencies, on macOS,
 Linux and Windows. Nothing needs root or opens a permission prompt, and secret values are never shown,
 stored or sent. Full list: [docs/what-it-checks.md](docs/what-it-checks.md). How the web UI is protected
