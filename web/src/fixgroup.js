@@ -3,7 +3,7 @@
 // one entry per place (and a Copy all).
 
 // Commands (with a space, or long) get their own line; short names stay inline.
-export const isBlock = code => code.includes(' ') || code.length > 32
+export const isBlock = code => code.includes(' ')
 
 export const codesOf = f => [...(f.fix || '').matchAll(/`([^`]+)`/g)].map(m => m[1]).filter(isBlock)
 

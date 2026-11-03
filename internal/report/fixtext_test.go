@@ -11,8 +11,8 @@ import (
 func TestIsBlock(t *testing.T) {
 	for code, want := range map[string]bool{
 		".gitignore": false, "git rm --cached x": true,
-		"~/Library/Application Support/x":         true,
-		"averyveryverylongnamewithoutspacesatall": true,
+		"~/Library/Application Support/x":                 true,
+		"/Users/someone/Code/a-very-long/path/to/project": false,
 	} {
 		if IsBlock(code) != want {
 			t.Errorf("IsBlock(%q) = %v", code, !want)

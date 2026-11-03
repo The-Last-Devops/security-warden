@@ -4,8 +4,8 @@ platforms: [macos, windows, linux]
 source: project_deps
 match: "item.severe && item.fixed != \"\""
 title:
-  en: "{repo_name}: {package} {version} has a serious known vulnerability, fixed in {fixed}"
-  vi: "{repo_name}: {package} {version} có lỗ hổng nghiêm trọng đã biết, bản {fixed} đã vá"
+  en: "Library with a serious known vulnerability: {repo_name} · {package} {version} → {fixed}"
+  vi: "Thư viện có lỗ hổng nghiêm trọng: {repo_name} · {package} {version} → {fixed}"
 check:
   en: "No project dependency with a high or critical known vulnerability"
   vi: "Không thư viện nào trong dự án có lỗ hổng mức cao hay nghiêm trọng đã biết"
@@ -13,8 +13,8 @@ explain:
   en: "{lockfile} in {repo} pins {package} {version} ({ecosystem}), which has a published vulnerability rated high or critical: {ids}. Vulnerable packages in this repo: {packages}. Matched offline against the OSV database (osv.dev); nothing about your projects was sent."
   vi: "{lockfile} trong {repo} đang dùng {package} {version} ({ecosystem}), bản này có lỗ hổng mức cao hoặc nghiêm trọng đã công bố: {ids}. Số thư viện có lỗ hổng trong repo này: {packages}. Đối chiếu ngay trên máy với dữ liệu OSV (osv.dev); không gửi gì về dự án của bạn ra ngoài."
 fix:
-  en: "1. In `{project}`: `{upgrade_cmd}`. If it stays below {fixed}, another package pulls it in (`{why}` shows which): upgrade that one. 2. Run the tests and commit the lock file. Looking up an id on osv.dev tells you whether your code is really exposed."
-  vi: "1. Trong `{project}`: `{upgrade_cmd}`. Nếu vẫn chưa lên {fixed} thì nó đi kèm một thư viện khác (`{why}` cho biết thư viện nào): nâng thư viện đó. 2. Chạy test và commit file lock. Tra mã lỗ hổng trên osv.dev để biết code của bạn có thật sự bị ảnh hưởng không."
+  en: "1. `cd {project} && {upgrade_cmd}` 2. If it stays below {fixed}, another package pulls it in. To see which: `cd {project} && {why}`, then upgrade that one. 3. Run the tests and commit the lock file. Looking up an id on osv.dev tells you whether your code is really exposed."
+  vi: "1. `cd {project} && {upgrade_cmd}` 2. Nếu vẫn chưa lên {fixed} thì nó đi kèm một thư viện khác. Xem là thư viện nào: `cd {project} && {why}`, rồi nâng thư viện đó. 3. Chạy test và commit file lock. Tra mã lỗ hổng trên osv.dev để biết code của bạn có thật sự bị ảnh hưởng không."
 author: the-last-devops
 tests:
   - {"item": {"repo": "/h/Code/app", "repo_name": "app", "project": "/h/Code/app", "lockfile": "package-lock.json", "ecosystem": "npm", "package": "lodash", "version": "4.17.20", "fixed": "4.17.21", "ids": "CVE-2021-23337", "more_ids": 0, "severity": "high", "severe": true, "packages": 1, "others": 0, "upgrade_cmd": "npm install lodash@4.17.21", "why": "npm explain lodash"}, "expect": true}

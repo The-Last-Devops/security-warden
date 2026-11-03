@@ -17,9 +17,9 @@ import (
 //   - a text that starts with "1. " is a list of numbered steps.
 
 // IsBlock reports whether code is a command (its own line) rather than a
-// short name kept inline.
+// name or path kept inline: commands have a space, paths and names do not.
 func IsBlock(code string) bool {
-	return strings.Contains(code, " ") || len([]rune(code)) > 32
+	return strings.Contains(code, " ")
 }
 
 // Part is a piece of one step: plain text, or code.
