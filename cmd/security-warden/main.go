@@ -56,6 +56,10 @@ func run(args []string) int {
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
 	}
+	if cmd == "mcp" && wantsHelp(args) {
+		fmt.Println(i18n.T(i18n.Detect(langFlag(args)), "mcp.usage"))
+		return 0
+	}
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	lang := fs.String("lang", "", "language: "+fmt.Sprint(i18n.Supported))
 	asJSON := fs.Bool("json", false, "print JSON")
@@ -76,6 +80,7 @@ func run(args []string) int {
 	category := fs.String("category", "", "scan: only one category")
 	byRepo := fs.Bool("by-repo", false, "scan: group code findings per repository")
 	safe := fs.Bool("safe", false, "scan: list what already passes")
+	allowChanges := fs.Bool("allow-changes", false, "mcp: also offer the tools that change things (apply_fix, undo_fix, hide, restore)")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -156,6 +161,8 @@ func run(args []string) int {
 		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab, *background, *popup)
 	case "open":
 		return runOpen(l, rs)
+	case "mcp":
+		return runMCP(l, rs, *allowChanges)
 	case "help":
 		fs.Usage()
 		return 0
@@ -192,6 +199,21 @@ func run(args []string) int {
 		}
 	}
 	return 0
+}
+
+// langFlag finds --lang in args before they are parsed.
+func langFlag(args []string) string {
+	for i, a := range args {
+		for _, p := range []string{"--lang=", "-lang="} {
+			if strings.HasPrefix(a, p) {
+				return strings.TrimPrefix(a, p)
+			}
+		}
+		if (a == "--lang" || a == "-lang") && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
 }
 
 // scanNow runs every collector (with a progress line on stderr when

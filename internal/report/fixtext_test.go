@@ -152,3 +152,20 @@ func TestTextVerboseKeys(t *testing.T) {
 		t.Errorf("verbose report lacks key %s", k)
 	}
 }
+
+func TestSteps(t *testing.T) {
+	got := Steps("1. Open `~/.ssh/config` and remove the line. 2. Run `chmod 600 ~/.ssh/id_rsa`. Then check (`ls -l ~/.ssh`).", nil, "")
+	if len(got) != 2 {
+		t.Fatalf("steps = %+v", got)
+	}
+	if got[0].Text != "Open `~/.ssh/config` and remove the line." || len(got[0].Commands) != 0 {
+		t.Errorf("step 1 = %+v", got[0])
+	}
+	if got[1].Text != "Run Then check" || len(got[1].Commands) != 2 || got[1].Commands[0] != "chmod 600 ~/.ssh/id_rsa" {
+		t.Errorf("step 2 = %+v", got[1])
+	}
+	hid := Steps("Run `git rm --cached a b`.", map[string]bool{"git rm --cached a b": true}, "(per place)")
+	if len(hid) != 1 || hid[0].Text != "Run (per place)." || len(hid[0].Commands) != 0 {
+		t.Errorf("hidden = %+v", hid)
+	}
+}

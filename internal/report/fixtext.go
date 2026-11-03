@@ -300,3 +300,46 @@ func sevRank() map[string]int {
 	}
 	return r
 }
+
+// Step is one fix step for tools: the text with short code inline (in
+// `backticks`) and its commands, each to run on its own line.
+type Step struct {
+	Text     string   `json:"text"`
+	Commands []string `json:"commands,omitempty"`
+}
+
+// Steps parses a fix text the way the terminal report prints it. Commands
+// in hide (listed per place) are replaced in the text by seeBelow.
+func Steps(fix string, hide map[string]bool, seeBelow string) []Step {
+	var out []Step
+	for _, parts := range ParseSteps(Tilde(engine.Clean(fix))) {
+		var st Step
+		var b strings.Builder
+		for j := 0; j < len(parts); j++ {
+			p := parts[j]
+			switch {
+			case !p.IsCode:
+				b.WriteString(p.Text)
+			case !IsBlock(p.Code):
+				b.WriteString("`" + p.Code + "`")
+			case hide[p.Code]:
+				b.WriteString(seeBelow)
+			default:
+				if j+1 < len(parts) && !parts[j+1].IsCode {
+					next := parts[j+1].Text
+					if t := strings.TrimRight(b.String(), " "); strings.HasSuffix(t, "(") && strings.HasPrefix(next, ")") {
+						b.Reset()
+						b.WriteString(strings.TrimSuffix(t, "("))
+						next = next[1:]
+					}
+					parts[j+1].Text = leadPunct.ReplaceAllString(next, " ")
+				}
+				st.Commands = append(st.Commands, p.Code)
+			}
+		}
+		st.Text = strings.Join(strings.Fields(b.String()), " ")
+		st.Text = strings.TrimRight(st.Text, " :")
+		out = append(out, st)
+	}
+	return out
+}

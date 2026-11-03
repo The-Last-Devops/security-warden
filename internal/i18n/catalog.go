@@ -83,6 +83,7 @@ Usage:
   security-warden ignore list                           what is hidden, and until when
   security-warden passkey list | clear [--yes]          passkeys that sign in to the web UI
   security-warden logout                sign every browser out of the web UI
+  security-warden mcp    [--allow-changes]  serve the checks to AI agents (MCP over stdio)
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -94,6 +95,22 @@ ids and the keys [in brackets] that ignore add accepts.
 Language: --lang, else SW_LANG, else your system language.
 Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"cli.rules_header": "%d rules",
+	"mcp.usage": `security-warden mcp: serve Security Warden to AI agents (Claude, Cursor, …) over MCP on stdin/stdout.
+
+Usage:
+  security-warden mcp                    read-only tools: scan, list_problems, get_fix,
+                                         explain_rule, list_safe, status
+  security-warden mcp --allow-changes    also apply_fix, undo_fix, hide, restore
+
+An AI app starts this command itself; add it to the app's MCP settings, for example:
+  claude mcp add security-warden -- security-warden mcp
+
+Scanning only reads and sends nothing off the machine. With --allow-changes the agent
+can apply built-in fixes (never ones that need admin rights) and hide problems: allow
+it only in an app that asks you before each tool call. Logs go to stderr.`,
+	"mcp.ready":         "Security Warden MCP server on stdio (read-only tools).",
+	"mcp.ready_changes": "Security Warden MCP server on stdio (changing tools allowed: apply_fix, undo_fix, hide, restore).",
+	"mcp.terminal":      "This command is for AI apps: it reads MCP messages (JSON) on stdin. See: security-warden mcp --help. Ctrl+D to quit.",
 
 	"count.critical":      "critical",
 	"count.high":          "high",
@@ -293,6 +310,7 @@ Cách dùng:
   security-warden ignore list                           những gì đang ẩn, và ẩn tới khi nào
   security-warden passkey list | clear [--yes]          passkey dùng để đăng nhập giao diện web
   security-warden logout                đăng xuất mọi trình duyệt khỏi giao diện web
+  security-warden mcp    [--allow-changes]  cho AI agent dùng các kiểm tra (MCP qua stdio)
   security-warden rules  [--lang en|vi]
   security-warden version
 
@@ -304,6 +322,22 @@ và mã [trong ngoặc vuông] để dùng với ignore add.
 Ngôn ngữ: --lang, không có thì SW_LANG, không có nữa thì theo ngôn ngữ hệ thống.
 Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất một, 2 lỗi.`,
 	"cli.rules_header": "%d rule",
+	"mcp.usage": `security-warden mcp: cho AI agent (Claude, Cursor, …) dùng Security Warden qua MCP trên stdin/stdout.
+
+Cách dùng:
+  security-warden mcp                    công cụ chỉ đọc: scan, list_problems, get_fix,
+                                         explain_rule, list_safe, status
+  security-warden mcp --allow-changes    thêm apply_fix, undo_fix, hide, restore
+
+Ứng dụng AI tự chạy lệnh này; thêm nó vào phần cài đặt MCP của ứng dụng, ví dụ:
+  claude mcp add security-warden -- security-warden mcp
+
+Quét chỉ đọc và không gửi gì ra khỏi máy. Với --allow-changes, agent có thể áp dụng
+cách sửa có sẵn (không bao giờ là cách cần quyền admin) và ẩn vấn đề: chỉ bật trong
+ứng dụng hỏi bạn trước mỗi lần gọi công cụ. Log ghi ra stderr.`,
+	"mcp.ready":         "Máy chủ MCP của Security Warden trên stdio (công cụ chỉ đọc).",
+	"mcp.ready_changes": "Máy chủ MCP của Security Warden trên stdio (cho phép công cụ thay đổi: apply_fix, undo_fix, hide, restore).",
+	"mcp.terminal":      "Lệnh này dành cho ứng dụng AI: nó đọc thông điệp MCP (JSON) từ stdin. Xem: security-warden mcp --help. Ctrl+D để thoát.",
 
 	"count.critical":      "nghiêm trọng",
 	"count.high":          "cao",
