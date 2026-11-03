@@ -16,8 +16,8 @@ explain:
   en: "Other machines on the same network (office, café Wi-Fi, VPN) can connect to port {port}. Dev servers rarely need that."
   vi: "Máy khác cùng mạng (văn phòng, Wi-Fi quán, VPN) kết nối được vào port {port}. Server dev hiếm khi cần vậy."
 fix:
-  en: "Make {process} listen on 127.0.0.1 instead of 0.0.0.0. If others really need it, keep the firewall on."
-  vi: "Cho {process} lắng nghe ở 127.0.0.1 thay vì 0.0.0.0. Nếu người khác thật sự cần thì giữ tường lửa bật."
+  en: "1. See what it is: `lsof -nP -iTCP:{port} -sTCP:LISTEN` (Windows: `netstat -ano | findstr :{port}`). 2. If you don't need it, quit {process}. If it is your dev server, start it on `127.0.0.1` (often `--host 127.0.0.1` or `HOST=127.0.0.1`; see its docs). If others on the network really need it, keep the firewall on."
+  vi: "1. Xem đó là gì: `lsof -nP -iTCP:{port} -sTCP:LISTEN` (Windows: `netstat -ano | findstr :{port}`). 2. Nếu không cần, thoát {process}. Nếu là server phát triển của bạn, chạy nó trên `127.0.0.1` (thường là `--host 127.0.0.1` hoặc `HOST=127.0.0.1`; xem tài liệu của nó). Nếu người khác trong mạng thật sự cần, hãy giữ tường lửa bật."
 author: the-last-devops
 tests:
   - {item: {process: node, port: 3000, reachable: true, system_binary: false, service: ""}, expect: true}

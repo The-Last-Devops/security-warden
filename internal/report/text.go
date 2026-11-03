@@ -3,32 +3,33 @@ package report
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
-	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
 
 // Scan is everything one run produced.
 type Scan struct {
-	Version  string           `json:"version"`
-	Lang     string           `json:"lang"`
-	Platform string           `json:"platform"`
-	Host     string           `json:"host"`
-	Time     string           `json:"time"`
-	Score    int              `json:"score"`
-	Gain     map[string]int   `json:"gain"`
-	Checked  int              `json:"checked"`
-	Passed   []string         `json:"passed"`
-	Sources  []SourceStatus   `json:"sources"`
-	Findings []engine.Finding `json:"findings"`
-	Ignored  []engine.Finding `json:"ignored"`
-	Root     bool             `json:"root"`
+	Version  string `json:"version"`
+	Lang     string `json:"lang"`
+	Platform string `json:"platform"`
+	Host     string `json:"host"`
+	Time     string `json:"time"`
+	Score    int    `json:"score"`
+	// ScoreMachine and ScoreCode score the two scopes on their own.
+	ScoreMachine int              `json:"score_machine"`
+	ScoreCode    int              `json:"score_code"`
+	Gain         map[string]int   `json:"gain"`
+	Checked      int              `json:"checked"`
+	Passed       []string         `json:"passed"`
+	Sources      []SourceStatus   `json:"sources"`
+	Findings     []engine.Finding `json:"findings"`
+	Ignored      []engine.Finding `json:"ignored"`
+	Root         bool             `json:"root"`
 }
 
 // SourceStatus says whether a source ran, and how many items it found.
@@ -59,10 +60,38 @@ func JSON(w io.Writer, s Scan) error {
 	return enc.Encode(s)
 }
 
-// Options changes how much the text report shows.
+// Options changes what the text report shows.
 type Options struct {
-	Verbose bool // details for every finding, and the list of passed checks
+	Verbose  bool           // every place, rule ids and keys, and the list of passed checks
+	Scope    string         // "machine" or "code": only that part ("" = all)
+	Category string         // one category, see Category ("" = all)
+	ByRepo   bool           // group code findings per repository
+	Safe     bool           // show what already passes instead of the problems
+	Rules    []*engine.Rule // for the labels of passed checks (--safe)
 }
+
+// Categories lists the categories in the order the UI shows them.
+var Categories = []string{"secrets", "exposure", "settings", "persistence", "ai", "devtools", "software", "other", "code_secrets", "code_deps"}
+
+// Keep returns whether a finding of source passes the scope and category filters.
+func (o Options) Keep(source string) bool {
+	return (o.Scope == "" || Scope(source) == o.Scope) && (o.Category == "" || Category(source) == o.Category)
+}
+
+// Filter keeps the findings that pass the scope and category filters.
+func (o Options) Filter(fs []engine.Finding) []engine.Finding {
+	var out []engine.Finding
+	for _, f := range fs {
+		if o.Keep(f.Source) {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// ShortKey is the part of a finding key shown to people (enough to be
+// unique on one machine; ignore add accepts any unique prefix).
+func ShortKey(f engine.Finding) string { return engine.FindingID(f)[:8] }
 
 // IsTerminal reports whether w is an interactive terminal that may get
 // colors and live progress.
@@ -99,153 +128,10 @@ var sevPill = map[string]string{
 
 const green = "32"
 
-// tilde shortens the home folder in text meant for people.
-func tilde(s string) string {
-	if h, err := os.UserHomeDir(); err == nil && h != "" {
-		return strings.ReplaceAll(s, h, "~")
-	}
-	return s
-}
-
 // pad right-pads to n display columns (Vietnamese labels are multi-byte).
 func pad(s string, n int) string {
 	if k := utf8.RuneCountInString(s); k < n {
 		return s + strings.Repeat(" ", n-k)
 	}
 	return s
-}
-
-// Text writes the human report in s.Lang.
-func Text(w io.Writer, s Scan, o Options) {
-	t := func(k string) string { return i18n.T(s.Lang, k) }
-	c := style{on: IsTerminal(w)}
-
-	shield := "🛡  "
-	if !c.on {
-		shield = ""
-	}
-	fmt.Fprintf(w, "\n  %s%s %s\n\n", shield, c.bold("security-warden"),
-		c.dim(fmt.Sprintf("%s · %s · %s", s.Version, s.Host, s.Time)))
-
-	// Score bar and counts.
-	n := map[string]int{}
-	for _, f := range s.Findings {
-		n[f.Severity]++
-	}
-	barColor := green
-	switch {
-	case s.Score < 50:
-		barColor = sevColor["high"]
-	case s.Score < 80:
-		barColor = sevColor["medium"]
-	}
-	filled := s.Score / 5
-	bar := c.wrap(barColor, strings.Repeat("█", filled)) + c.dim(strings.Repeat("░", 20-filled))
-	if !c.on {
-		bar = "[" + strings.Repeat("#", filled) + strings.Repeat(".", 20-filled) + "]"
-	}
-	fmt.Fprintf(w, "  %s  %s  %s%s  ", c.bold(t("report.score")), bar, c.wrap(barColor+";1", fmt.Sprint(s.Score)), c.dim("/100"))
-	for _, sev := range engine.Severities {
-		if n[sev] > 0 && sev != "info" {
-			fmt.Fprintf(w, " %s", c.wrap(sevColor[sev], fmt.Sprintf("● %d %s", n[sev], t("count."+sev))))
-		}
-	}
-	fmt.Fprint(w, "\n\n")
-
-	if len(s.Findings) == 0 {
-		fmt.Fprintf(w, "  %s %s\n\n", c.wrap(green, "✓"), c.bold(t("report.none")))
-	}
-
-	// Findings, worst first. Low and info get one line unless --verbose.
-	width := 0
-	for _, f := range s.Findings {
-		width = max(width, utf8.RuneCountInString(t("severity."+f.Severity)))
-	}
-	// A rule that fires many times gets one card: the first finding in full,
-	// then a short list of the others.
-	const listMax = 5
-	shown := map[string]int{}
-	total := map[string]int{}
-	for _, f := range s.Findings {
-		total[f.RuleID]++
-	}
-	for _, f := range s.Findings {
-		shown[f.RuleID]++
-		if n := shown[f.RuleID]; n > 1 && !o.Verbose {
-			rail := c.wrap(sevColor[f.Severity], "┃")
-			if !c.on {
-				rail = "|"
-			}
-			indent := strings.Repeat(" ", width+4)
-			switch {
-			case n <= listMax+1:
-				fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.dim("•"), tilde(f.Title))
-			case n == listMax+2:
-				fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.and_more"), total[f.RuleID]-listMax-1)))
-			}
-			if n == total[f.RuleID] {
-				fmt.Fprintln(w)
-			}
-			continue
-		}
-		rail := c.wrap(sevColor[f.Severity], "┃")
-		if !c.on {
-			rail = "|"
-		}
-		label := t("severity." + f.Severity)
-		pill := c.wrap(sevPill[f.Severity], " "+pad(label, width)+" ")
-		if !c.on {
-			pill = pad("["+label+"]", width+2)
-		}
-		fmt.Fprintf(w, "  %s %s  %s\n", rail, pill, c.bold(tilde(f.Title)))
-		short := f.Severity == "low" || f.Severity == "info"
-		indent := strings.Repeat(" ", width+4)
-		if short && !o.Verbose {
-			// One line of advice is enough for minor findings.
-			fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
-			if total[f.RuleID] > 1 {
-				fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.same_issue"), total[f.RuleID]-1)))
-			}
-			continue
-		}
-		fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(tilde(f.Explain)))
-		fmt.Fprintf(w, "  %s %s%s %s\n", rail, indent, c.wrap(green, "→"), tilde(f.Fix))
-		if o.Verbose {
-			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(f.RuleID))
-		}
-		if total[f.RuleID] > 1 && !o.Verbose {
-			fmt.Fprintf(w, "  %s %s%s\n", rail, indent, c.dim(fmt.Sprintf(t("report.same_issue"), total[f.RuleID]-1)))
-			continue
-		}
-		fmt.Fprintln(w)
-	}
-	if len(s.Findings) > 0 && !o.Verbose && (n["low"] > 0 || n["info"] > 0) {
-		fmt.Fprintln(w)
-	}
-
-	// What passed, and what could not be checked.
-	fmt.Fprintf(w, "  %s %s\n", c.wrap(green, "✓"), c.dim(fmt.Sprintf(t("report.passed"), len(s.Passed), s.Checked)))
-	if o.Verbose {
-		for _, id := range s.Passed {
-			fmt.Fprintf(w, "      %s\n", c.dim(id))
-		}
-	}
-	for _, st := range s.Sources {
-		switch {
-		case st.Error != "":
-			fmt.Fprintf(w, "  %s %s\n", c.wrap(sevColor["medium"], "!"), c.dim(t("source."+st.Name)+": "+fmt.Sprintf(t("source.error"), st.Error)))
-		case st.Skipped != "" && o.Verbose:
-			fmt.Fprintf(w, "  %s %s\n", c.dim("–"), c.dim(t("source."+st.Name)+": "+t(st.Skipped)))
-		}
-	}
-	if n := len(s.Ignored); n > 0 {
-		fmt.Fprintf(w, "  %s\n", c.dim(fmt.Sprintf(t("report.ignored"), n)))
-	}
-	if !o.Verbose {
-		fmt.Fprintf(w, "  %s\n", c.dim(t("report.more")))
-	}
-	if !s.Root {
-		fmt.Fprintf(w, "  %s\n", c.dim(t("report.not_root")))
-	}
-	fmt.Fprintf(w, "  %s\n\n", c.dim(t("report.private")))
 }

@@ -1,0 +1,22 @@
+id: linux-updates-pending-many
+severity: medium
+platforms: [linux]
+source: outdated_software
+match: item.kind == "packages" && item.security <= 0 && item.total >= 50
+title:
+  en: "{total} package updates are waiting to be installed"
+  vi: "Có {total} bản cập nhật gói đang chờ cài"
+check:
+  en: "Fewer than 50 Linux package updates are waiting"
+  vi: "Không tới 50 bản cập nhật gói Linux đang chờ"
+explain:
+  en: "{manager} lists {total} packages with a newer version: this machine has not been updated for a while. Some of them likely fix security bugs. The count comes from the package list saved at the last refresh, so the real number may be higher."
+  vi: "{manager} có {total} gói đã có bản mới hơn: máy này lâu rồi chưa cập nhật. Nhiều khả năng trong đó có bản vá lỗi bảo mật. Con số lấy từ danh sách gói lưu ở lần làm mới gần nhất, nên thực tế có thể còn nhiều hơn."
+fix:
+  en: "Run: `{upgrade_command}` (needs your sudo password), then restart if a new kernel was installed."
+  vi: "Chạy: `{upgrade_command}` (cần mật khẩu sudo), rồi khởi động lại máy nếu có kernel mới."
+author: the-last-devops
+tests:
+  - {item: {kind: packages, manager: dnf, total: 105, security: -1, cache_days: 3, upgrade_command: "sudo dnf upgrade --refresh"}, expect: true}
+  - {item: {kind: packages, manager: dnf, total: 105, security: 51, cache_days: 3, upgrade_command: "sudo dnf upgrade --refresh"}, expect: false, note: linux-security-updates-pending covers it}
+  - {item: {kind: packages, manager: apt, total: 12, security: 0, cache_days: 0, upgrade_command: "sudo apt update && sudo apt upgrade"}, expect: false}

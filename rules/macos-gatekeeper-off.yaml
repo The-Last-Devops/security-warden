@@ -13,8 +13,8 @@ explain:
   en: macOS no longer checks that downloaded apps are signed and notarized.
   vi: macOS thôi kiểm tra app tải về có được ký và notarize hay không.
 fix:
-  en: "Run: sudo spctl --global-enable"
-  vi: "Chạy: sudo spctl --global-enable"
+  en: "Press Fix to do it automatically, or run: `sudo spctl --global-enable` (asks for your password)."
+  vi: "Bấm Sửa để tự sửa, hoặc chạy: `sudo spctl --global-enable` (sẽ hỏi mật khẩu máy)."
 author: the-last-devops
 tests:
   - {item: {gatekeeper: false}, expect: true}

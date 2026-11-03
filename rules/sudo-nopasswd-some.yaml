@@ -13,8 +13,8 @@ explain:
   en: "Commands allowed with NOPASSWD can often be abused to get a full root shell."
   vi: "Lệnh được phép NOPASSWD thường bị lợi dụng để mở shell root đầy đủ."
 fix:
-  en: "Review the NOPASSWD rules (sudo -l) and keep only commands that cannot run other programs."
-  vi: "Xem lại các rule NOPASSWD (sudo -l), chỉ giữ lệnh không chạy được chương trình khác."
+  en: "1. Run `sudo -l` to list the `NOPASSWD` rules. 2. With `sudo visudo -f <file>`, keep `NOPASSWD` only for commands that cannot open a shell or run other programs (not editors, `less`, `find`, `python`, `bash` and the like). These commands need admin rights: sudo asks for your password."
+  vi: "1. Chạy `sudo -l` để xem các quy tắc `NOPASSWD`. 2. Dùng `sudo visudo -f <tệp>`, chỉ giữ `NOPASSWD` cho lệnh không mở được shell hay chạy chương trình khác (không phải trình soạn thảo, `less`, `find`, `python`, `bash`…). Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {"item": {"kind": "sudo", "nopasswd_any": true, "nopasswd_all": false}, "expect": true}

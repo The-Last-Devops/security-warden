@@ -1,0 +1,22 @@
+id: windows-rdp-on
+severity: medium
+platforms: [windows]
+source: posture
+match: has(item.rdp_enabled) && item.rdp_enabled && item.rdp_nla
+title:
+  en: "Remote Desktop is on"
+  vi: "Remote Desktop đang bật"
+check:
+  en: "Remote Desktop is off"
+  vi: "Remote Desktop đang tắt"
+explain:
+  en: "This PC accepts Remote Desktop logins on port 3389. If an account has a weak or reused password, someone on the network can take over the machine; attackers scan for this port all day."
+  vi: "Máy này nhận đăng nhập Remote Desktop qua port 3389. Tài khoản nào có mật khẩu yếu hoặc dùng lại ở nơi khác là người trong mạng chiếm được máy; kẻ tấn công dò port này suốt ngày."
+fix:
+  en: "If you don't use it: Settings > System > Remote Desktop > Off. Needs an administrator. If you do, keep the firewall on and use strong, unique passwords."
+  vi: "Không dùng thì: Cài đặt > Hệ thống > Remote Desktop > Tắt. Cần quyền quản trị. Nếu cần dùng, hãy giữ tường lửa bật và đặt mật khẩu mạnh, không trùng nơi khác."
+author: the-last-devops
+tests:
+  - {item: {os: windows, rdp_enabled: true, rdp_nla: true}, expect: true}
+  - {item: {os: windows, rdp_enabled: false, rdp_nla: true}, expect: false}
+  - {item: {os: windows, rdp_enabled: true, rdp_nla: false}, expect: false, note: windows-rdp-no-nla covers it}

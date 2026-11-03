@@ -1,0 +1,22 @@
+id: windows-rdp-no-nla
+severity: high
+platforms: [windows]
+source: posture
+match: has(item.rdp_enabled) && item.rdp_enabled && !item.rdp_nla
+title:
+  en: "Remote Desktop is on without Network Level Authentication"
+  vi: "Remote Desktop đang bật mà không có Network Level Authentication"
+check:
+  en: "Remote Desktop requires Network Level Authentication"
+  vi: "Remote Desktop bắt buộc Network Level Authentication"
+explain:
+  en: "Anyone who can reach port 3389 gets the Windows sign-in screen before proving who they are. That makes password guessing easier and exposes the RDP service itself to attacks such as BlueKeep."
+  vi: "Ai kết nối được tới port 3389 là thấy ngay màn hình đăng nhập Windows trước khi phải chứng minh mình là ai. Đoán mật khẩu dễ hơn, và chính dịch vụ RDP bị lộ ra trước các kiểu tấn công như BlueKeep."
+fix:
+  en: "Settings > System > Remote Desktop > Advanced settings (Windows 10: Remote Desktop > Advanced settings) > tick \"Require devices to use Network Level Authentication to connect\". Needs an administrator. Or turn Remote Desktop off if you don't use it."
+  vi: "Cài đặt > Hệ thống > Remote Desktop > Cài đặt nâng cao > đánh dấu \"Require devices to use Network Level Authentication to connect\". Cần quyền quản trị. Không dùng thì tắt luôn Remote Desktop."
+author: the-last-devops
+tests:
+  - {item: {os: windows, rdp_enabled: true, rdp_nla: false}, expect: true}
+  - {item: {os: windows, rdp_enabled: true, rdp_nla: true}, expect: false}
+  - {item: {os: windows, rdp_enabled: false, rdp_nla: false}, expect: false}

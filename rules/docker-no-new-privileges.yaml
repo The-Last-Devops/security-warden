@@ -13,8 +13,8 @@ explain:
   en: "{container} runs as user {user}, which is good, but without no-new-privileges a setuid program inside {image} can still turn it into root."
   vi: "{container} chạy bằng user {user}, như vậy là tốt, nhưng thiếu no-new-privileges thì một chương trình setuid trong {image} vẫn có thể biến nó thành root."
 fix:
-  en: "Add security_opt: [\"no-new-privileges:true\"] in compose (or --security-opt no-new-privileges), or set \"no-new-privileges\": true in daemon.json for every container."
-  vi: "Thêm security_opt: [\"no-new-privileges:true\"] trong compose (hoặc --security-opt no-new-privileges), hoặc đặt \"no-new-privileges\": true trong daemon.json cho mọi container."
+  en: "1. Add `security_opt: [\"no-new-privileges:true\"]` to {container} in compose (or `docker run --security-opt no-new-privileges`), or set `\"no-new-privileges\": true` in `daemon.json` for every container. 2. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Thêm `security_opt: [\"no-new-privileges:true\"]` cho {container} trong compose (hoặc `docker run --security-opt no-new-privileges`), hoặc đặt `\"no-new-privileges\": true` trong `daemon.json` cho mọi container. 2. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "user": "app", "runs_as_root": false, "published_all": false, "no_new_privileges": false, "memory_limit": 0, "pids_limit": 0, "read_only_rootfs": false, "shared_mount": "", "host_uts": false, "host_userns": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "{program} starts automatically from a world-writable place or as an inline shell command. Real apps install into /Applications or /Library."
   vi: "{program} tự khởi động từ chỗ ai cũng ghi được, hoặc là một lệnh shell viết liền. App thật thường cài vào /Applications hoặc /Library."
 fix:
-  en: "If you don't recognise {label}, unload and delete {plist}."
-  vi: "Không nhận ra {label} thì gỡ và xoá {plist}."
+  en: "If you don't recognise {label}: macOS: 1. System Settings › General › Login Items & Extensions › Allow in the Background, turn off its entry. 2. In Finder press Cmd+Shift+G, paste `{plist}`, press Enter and move the file to the Trash (your admin password is needed for `/Library`). 3. Restart. Linux: `systemctl --user disable --now {label}` (for a `.service`), then move `{plist}` to another folder and log in again."
+  vi: "Nếu bạn không nhận ra {label}: macOS: 1. Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng › Cho phép chạy nền, tắt mục của nó. 2. Trong Finder bấm Cmd+Shift+G, dán `{plist}`, bấm Enter rồi kéo tệp vào Thùng rác (tệp trong `/Library` cần mật khẩu quản trị). 3. Khởi động lại máy. Linux: `systemctl --user disable --now {label}` (với tệp `.service`), rồi chuyển `{plist}` sang thư mục khác và đăng nhập lại."
 author: the-last-devops
 tests:
   - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/tmp/x", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": true, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}

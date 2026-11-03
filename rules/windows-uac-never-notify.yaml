@@ -1,0 +1,22 @@
+id: windows-uac-never-notify
+severity: medium
+platforms: [windows]
+source: posture
+match: has(item.uac_never_notify) && item.uac_enabled && item.uac_never_notify
+title:
+  en: "User Account Control never asks before admin changes"
+  vi: "User Account Control không bao giờ hỏi trước khi đổi quyền quản trị"
+check:
+  en: "User Account Control asks before admin changes"
+  vi: "User Account Control hỏi trước khi đổi quyền quản trị"
+explain:
+  en: "UAC is set to \"Never notify\" for administrators, so any program you run can silently give itself administrator rights and change the system."
+  vi: "UAC đang đặt \"Never notify\" cho tài khoản quản trị, nên chương trình nào bạn chạy cũng âm thầm tự lấy quyền quản trị và sửa được hệ thống."
+fix:
+  en: "Control Panel > User Accounts > User Accounts > Change User Account Control settings > move the slider to \"Notify me only when apps try to make changes to my computer (default)\" or higher > OK. Needs an administrator."
+  vi: "Control Panel > User Accounts > User Accounts > Change User Account Control settings > kéo thanh trượt lên \"Notify me only when apps try to make changes to my computer (default)\" hoặc cao hơn > OK. Cần quyền quản trị."
+author: the-last-devops
+tests:
+  - {item: {os: windows, uac_enabled: true, uac_never_notify: true}, expect: true}
+  - {item: {os: windows, uac_enabled: true, uac_never_notify: false}, expect: false}
+  - {item: {os: windows, uac_enabled: false, uac_never_notify: true}, expect: false, note: windows-uac-off covers it}

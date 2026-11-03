@@ -13,8 +13,8 @@ explain:
   en: "http.sslVerify false lets anyone on the network serve you modified code."
   vi: "http.sslVerify false cho phép kẻ đứng giữa mạng đưa bạn code đã bị sửa."
 fix:
-  en: "Run: git config --global --unset http.sslVerify"
-  vi: "Chạy: git config --global --unset http.sslVerify"
+  en: "Run: `git config --global --unset http.sslVerify`"
+  vi: "Chạy: `git config --global --unset http.sslVerify`"
 author: the-last-devops
 tests:
   - {"item": {"credential_store": false, "ssl_verify_off": true, "safe_directory_all": false, "hooks_path": "", "insteadof_downgrade": false, "file_protocol_always": false}, "expect": true}

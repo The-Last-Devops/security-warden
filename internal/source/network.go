@@ -30,6 +30,9 @@ func readListeners(ctx context.Context) ([]Item, error) {
 	if runtime.GOOS == "linux" {
 		return procListeners()
 	}
+	if runtime.GOOS == "windows" {
+		return windowsListeners(ctx)
+	}
 	out, err := run(ctx, "lsof", "-nP", "+c", "0", "-iTCP", "-sTCP:LISTEN", "-F", "pcLn")
 	if err != nil && out == "" {
 		// lsof exits 1 when nothing listens; only a missing lsof is a skip.
@@ -126,6 +129,9 @@ func remoteServices(ctx context.Context) ([]Item, error) {
 	}
 	var items []Item
 	for _, s := range services {
+		if runtime.GOOS == "windows" && s.name == "rdp" {
+			continue // posture reads the real setting (windows-rdp-* rules)
+		}
 		d := net.Dialer{Timeout: 500 * time.Millisecond}
 		c, err := d.DialContext(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", s.port))
 		open := err == nil
@@ -137,33 +143,63 @@ func remoteServices(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
+// remoteToolKinds maps a process name to the kind of remote tool it is.
+var remoteToolKinds = map[string]string{
+	"ngrok":                      "tunnel",
+	"cloudflared":                "tunnel",
+	"frpc":                       "tunnel",
+	"bore":                       "tunnel",
+	"code-tunnel":                "tunnel",
+	"localtunnel":                "tunnel",
+	"zrok":                       "tunnel",
+	"AnyDesk":                    "remote_desktop",
+	"TeamViewer":                 "remote_desktop",
+	"rustdesk":                   "remote_desktop",
+	"RustDesk":                   "remote_desktop",
+	"parsecd":                    "remote_desktop",
+	"chrome-remote-desktop-host": "remote_desktop",
+}
+
 // remoteTools finds running tunnels and remote desktop apps.
 func remoteTools(ctx context.Context) ([]Item, error) {
-	known := map[string]string{
-		"ngrok":                      "tunnel",
-		"cloudflared":                "tunnel",
-		"frpc":                       "tunnel",
-		"bore":                       "tunnel",
-		"code-tunnel":                "tunnel",
-		"localtunnel":                "tunnel",
-		"zrok":                       "tunnel",
-		"AnyDesk":                    "remote_desktop",
-		"TeamViewer":                 "remote_desktop",
-		"rustdesk":                   "remote_desktop",
-		"RustDesk":                   "remote_desktop",
-		"parsecd":                    "remote_desktop",
-		"chrome-remote-desktop-host": "remote_desktop",
-	}
 	seen := map[string]bool{}
 	var items []Item
 	for pid, path := range processPaths() {
-		name := path[strings.LastIndex(path, "/")+1:]
-		kind, ok := known[name]
+		name := strings.TrimSuffix(winBase(path), ".exe")
+		kind, ok := remoteToolKinds[name]
 		if !ok || seen[name] {
 			continue
 		}
 		seen[name] = true
-		items = append(items, Item{"tool": name, "kind": kind, "pid": pid, "path": path})
+		it := Item{"tool": name, "kind": kind, "pid": pid, "path": path}
+		if kind == "tunnel" {
+			it["stop_cmd"] = tunnelStopCmd(name, pid)
+		}
+		items = append(items, it)
 	}
 	return items, nil
+}
+
+// tunnelStops are the commands that stop a tunnel tool and keep it from
+// starting again, in order. Each is safe to run when nothing is running or
+// installed (it only prints an error). Checked against each tool's --help:
+// code tunnel (VS Code CLI 1.144), ngrok service (3.39), cloudflared service
+// (2026.10). Tools without a service mode just get kill <pid>.
+var tunnelStops = map[string][]string{
+	"code-tunnel": {"code tunnel service uninstall", "code tunnel kill", "code tunnel unregister"},
+	"ngrok":       {"sudo ngrok service stop", "sudo ngrok service uninstall"},
+	"cloudflared": {"sudo cloudflared service uninstall", "cloudflared service uninstall"},
+}
+
+// tunnelStopCmd lists the stop commands for a tunnel tool, separated by
+// " · ". The values are fixed text plus a pid, never anything the machine
+// can choose, so they are safe to copy into a terminal.
+func tunnelStopCmd(tool string, pid int) string {
+	cmds := append([]string(nil), tunnelStops[tool]...)
+	if tool != "code-tunnel" {
+		cmds = append(cmds, fmt.Sprintf("kill %d", pid))
+	}
+	// The rule wraps {stop_cmd} in backticks; closing and reopening them
+	// here gives each command its own code span (and copy button).
+	return strings.Join(cmds, "` · `")
 }

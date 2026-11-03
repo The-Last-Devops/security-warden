@@ -13,8 +13,8 @@ explain:
   en: "{program} is not code-signed. Real vendors sign what they install system-wide, so this deserves a look."
   vi: "{program} không được ký số. Hãng phần mềm thật đều ký những gì họ cài cho toàn hệ thống, nên mục này đáng xem lại."
 fix:
-  en: "Check who installed {plist}. Remove it if you don't need it."
-  vi: "Xem ai đã cài {plist}. Không cần thì gỡ."
+  en: "Open `{plist}` to see what it runs (`{program}`). If it belongs to software you use, update or reinstall that software from its vendor. If not: 1. System Settings › General › Login Items & Extensions › Allow in the Background, turn off its entry. 2. In Finder press Cmd+Shift+G, paste `{plist}`, press Enter and move the file to the Trash (your admin password is needed for `/Library`). 3. Restart."
+  vi: "Mở `{plist}` để xem nó chạy gì (`{program}`). Nếu là của phần mềm bạn dùng, cập nhật hoặc cài lại phần mềm đó từ nhà phát hành. Nếu không: 1. Cài đặt hệ thống › Cài đặt chung › Mục đăng nhập & Tiện ích mở rộng › Cho phép chạy nền, tắt mục của nó. 2. Trong Finder bấm Cmd+Shift+G, dán `{plist}`, bấm Enter rồi kéo tệp vào Thùng rác (tệp trong `/Library` cần mật khẩu quản trị). 3. Khởi động lại máy."
 author: the-last-devops
 tests:
   - {"item": {"kind": "launchd", "scope": "system-agent", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": false, "plist_writable": false, "signed": false, "team_id": "ABCDE12345"}, "expect": true}

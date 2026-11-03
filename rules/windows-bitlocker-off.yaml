@@ -1,0 +1,22 @@
+id: windows-bitlocker-off
+severity: high
+platforms: [windows]
+source: posture
+match: has(item.bitlocker) && item.bitlocker == "off"
+title:
+  en: "The Windows drive is not encrypted (BitLocker off)"
+  vi: "Ổ Windows chưa được mã hoá (BitLocker đang tắt)"
+check:
+  en: "The Windows drive is encrypted"
+  vi: "Ổ Windows đã được mã hoá"
+explain:
+  en: "Anyone who gets the laptop or its disk can read every file on it, including browser sessions, SSH keys and tokens, without knowing your password."
+  vi: "Ai cầm được laptop hay ổ đĩa là đọc được mọi file, kể cả phiên đăng nhập trình duyệt, khoá SSH và token, mà không cần biết mật khẩu của bạn."
+fix:
+  en: "1. First make sure you can save the recovery key (Microsoft account, USB stick or printout). 2. Windows Home: Settings > Privacy & security > Device encryption > On. Pro, Enterprise or Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Needs an administrator; you can keep working while it encrypts."
+  vi: "1. Trước tiên hãy chắc là bạn lưu được khoá khôi phục (tài khoản Microsoft, USB hoặc bản in). 2. Windows Home: Cài đặt > Quyền riêng tư & bảo mật > Mã hoá thiết bị > Bật. Bản Pro, Enterprise hay Education: Control Panel > System and Security > BitLocker Drive Encryption > Turn on BitLocker. Cần quyền quản trị; vẫn dùng máy bình thường trong lúc mã hoá."
+author: the-last-devops
+tests:
+  - {item: {os: windows, bitlocker: "off"}, expect: true}
+  - {item: {os: windows, bitlocker: "on"}, expect: false}
+  - {item: {os: windows}, expect: false, note: status hidden from a standard user}

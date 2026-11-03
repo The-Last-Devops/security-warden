@@ -13,8 +13,8 @@ explain:
   en: "Microsoft removed {extension} from the VS Code Marketplace ({removed_type}): it pretended to be another extension or could not be trusted. It is still installed and runs with your full permissions."
   vi: "Microsoft đã gỡ {extension} khỏi VS Code Marketplace ({removed_type}): nó giả danh một extension khác hoặc không đáng tin. Nó vẫn đang cài và chạy với toàn quyền của bạn."
 fix:
-  en: "Uninstall it (Extensions panel, or code --uninstall-extension {extension}) and install the real extension from its known publisher if you need it."
-  vi: "Gỡ nó (bảng Extensions, hoặc code --uninstall-extension {extension}) và cài extension thật từ đúng nhà phát hành nếu bạn cần."
+  en: "Uninstall it (Extensions panel, or `code --uninstall-extension {extension}`) and install the real extension from its known publisher if you need it."
+  vi: "Gỡ nó (bảng Extensions, hoặc `code --uninstall-extension {extension}`) và cài extension thật từ đúng nhà phát hành nếu bạn cần."
 references:
   - https://github.com/microsoft/vsmarketplace/blob/main/RemovedPackages.md
 author: the-last-devops

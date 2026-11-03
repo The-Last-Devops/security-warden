@@ -1,0 +1,93 @@
+name: rules-pr-comment
+
+# Posts the result of rules-pr as one sticky comment on the pull request and
+# sets labels. It runs from the default branch with a write token, so it
+# never checks out or runs code from the pull request: it only reads the
+# JSON artifact rules-pr produced, and treats every value in it as
+# untrusted text. It never approves or merges.
+on:
+  workflow_run:
+    workflows: [rules-pr]
+    types: [completed]
+
+permissions:
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: rules-check
+          path: rules-check
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const read = (f, fallback) => { try { return fs.readFileSync('rules-check/' + f, 'utf8'); } catch { return fallback; } };
+            const json = (f) => { try { return JSON.parse(read(f, 'null')); } catch { return null; } };
+
+            const meta = json('meta.json') || {};
+            const run = context.payload.workflow_run;
+            const number = Number(meta.number);
+            if (!Number.isInteger(number) || number <= 0) { core.setFailed('bad PR number in artifact'); return; }
+
+            // The artifact names a PR; make sure it is the PR this run was for.
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number });
+            if (pr.head.sha !== run.head_sha) { core.setFailed('artifact PR does not match the workflow run'); return; }
+
+            // Text from the artifact comes from PR code: strip markup-breaking
+            // characters and cap its length.
+            const safe = (s, n = 300) => String(s ?? '').replace(/[`<>\r]/g, "'").replace(/\n/g, ' ').replace(/@/g, '@​').slice(0, n);
+
+            const results = [json('added.json'), json('modified.json')].filter(Boolean);
+            const files = results.flatMap(r => Array.isArray(r.files) ? r.files : []);
+            const errors = files.reduce((n, f) => n + (f.errors || []).length, 0);
+            const warnings = files.reduce((n, f) => n + (f.warnings || []).length, 0);
+            const flagged = results.some(r => r.flagged_commands === true);
+            const fixChanged = read('fix_changed.txt', 'false').trim() === 'true';
+            const ai = meta.ai === true || pr.user.type === 'Bot' || pr.user.login.endsWith('[bot]');
+            const passed = run.conclusion === 'success';
+
+            const lines = ['<!-- security-warden-rules-check -->', '### Rule check'];
+            if (files.length === 0) {
+              lines.push(passed ? 'No rule file to check.' : `The check did not produce results (${safe(run.conclusion, 40)}). See the workflow run.`);
+            } else {
+              lines.push(`${passed ? '✅' : '❌'} ${files.length} file(s): ${errors} error(s), ${warnings} warning(s).`, '');
+              for (const f of files.slice(0, 30)) {
+                const t = f.tests || {};
+                lines.push(`**${safe(f.file, 120)}** · \`${safe(f.rule_id, 80)}\` · tier ${safe(f.tier, 20)}${f.new ? ' · new' : ''} · tests ${Number(t.passed) || 0}/${Number(t.total) || 0}`);
+                for (const [kind, list] of [['error', f.errors], ['warning', f.warnings]]) {
+                  for (const i of (list || []).slice(0, 20)) lines.push(`- ${kind} \`${safe(i.code, 60)}\` ${safe(i.field, 60)}: ${safe(i.message)}`);
+                }
+                lines.push('');
+              }
+              if (files.length > 30) lines.push(`… ${files.length - 30} more file(s): see the workflow run.`);
+            }
+            if (flagged) lines.push('⚠️ The fix-text lint flagged commands. A maintainer must check every command by hand before merging.');
+            if (ai) lines.push('🤖 This pull request looks AI-generated (author or text says so). That is welcome; please confirm it in the PR description.');
+            lines.push('', `_Merging is always done by hand by a maintainer after review. See [docs/review-guide.md](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/blob/main/docs/review-guide.md)._`);
+            const body = lines.join('\n').slice(0, 60000);
+
+            // One sticky comment: update ours if it exists.
+            const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: number, per_page: 100 });
+            const mine = comments.find(c => c.user.type === 'Bot' && c.body.startsWith('<!-- security-warden-rules-check -->'));
+            if (mine) await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ ...context.repo, issue_number: number, body });
+
+            // Labels, created if missing.
+            const want = { 'rule': ['0b6e52', 'Adds or changes a rule'] };
+            if (ai) want['ai-generated'] = ['8250df', 'Written with an AI agent'];
+            if (flagged || fixChanged) want['needs-careful-review'] = ['d93f0b', 'Fix commands to check by hand'];
+            for (const [name, [color, description]] of Object.entries(want)) {
+              try { await github.rest.issues.getLabel({ ...context.repo, name }); }
+              catch { await github.rest.issues.createLabel({ ...context.repo, name, color, description }); }
+            }
+            await github.rest.issues.addLabels({ ...context.repo, issue_number: number, labels: Object.keys(want) });

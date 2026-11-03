@@ -13,8 +13,8 @@ explain:
   en: "npx without a version downloads whatever was published last. A hijacked package runs on your machine the next time {tool} starts."
   vi: "npx không ghi phiên bản sẽ tải bản phát hành mới nhất. Gói bị chiếm sẽ chạy trên máy bạn ngay lần sau {tool} khởi động."
 fix:
-  en: "Pin a version in {file}, e.g. \"package@1.2.3\"."
-  vi: "Ghim phiên bản trong {file}, ví dụ \"package@1.2.3\"."
+  en: "Pin a version in `{file}`, e.g. `\"package@1.2.3\"`."
+  vi: "Ghim phiên bản trong `{file}`, ví dụ `\"package@1.2.3\"`."
 author: the-last-devops
 tests:
   - {"item": {"kind": "mcp", "tool": "Claude Code", "file": "/h/.claude.json", "server": "github", "secret_keys": "", "has_secret": false, "plain_http": false, "unpinned_npx": true, "world_readable": false}, "expect": true}

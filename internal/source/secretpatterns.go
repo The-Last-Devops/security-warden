@@ -256,3 +256,15 @@ func shannon(s string) float64 {
 	}
 	return e
 }
+
+// SecretSpans returns where known token formats (the gitleaks patterns) are
+// in text, as [start, end) byte offsets, for callers that must blank them
+// out (the feedback scrubber). The values themselves are never returned.
+func SecretSpans(text string) [][2]int {
+	hits := scanSecrets(text)
+	out := make([][2]int, 0, len(hits))
+	for _, h := range hits {
+		out = append(out, [2]int{h.Start, h.End})
+	}
+	return out
+}

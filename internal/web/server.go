@@ -13,17 +13,19 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
+	"github.com/The-Last-Devops/security-warden/internal/feedback"
 	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/report"
+	"github.com/The-Last-Devops/security-warden/internal/rulecheck"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
 
@@ -32,7 +34,7 @@ import (
 type Scanner struct {
 	Rules    []*engine.Rule
 	Collect  func(ctx context.Context, done func(name string)) []source.Result
-	Evaluate func(results []source.Result, lang string) report.Scan
+	Evaluate func(results []source.Result, lang string, experimental bool) report.Scan
 }
 
 // Server is the web UI.
@@ -129,8 +131,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /login", s.handleLogin)
 	mux.HandleFunc("POST /api/ticket", s.handleTicket)
 	mux.HandleFunc("POST /api/logout", s.withSession(s.handleLogout))
+	mux.HandleFunc("GET /api/local/passkeys", s.localOnly(s.handleLocalPasskeys))
+	mux.HandleFunc("POST /api/local/passkeys/clear", s.localOnly(s.handleLocalPasskeysClear))
+	mux.HandleFunc("POST /api/local/logout", s.localOnly(s.handleLocalLogout))
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
+	mux.HandleFunc("GET /api/sources", s.withSession(s.handleSources))
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
 	mux.HandleFunc("POST /api/scan/start", s.withSession(s.handleScanStart))
 	mux.HandleFunc("GET /api/scan/progress", s.withSession(s.handleProgress))
@@ -140,6 +146,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/update", s.withSession(s.handleUpdateStatus))
 	mux.HandleFunc("POST /api/update/auto", s.withSession(s.handleUpdateAuto))
 	mux.HandleFunc("POST /api/unignore", s.withSession(s.handleUnignore))
+	mux.HandleFunc("GET /api/feedback", s.withSession(s.handleFeedback))
+	mux.HandleFunc("POST /api/feedback/idea", s.withSession(s.handleFeedbackIdea))
 	mux.HandleFunc("GET /api/passkey", s.handlePasskeyStatus)
 	mux.HandleFunc("POST /api/passkey/register/begin", s.withSession(s.handleRegisterBegin))
 	mux.HandleFunc("POST /api/passkey/register/finish", s.withSession(s.handleRegisterFinish))
@@ -167,7 +175,9 @@ func (s *Server) Handler() http.Handler {
 			http.Error(w, "unexpected Host header", http.StatusMisdirectedRequest)
 			return
 		}
-		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/ticket" {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/ticket" && !strings.HasPrefix(r.URL.Path, "/api/local/") {
+			// (/api/ticket and /api/local/ need the server secret in a header,
+			// which a page elsewhere cannot send.)
 			// Same-origin only: browsers always send Origin on cross-site
 			// POSTs, so a page elsewhere cannot trigger a fix.
 			if r.Header.Get("Origin") != "http://"+r.Host || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
@@ -282,6 +292,10 @@ func (s *Server) scan(ctx context.Context, force bool) []source.Result {
 	return res
 }
 
+// wantsExperimental: the page asked for experimental rules too (its
+// "Show experimental checks" setting).
+func wantsExperimental(r *http.Request) bool { return r.URL.Query().Get("experimental") == "1" }
+
 func langOf(r *http.Request, def string) string {
 	switch l := r.URL.Query().Get("lang"); l {
 	case "en", "vi":
@@ -300,20 +314,27 @@ type apiFinding struct {
 	Gain      int      `json:"gain"`
 	NeedsRoot bool     `json:"needs_root"`
 	Undoable  bool     `json:"undoable"`
+	// Repo and Place are the only parts of the item the page gets: which
+	// repository (for the by-repo view) and where, as display text.
+	Repo  string `json:"repo,omitempty"`
+	Place string `json:"place,omitempty"`
+	// Author is the GitHub handle of a contributed rule ("" for the core set).
+	Author string `json:"author,omitempty"`
 }
 
-func (s *Server) render(results []source.Result, lang string) map[string]any {
-	sc := s.Scanner.Evaluate(results, lang)
+func (s *Server) render(results []source.Result, lang string, experimental bool) map[string]any {
+	sc := s.Scanner.Evaluate(results, lang, experimental)
 	type apiPassed struct {
 		RuleID   string `json:"rule_id"`
 		Label    string `json:"label"`
 		Category string `json:"category"`
 		Severity string `json:"severity"`
+		Tier     string `json:"tier,omitempty"`
 	}
 	passed := []apiPassed{}
 	for _, id := range sc.Passed {
 		if r := s.rule(id); r != nil {
-			passed = append(passed, apiPassed{id, r.Check.Get(lang), report.Category(r.Source), r.Severity})
+			passed = append(passed, apiPassed{id, r.Check.Get(lang), report.Category(r.Source), r.Severity, r.TierLabel()})
 		}
 	}
 	out := make([]apiFinding, 0, len(sc.Findings))
@@ -328,6 +349,10 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 				af.NeedsRoot, af.Undoable = a.NeedsRoot, a.Undoable
 				af.CanFix = !a.NeedsRoot // admin fixes stay in the terminal
 			}
+		}
+		af.Repo, af.Place = report.Repo(f), report.Place(f)
+		if r := s.rule(f.RuleID); r != nil {
+			af.Author = r.Credit()
 		}
 		af.Item = nil // raw items stay on the machine; the UI needs only text
 		out = append(out, af)
@@ -400,10 +425,10 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ 
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		writeJSON(w, http.StatusOK, s.render(res, langOf(r, s.Lang)))
+		writeJSON(w, http.StatusOK, s.render(res, langOf(r, s.Lang), wantsExperimental(r)))
 		return
 	}
-	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang)))
+	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang), wantsExperimental(r)))
 }
 
 // handleScanStart begins a scan in the background; the UI polls progress
@@ -447,7 +472,7 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request, _ string
 }
 
 func (s *Server) handleRescan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
-	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), true), langOf(r, s.Lang)))
+	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), true), langOf(r, s.Lang), wantsExperimental(r)))
 }
 
 func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
@@ -468,7 +493,7 @@ func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *
 		return
 	}
 	byKey := map[string]engine.Finding{}
-	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
+	for _, f := range s.Scanner.Evaluate(results, s.Lang, true).Findings {
 		byKey[engine.FindingID(f)] = f
 	}
 	batch := fix.NewBatch()
@@ -519,7 +544,7 @@ func (s *Server) handleIgnore(w http.ResponseWriter, r *http.Request, _ string, 
 		want[k] = true
 	}
 	var pick []engine.Finding
-	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
+	for _, f := range s.Scanner.Evaluate(results, s.Lang, true).Findings {
 		if want[engine.FindingID(f)] {
 			pick = append(pick, f)
 		}
@@ -590,13 +615,72 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ 
 	writeJSON(w, http.StatusOK, map[string]any{"undone": len(done), "error": msg})
 }
 
-// tilde shows the home folder as ~, like the terminal report.
-func tilde(s string) string {
-	if h, err := os.UserHomeDir(); err == nil && h != "" {
-		return strings.ReplaceAll(s, h, "~")
-	}
-	return s
+// feedbackInfo describes this server for issue drafts.
+func (s *Server) feedbackInfo() feedback.Info {
+	return feedback.Info{Version: s.Version, Platform: platformName(), Via: "web"}
 }
+
+func draftJSON(d feedback.Draft) map[string]any {
+	return map[string]any{"preview": d.Preview, "url": d.URL, "title": d.Title, "shortened": d.Shortened, "kind": d.Kind}
+}
+
+// handleFeedback drafts a "this finding is wrong" issue for ?key= (or a
+// rule id in ?rule=). It only builds the link: the browser opens it and the
+// user submits it on GitHub, or not.
+func (s *Server) handleFeedback(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	target := strings.TrimSpace(r.URL.Query().Get("key"))
+	if target == "" {
+		target = strings.TrimSpace(r.URL.Query().Get("rule"))
+	}
+	if target == "" || len(target) > 200 {
+		errJSON(w, http.StatusBadRequest, "give ?key=FINDING_KEY or ?rule=RULE_ID")
+		return
+	}
+	s.mu.Lock()
+	results := s.results
+	s.mu.Unlock()
+	sc := feedback.NewScrubber(feedback.DefaultEnv())
+	if results != nil {
+		// In English: the issue tracker's language.
+		ev := s.Scanner.Evaluate(results, "en", true)
+		if pick, err := ignore.Pick(append(ev.Findings, ev.Ignored...), target); err == nil {
+			writeJSON(w, http.StatusOK, draftJSON(feedback.FalsePositive(pick[0], s.rule(pick[0].RuleID), s.feedbackInfo(), sc)))
+			return
+		}
+	}
+	if rule := s.rule(target); rule != nil {
+		writeJSON(w, http.StatusOK, draftJSON(feedback.ForRule(rule, s.feedbackInfo(), sc)))
+		return
+	}
+	errJSON(w, http.StatusNotFound, "no such finding or rule")
+}
+
+// handleFeedbackIdea drafts a "new check" issue from the user's words.
+func (s *Server) handleFeedbackIdea(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errJSON(w, http.StatusBadRequest, "send {\"text\": \"...\"}")
+		return
+	}
+	d, err := feedback.Idea(req.Text, s.feedbackInfo(), feedback.NewScrubber(feedback.DefaultEnv()))
+	if err != nil {
+		errJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, draftJSON(d))
+}
+
+func platformName() string {
+	if runtime.GOOS == "darwin" {
+		return "macos"
+	}
+	return runtime.GOOS
+}
+
+// tilde shows the home folder as ~, like the terminal report.
+func tilde(s string) string { return report.Tilde(s) }
 
 // rule finds a loaded rule by id.
 func (s *Server) rule(id string) *engine.Rule {
@@ -631,4 +715,30 @@ func (s *Server) Run(ctx context.Context, ln net.Listener) error {
 func HasUI(ui fs.FS) bool {
 	_, err := fs.Stat(ui, "index.html")
 	return err == nil
+}
+
+// handleSources lists what each source collects and every rule, for the
+// "Rules & sources" page. Read-only: rules and schema are in the binary.
+func (s *Server) handleSources(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	lang := langOf(r, s.Lang)
+	type apiRule struct {
+		ID        string   `json:"id"`
+		Severity  string   `json:"severity"`
+		Tier      string   `json:"tier"`
+		Source    string   `json:"source"`
+		Category  string   `json:"category"`
+		Platforms []string `json:"platforms"`
+		Title     string   `json:"title"`
+		Check     string   `json:"check"`
+		Author    string   `json:"author,omitempty"`
+	}
+	rs := []apiRule{}
+	for _, x := range s.Scanner.Rules {
+		rs = append(rs, apiRule{x.ID, x.Severity, x.Tier, x.Source, report.Category(x.Source), x.Platforms, x.Title.Get(lang), x.Check.Get(lang), x.Credit()})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"sources":  rulecheck.Sources(s.Scanner.Rules, lang),
+		"rules":    rs,
+		"docs_url": rulecheck.DocsURL,
+	})
 }

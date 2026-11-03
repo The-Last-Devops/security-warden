@@ -13,8 +13,8 @@ explain:
   en: "{program} runs as root at boot, but it (or its plist) can be replaced without admin rights. Anything running as you can become root."
   vi: "{program} chạy bằng root khi khởi động, nhưng nó (hoặc file plist) thay được mà không cần quyền admin. Thứ gì chạy dưới tên bạn cũng leo lên root được."
 fix:
-  en: "Make it root-owned and not writable by others: sudo chown root:wheel {program} && sudo chmod go-w {program}. Remove the daemon if you don't need it."
-  vi: "Đổi chủ sở hữu về root và bỏ quyền ghi của người khác: sudo chown root:wheel {program} && sudo chmod go-w {program}. Không cần thì gỡ daemon đó."
+  en: "Make it root-owned and not writable by others: `sudo chown root:wheel {program} && sudo chmod go-w {program}`. Remove the daemon if you don't need it."
+  vi: "Đổi chủ sở hữu về root và bỏ quyền ghi của người khác: `sudo chown root:wheel {program} && sudo chmod go-w {program}`. Không cần thì gỡ daemon đó."
 author: the-last-devops
 tests:
   - {"item": {"kind": "launchd", "scope": "system-daemon", "label": "com.vendor.agent", "plist": "/Library/LaunchDaemons/com.vendor.agent.plist", "program": "/opt/vendor/agent", "apple": false, "run_at_load": true, "inline_script": false, "program_in_tmp": false, "program_exists": true, "program_user_writable": true, "plist_writable": false, "signed": true, "team_id": "ABCDE12345"}, "expect": true}

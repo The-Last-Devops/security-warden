@@ -13,8 +13,8 @@ explain:
   en: "Line {line_no} downloads a script and runs it each time a terminal opens. If that server is compromised, so is your machine."
   vi: "Dòng {line_no} tải script về và chạy mỗi lần mở terminal. Máy chủ đó bị chiếm là máy bạn bị chiếm theo."
 fix:
-  en: "Download the script once, review it, and source the local copy."
-  vi: "Tải script về một lần, đọc kỹ, rồi source bản trên máy."
+  en: "1. Open `{file}` and look at line {line_no}. 2. Replace it: download the script once (`curl -fsSL <url> -o ~/<name>.sh`), read it, and `source` that local file instead; or install the tool with your package manager. 3. Open a new terminal."
+  vi: "1. Mở `{file}` và xem dòng {line_no}. 2. Thay nó: tải script về một lần (`curl -fsSL <url> -o ~/<tên>.sh`), đọc qua, rồi `source` tệp trên máy thay vì tải mỗi lần; hoặc cài công cụ qua trình quản lý gói. 3. Mở terminal mới."
 author: the-last-devops
 tests:
   - {"item": {"kind": "pipe_to_shell", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": true}

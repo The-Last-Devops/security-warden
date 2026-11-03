@@ -1,0 +1,6 @@
+# Every change needs a review from the maintainer. This only takes effect
+# when branch protection requires review from Code Owners: see
+# docs/review-guide.md#repository-settings-to-enable-by-hand.
+*           @itlboy
+/rules/     @itlboy
+/.github/   @itlboy

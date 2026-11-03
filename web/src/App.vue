@@ -1,11 +1,19 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { api } from './api.js'
+import { api, experimentalOn, setExperimental } from './api.js'
 import { dict } from './i18n.js'
 import { passkeySupported } from './passkey.js'
 import SevChip from './components/SevChip.vue'
 import Segmented from './components/Segmented.vue'
+import SettingsDialog from './components/SettingsDialog.vue'
+import FixSteps from './components/FixSteps.vue'
+import CodeLine from './components/CodeLine.vue'
+import PerPlace from './components/PerPlace.vue'
+import { perPlace, placeOf } from './fixgroup.js'
 import FindingRow from './components/FindingRow.vue'
+import RulesPage from './components/RulesPage.vue'
+import TierBadge from './components/TierBadge.vue'
+import FeedbackDialog from './components/FeedbackDialog.vue'
 
 // Per-viewer preferences: "auto" follows the browser / system.
 const pref = key => { try { return localStorage.getItem(key) } catch { return null } }
@@ -37,7 +45,8 @@ function say(msg, isError = false, action = null) {
 }
 const fail = e => { if (e.status === 401) signedOut.value = true; else say(`${t.value.error}: ${e.message}`, true) }
 
-const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software']
+const codeCats = ['code_secrets', 'code_deps']
+const categories = ['secrets', 'exposure', 'settings', 'persistence', 'ai', 'devtools', 'software', ...codeCats]
 const sevOrder = ['critical', 'high', 'medium', 'low', 'info']
 
 async function load(force = false) {
@@ -151,6 +160,7 @@ const sortedCategories = computed(() => [...categories].sort((a, b) => {
   const rb = worst.value[b] ? sevOrder.indexOf(worst.value[b]) : 99
   return ra - rb || (counts.value[b] || 0) - (counts.value[a] || 0) || categories.indexOf(a) - categories.indexOf(b)
 }))
+const worstDot = { critical: 'bg-crit', high: 'bg-high', medium: 'bg-med', low: 'bg-low', info: 'bg-info' }
 const worstText = { critical: 'text-crit', high: 'text-high', medium: 'text-med', low: 'text-low', info: 'text-info' }
 const groups = computed(() => {
   const by = new Map()
@@ -164,11 +174,41 @@ const groups = computed(() => {
 })
 // On "All", the most important group becomes the single "next step" card.
 const nextGroup = computed(() => (cat.value === 'all' ? groups.value[0] || null : null))
+const nextPP = computed(() => (nextGroup.value ? perPlace([nextGroup.value.first, ...nextGroup.value.rest]) : null))
 const listGroups = computed(() => (nextGroup.value ? groups.value.slice(1) : groups.value))
+// "By repo" view: everything about one repository together; problems of the
+// machine itself come first under its own heading.
+const view = ref('sev')
+const repoOf = f => f.repo || ''
+const repoSections = computed(() => {
+  const by = new Map()
+  for (const f of findings.value) {
+    if (cat.value !== 'all' && f.category !== cat.value) continue
+    const repo = scopeOf(f.category) === 'code' ? repoOf(f) || t.value.otherRepos : ''
+    if (!by.has(repo)) by.set(repo, new Map())
+    const rules = by.get(repo)
+    if (!rules.has(f.rule_id)) rules.set(f.rule_id, { first: f, rest: [], fixable: [] })
+    else rules.get(f.rule_id).rest.push(f)
+    if (f.can_fix) rules.get(f.rule_id).fixable.push(f)
+  }
+  const rank = g => sevOrder.indexOf(g.first.severity)
+  return [...by.entries()].map(([repo, rules]) => ({ repo, groups: [...rules.values()].sort((a, b) => rank(a) - rank(b)) }))
+    .sort((a, b) => (a.repo === '' ? -1 : b.repo === '' ? 1 : rank(a.groups[0]) - rank(b.groups[0]) || b.groups.length - a.groups.length))
+})
 const sections = computed(() => sevOrder.map(sev => ({ sev, groups: listGroups.value.filter(g => g.first.severity === sev) })).filter(x => x.groups.length))
 const nextOpen = ref(false)
 const scoreColor = computed(() => { const sc = data.value?.scan.score ?? 0; return sc >= 75 ? 'var(--color-ok)' : sc >= 50 ? 'var(--color-med)' : 'var(--color-crit)' })
 const RING = 2 * Math.PI * 30
+// Two scopes: the machine itself, and the code (repositories) on it.
+const scopeOf = c => (codeCats.includes(c) ? 'code' : 'machine')
+const colorOf = sc => (sc >= 75 ? 'var(--color-ok)' : sc >= 50 ? 'var(--color-med)' : sc >= 26 ? 'var(--color-high)' : 'var(--color-crit)')
+const scopes = computed(() => ['machine', 'code'].map(id => {
+  const fs = findings.value.filter(f => scopeOf(f.category) === id)
+  const kinds = new Set(fs.map(f => f.rule_id)).size
+  const worstSev = sevOrder.find(sv => fs.some(f => f.severity === sv))
+  const score = data.value?.scan[id === 'machine' ? 'score_machine' : 'score_code'] ?? 0
+  return { id, score, kinds, worstSev, color: colorOf(score), cats: sortedCategories.value.filter(c => scopeOf(c) === id) }
+}))
 const safeFixes = computed(() => findings.value.filter(f => f.can_fix))
 // Points earned by fixing every safe item (each rule counts once).
 const passedN = computed(() => (data.value?.scan.passed || []).length)
@@ -228,6 +268,12 @@ async function ignoreFindings(list, days) {
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
 const menuOpen = ref(false)
+const rulesOpen = ref(false)
+// Feedback dialog: { key } for a wrong finding, { key: '' } for a new idea.
+const feedbackAsk = ref(null)
+// Experimental checks: per viewer; the cached scan is evaluated again with them.
+const experimental = ref(experimentalOn())
+watch(experimental, v => { setExperimental(v); if (meta.value) load() })
 const watchOpen = ref(false)
 const upd = ref(null)
 async function refreshUpdate() { try { upd.value = await api.updateStatus() } catch {} }
@@ -236,8 +282,8 @@ async function toggleAuto() {
   try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
 }
 onMounted(refreshUpdate)
-function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false } }
-onMounted(() => document.addEventListener('click', () => { menuOpen.value = false; watchOpen.value = false }))
+function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false; rulesOpen.value = false; feedbackAsk.value = null } }
+onMounted(() => document.addEventListener('click', () => { watchOpen.value = false }))
 </script>
 
 <template>
@@ -285,41 +331,10 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <p class="border-t border-line pt-3 text-[13px] text-muted">{{ data.watching ? t.watchNext(fmtTime(new Date(new Date(data.scanned_at).getTime() + 30 * 60000).toISOString())) + ' ' + t.watchStop : t.local }}</p>
           </div>
         </div>
-        <div class="relative ml-auto">
-          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="t.settings" :aria-expanded="menuOpen" @click.stop="menuOpen = !menuOpen; watchOpen = false">
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="2" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
-          </button>
-          <div v-if="menuOpen" class="rise absolute right-0 z-30 mt-2 grid w-72 gap-4 rounded-2xl border border-line bg-panel p-4 shadow-2xl" role="menu" @click.stop>
-            <div class="grid gap-2"><span class="caps">{{ t.theme }}</span><Segmented v-model="themePref" :options="themeOptions" :label="t.theme" /></div>
-            <div class="grid gap-2"><span class="caps">{{ t.language }}</span><Segmented v-model="langPref" :options="langOptions" :label="t.language" /></div>
-            <div v-if="canPasskey || pk.count" class="grid gap-2">
-              <span class="caps">{{ t.passkeysSection }} · <span class="num">{{ pk.count }}</span></span>
-              <div class="flex gap-2">
-                <button v-if="canPasskey" class="flex-1 rounded-[10px] bg-accent px-3 py-2 text-[13px] font-semibold text-accent-ink hover:brightness-110" @click="menuOpen = false; addPasskey()">{{ t.addPasskey }}</button>
-                <button v-if="pk.count" class="rounded-[10px] border border-line px-3 py-2 text-[13px] font-semibold text-muted hover:text-crit" @click="menuOpen = false; clearPasskeys()">{{ t.removePasskeys }}</button>
-              </div>
-            </div>
-            <div v-if="upd" class="grid gap-2">
-              <span class="caps">{{ t.updates }}</span>
-              <label class="flex items-center justify-between gap-3 text-[14px]">
-                <span>{{ t.autoUpdate }}</span>
-                <button type="button" role="switch" :aria-checked="upd.auto" class="relative h-6 w-11 rounded-full transition-colors" :class="upd.auto ? 'bg-accent' : 'bg-line'" @click="toggleAuto">
-                  <span class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all" :class="upd.auto ? 'left-[22px]' : 'left-0.5'" />
-                </button>
-              </label>
-              <span class="text-[12.5px] text-muted">{{ t.version(upd.current) }}</span>
-              <div v-if="upd.method === 'brew'" class="grid gap-1 text-[12.5px] text-muted">
-                <span>{{ t.updateCmds }}</span>
-                <code class="rounded-md bg-panel2 px-2 py-1 font-mono text-[12px] text-fg ring-1 ring-line">security-warden update</code>
-                <code class="rounded-md bg-panel2 px-2 py-1 font-mono text-[12px] text-fg ring-1 ring-line">brew upgrade security-warden</code>
-              </div>
-            </div>
-            <div class="border-t border-line pt-3">
-              <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg disabled:opacity-50" :disabled="busy" @click="menuOpen = false; undo()">{{ t.undo }}</button>
-              <button class="w-full rounded-[10px] px-3 py-2 text-left text-[14px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="menuOpen = false; logout()">{{ t.signOut }}</button>
-            </div>
-          </div>
-        </div>
+        <button class="ml-auto flex items-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold text-muted hover:text-fg" :aria-label="t.settings" @click.stop="menuOpen = true; watchOpen = false">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+          <span class="hidden sm:inline">{{ t.settings }}</span>
+        </button>
       </div>
     </header>
 
@@ -337,17 +352,18 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
       <!-- left: score, counts, groups -->
       <aside class="grid content-start gap-5">
         <section class="panel grid gap-4 p-5">
-          <div class="flex items-center gap-4">
-            <svg width="68" height="68" viewBox="0 0 76 76" class="shrink-0" role="img" :aria-label="`${t.score}: ${data?.scan.score ?? 0}/100`">
-              <circle cx="38" cy="38" r="31" fill="none" stroke="var(--color-line)" stroke-width="6" />
-              <circle cx="38" cy="38" r="31" fill="none" :stroke="scoreColor" stroke-width="6" stroke-linecap="round"
-                :stroke-dasharray="`${(RING * Math.max(data?.scan.score ?? 0, 1)) / 100} ${RING}`" transform="rotate(-90 38 38)" class="transition-all duration-700" />
-              <text x="38" y="45" text-anchor="middle" font-size="23" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ data?.scan.score ?? 0 }}</text>
+          <div v-for="(sc, k) in scopes" :key="sc.id" class="grid grid-cols-[56px_1fr] items-center gap-3" :class="k ? 'border-t border-line pt-4' : ''">
+            <svg width="56" height="56" viewBox="0 0 76 76" role="img" :aria-label="`${t['scope_' + sc.id]}: ${sc.score}/100`">
+              <circle cx="38" cy="38" r="31" fill="none" stroke="var(--color-line)" stroke-width="7" />
+              <circle cx="38" cy="38" r="31" fill="none" :stroke="sc.color" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${(RING * Math.max(sc.score, 1)) / 100} ${RING}`" transform="rotate(-90 38 38)" class="transition-all duration-700" />
+              <text x="38" y="46" text-anchor="middle" font-size="24" font-weight="800" fill="var(--color-fg)" font-family="Plus Jakarta Sans, sans-serif">{{ sc.score }}</text>
             </svg>
-            <div class="min-w-0">
-              <p class="text-[17px] leading-tight font-bold" :style="{ color: scoreColor }">{{ data ? (sevCounts.critical ? t.verdictCrit : t.verdict(data.scan.score)) : t.scanning }}</p>
-              <p class="mt-1 text-[13px] text-muted">{{ t.passedShort(passedN, groupsAll) }}</p>
-            </div>
+            <button class="min-w-0 text-left" @click="cat = sc.cats[0] && sc.kinds ? sc.cats[0] : cat">
+              <span class="caps flex items-center gap-1.5"><svg v-if="sc.id === 'machine'" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><rect x="4" y="5" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 19h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><svg v-else width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ t['scope_' + sc.id] }}</span>
+              <span class="block text-[15.5px] leading-tight font-bold" :style="{ color: sc.color }">{{ data ? (sc.kinds ? t.toFix(sc.kinds) : t.allGood) : t.scanning }}</span>
+              <span class="mt-0.5 block text-[12.5px] text-muted">{{ t['scope_' + sc.id + '_help'] }}</span>
+            </button>
           </div>
           <button v-if="safeFixes.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(safeFixes)">{{ t.fixSafe(safeFixes.length) }}</button>
           <div class="flex items-center gap-2">
@@ -363,12 +379,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             :class="cat === 'all' ? 'bg-accent-soft text-accent' : 'hover:bg-panel2'" @click="cat = 'all'">
             {{ t.all }} <span class="num">{{ groupsAll }}</span>
           </button>
-          <button v-for="c in sortedCategories" :key="c" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
-            :class="cat === c ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = c">
-            {{ t[c] }}
-            <span class="num font-bold" :class="counts[c] ? worstText[worst[c]] : 'text-muted/50'">{{ counts[c] || 0 }}</span>
-          </button>
-          <div class="my-1.5 border-t border-line" />
+          <template v-for="sc in scopes" :key="sc.id">
+            <div class="caps flex items-center gap-1.5 px-3 pt-3 pb-1"><svg v-if="sc.id === 'machine'" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><rect x="4" y="5" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 19h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><svg v-else width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ t['scope_' + sc.id] }}</div>
+            <button v-for="c in sc.cats" :key="c" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[15px]"
+              :class="cat === c ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = c">
+              <i class="h-2 w-2 shrink-0 rounded-full" :class="counts[c] ? worstDot[worst[c]] : 'bg-line'" />
+              {{ t[c] }}
+              <span class="num ml-auto font-bold" :class="counts[c] ? worstText[worst[c]] : 'text-muted/50'">{{ counts[c] || 0 }}</span>
+            </button>
+          </template>
+          <div class="caps px-3 pt-3 pb-1">{{ t.other }}</div>
           <button class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[15px]"
             :class="cat === 'safe' ? 'bg-accent-soft font-semibold text-accent' : 'text-fg/85 hover:bg-panel2'" @click="cat = 'safe'">
             <span class="flex items-center gap-2"><span class="text-ok">✓</span>{{ t.safeView }}</span> <span class="num font-bold text-ok">{{ passedList.length }}</span>
@@ -378,6 +398,10 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             {{ t.ignoredView }} <span class="num text-muted">{{ ignored.length }}</span>
           </button>
         </nav>
+        <button class="flex items-center gap-2 justify-self-start rounded-lg px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="rulesOpen = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="M5 4h11l3 3v13H5zM9 10h6M9 14h6M9 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          {{ t.rulesSources }}
+        </button>
       </aside>
 
       <!-- right: list -->
@@ -385,7 +409,9 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <div class="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
           <h1 class="text-[19px] font-bold">{{ listTitle }}</h1>
           <span v-if="!['ignored', 'safe'].includes(cat)" class="num rounded-full bg-panel2 px-2.5 py-0.5 text-[13px] font-bold text-muted ring-1 ring-line">{{ groups.length }}</span>
-          <span v-if="ignored.length && cat !== 'ignored'" class="ml-auto text-[13px] text-muted">{{ t.ignoredNote(ignored.length) }}</span>
+          <div v-if="!['ignored', 'safe'].includes(cat)" class="ml-auto inline-flex rounded-[10px] bg-panel2 p-0.5 ring-1 ring-line" role="group">
+            <button v-for="v in ['sev', 'repo']" :key="v" class="rounded-lg px-3 py-1 text-[13px] font-semibold" :class="view === v ? 'bg-panel text-fg shadow-sm ring-1 ring-line' : 'text-muted hover:text-fg'" :aria-pressed="view === v" @click="view = v">{{ v === 'sev' ? t.bySeverity : t.byRepo }}</button>
+          </div>
         </div>
 
         <!-- safe: what already passes -->
@@ -396,7 +422,7 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
             <ul class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               <li v-for="p in g.items" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
                 <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
-                <span>{{ p.label }}</span>
+                <span>{{ p.label }}<TierBadge v-if="p.tier" class="ml-2 align-[2px]" :tier="p.tier" :t="t" /></span>
               </li>
             </ul>
           </section>
@@ -418,38 +444,55 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         <div v-else>
           <p v-if="data && !groups.length && cat !== 'all'" class="mx-5 mt-5 rounded-xl bg-ok-bg px-5 py-3.5 text-[15px] font-semibold text-ok">{{ t.noIssues }}</p>
           <p v-if="data && !groups.length && cat === 'all'" class="mx-5 my-6 rounded-xl bg-ok-bg px-5 py-4 text-center text-[15px] font-semibold text-ok">{{ t.allClear }}</p>
-          <article v-if="nextGroup" class="m-3 mb-1 overflow-hidden rounded-2xl bg-panel2 ring-1 ring-line">
+          <article v-if="nextGroup && view === 'sev'" class="m-3 mb-1 overflow-hidden rounded-2xl bg-panel ring-1 ring-line">
             <div class="flex flex-wrap items-center gap-2 px-5 py-2.5"
-              :class="{ critical: 'bg-rail-crit text-white', high: 'bg-rail-high text-white', medium: 'bg-rail-med text-[#1a1300]', low: 'bg-rail-low text-white', info: 'bg-rail-info text-white' }[nextGroup.first.severity]">
+              :class="{ critical: 'bg-crit-bg text-crit', high: 'bg-high-bg text-high', medium: 'bg-med-bg text-med', low: 'bg-low-bg text-low', info: 'bg-panel2 text-muted' }[nextGroup.first.severity]">
               <span class="text-[12.5px] font-extrabold tracking-[.1em] uppercase">{{ t.nextUp }} · {{ t.sev[nextGroup.first.severity] }}</span>
+              <span v-if="nextGroup.rest.length" class="ml-auto font-mono text-[12.5px] text-muted">{{ t.places(nextGroup.rest.length + 1) }}</span>
             </div>
-            <div class="grid gap-3 p-5">
-            <h2 class="text-[21px] leading-snug font-extrabold tracking-tight">{{ nextGroup.first.title.split(': ')[0] }}</h2>
-            <p class="max-w-[72ch] text-[15px] leading-relaxed text-fg/85">{{ nextGroup.first.explain }}</p>
-            <div class="rounded-xl bg-panel px-4 py-3 ring-1 ring-line">
-              <div class="caps mb-1">{{ t.howLabel }}</div>
-              <div v-if="nextGroup.first.plan" class="font-mono text-[13.5px]">{{ nextGroup.first.plan.map(p => '$ ' + p).join('\n') }}</div>
-              <p v-else class="text-[14.5px] leading-relaxed">{{ nextGroup.first.fix }}</p>
-            </div>
-            <ul v-if="nextOpen" class="grid max-h-60 gap-1 overflow-y-auto rounded-xl bg-panel px-4 py-3 font-mono text-[12.5px] text-muted ring-1 ring-line">
-              <li v-for="x in [nextGroup.first, ...nextGroup.rest]" :key="x.key" class="break-all">{{ x.title.includes(': ') ? x.title.slice(x.title.indexOf(': ') + 2) : x.title }}</li>
-            </ul>
-            <div class="flex flex-wrap items-center gap-2">
-              <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>
-              <button v-if="nextGroup.rest.length" class="rounded-xl border border-line bg-panel px-4 py-2.5 text-[14px] font-semibold hover:text-accent" @click="nextOpen = !nextOpen">{{ nextOpen ? t.showLess : t.seePlaces(nextGroup.rest.length + 1) }}</button>
-              <button class="ml-auto rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="askHide([nextGroup.first, ...nextGroup.rest])">{{ t.ignore }}…</button>
-            </div>
+            <div class="grid gap-4 p-5">
+              <h2 class="text-[21px] leading-snug font-extrabold tracking-tight text-balance">{{ nextGroup.first.title.split(': ')[0] }}</h2>
+              <p v-if="nextGroup.first.author" class="-mt-3 text-[12.5px] text-muted"><a :href="`https://github.com/${nextGroup.first.author}`" target="_blank" rel="noopener noreferrer" class="hover:text-accent hover:underline">{{ t.byAuthor(nextGroup.first.author) }}</a></p>
+              <p class="max-w-[75ch] text-[15px] leading-relaxed text-muted">{{ nextGroup.first.explain }}</p>
+              <div v-if="nextGroup.rest.length" class="flex flex-wrap gap-1.5">
+                <span v-for="x in (nextOpen ? [nextGroup.first, ...nextGroup.rest] : [nextGroup.first, ...nextGroup.rest].slice(0, 2))" :key="x.key"
+                  class="max-w-full truncate rounded-md bg-panel2 px-2 py-0.5 font-mono text-[12.5px] text-muted ring-1 ring-line">{{ placeOf(x) }}</span>
+                <button class="rounded-md px-2 py-0.5 text-[12.5px] font-semibold text-accent hover:bg-accent-soft" @click="nextOpen = !nextOpen">{{ nextOpen ? t.showLess : t.morePlaces(nextGroup.rest.length - 1) }}</button>
+              </div>
+              <div class="grid gap-3 rounded-xl bg-panel2 px-4 py-3.5 ring-1 ring-line">
+                <div class="caps">{{ t.howLabel }}</div>
+                <PerPlace v-if="nextPP && nextPP.plan" :pp="nextPP" :t="t" />
+                <div v-else-if="nextGroup.first.plan" class="grid gap-1.5"><CodeLine v-for="(c, k) in nextGroup.first.plan" :key="k" :code="c" :t="t" /></div>
+                <template v-else>
+                  <FixSteps :text="nextGroup.first.fix" :t="t" :hide="nextPP ? nextPP.hide : undefined" />
+                  <PerPlace v-if="nextPP" class="border-t border-line pt-3" :pp="nextPP" :t="t" />
+                </template>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button v-if="nextGroup.fixable.length" class="rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-50" :disabled="busy" @click="askFix(nextGroup.fixable)">{{ t.fixNow }}</button>
+                <button class="ml-auto rounded-lg px-2 py-2.5 text-[13px] text-muted hover:text-accent hover:underline" @click="feedbackAsk = { key: nextGroup.first.key }">{{ t.reportFp }}</button>
+                <button class="rounded-xl px-3 py-2.5 text-[14px] font-semibold text-muted hover:text-fg" @click="askHide([nextGroup.first, ...nextGroup.rest])">{{ t.ignore }}…</button>
+              </div>
             </div>
           </article>
-          <h2 v-if="nextGroup && sections.length" class="px-5 pt-5 text-[13px] font-bold tracking-[.1em] text-muted uppercase">{{ t.remaining }} · {{ listGroups.length }}</h2>
-          <section v-for="sec in sections" :key="sec.sev">
+          <h2 v-if="view === 'sev' && nextGroup && sections.length" class="px-5 pt-5 text-[13px] font-bold tracking-[.1em] text-muted uppercase">{{ t.remaining }} · {{ listGroups.length }}</h2>
+          <section v-for="rs in (view === 'repo' ? repoSections : [])" :key="'r' + rs.repo">
+            <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
+              <span class="caps !text-fg" :class="rs.repo ? 'font-mono !normal-case !tracking-normal' : ''">{{ rs.repo || t.scope_machine }}</span>
+              <span class="num text-[13px] font-bold text-muted">{{ rs.groups.length }}</span>
+            </h2>
+            <div class="grid gap-2 px-3 pt-2 pb-1">
+              <FindingRow v-for="(g, i) in rs.groups" :key="rs.repo + g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" @report="k => (feedbackAsk = { key: k })" />
+            </div>
+          </section>
+          <section v-for="sec in (view === 'sev' ? sections : [])" :key="sec.sev">
             <h2 class="flex items-center gap-2 px-5 pt-4 pb-0.5">
               <span class="h-2.5 w-2.5 rounded-full" :class="{ critical: 'bg-rail-crit', high: 'bg-rail-high', medium: 'bg-rail-med', low: 'bg-rail-low', info: 'bg-rail-info' }[sec.sev]" />
               <span class="caps !text-fg">{{ t.sev[sec.sev] }}</span>
               <span class="num text-[13px] font-bold text-muted">{{ sec.groups.length }}</span>
             </h2>
             <div class="grid gap-2 px-3 pt-2 pb-1">
-              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" />
+              <FindingRow v-for="(g, i) in sec.groups" :key="g.first.rule_id" :group="g" :index="i" :t="t" :busy="busy" @fix="askFix" @ignore="askHide" @report="k => (feedbackAsk = { key: k })" />
             </div>
           </section>
           <section v-if="hiddenGroups.length" class="mx-3 mt-4 mb-1 rounded-2xl bg-panel2/60 px-4 py-3.5 ring-1 ring-line">
@@ -464,12 +507,16 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
               <button class="shrink-0 rounded-lg border border-line bg-panel px-2.5 py-1 text-[13px] font-semibold hover:text-accent" @click="restore(g.keys)">{{ t.restore }}</button>
             </div>
           </section>
+          <div v-if="data" class="mx-3 mt-4 mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-[13px] text-muted">
+            <span>{{ t.suggestCheckHelp }}</span>
+            <button class="font-semibold text-accent hover:underline" @click="feedbackAsk = { key: '' }">{{ t.suggestCheck }}</button>
+          </div>
           <section v-if="data && cat !== 'all' && catPassed.length" class="px-5 pt-5 pb-4">
             <h2 class="caps mb-3">{{ t.safeView }} · <span class="num">{{ catPassed.length }}</span></h2>
             <ul v-if="catPassed.length" class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               <li v-for="p in catPassed" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
                 <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
-                <span>{{ p.label }}</span>
+                <span>{{ p.label }}<TierBadge v-if="p.tier" class="ml-2 align-[2px]" :tier="p.tier" :t="t" /></span>
               </li>
             </ul>
           </section>
@@ -516,6 +563,13 @@ onMounted(() => document.addEventListener('click', () => { menuOpen.value = fals
         </section>
       </div>
     </Transition>
+
+    <SettingsDialog v-if="menuOpen" v-model:theme="themePref" v-model:lang="langPref" v-model:experimental="experimental" :t="t" :theme-options="themeOptions" :lang-options="langOptions"
+      :pk="pk" :can-passkey="canPasskey" :upd="upd" :busy="busy" :checked-at="upd?.checked && new Date(upd.checked).getFullYear() > 2000 ? fmtTime(upd.checked) : ''"
+      @close="menuOpen = false" @add-passkey="menuOpen = false; addPasskey()" @clear-passkeys="menuOpen = false; clearPasskeys()"
+      @toggle-auto="toggleAuto" @undo="menuOpen = false; undo()" @logout="menuOpen = false; logout()" @rules="menuOpen = false; rulesOpen = true" />
+    <RulesPage v-if="rulesOpen" :t="t" :lang="lang" @close="rulesOpen = false" />
+    <FeedbackDialog v-if="feedbackAsk" :t="t" :finding-key="feedbackAsk.key" @close="feedbackAsk = null" />
 
     <!-- hide confirmation -->
     <div v-if="hideAsk" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="hideAsk = null">

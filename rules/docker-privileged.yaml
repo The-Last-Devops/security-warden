@@ -13,8 +13,8 @@ explain:
   en: "{container} ({image}) runs privileged or mounts docker.sock. If it is compromised, the attacker controls every container and the Docker host."
   vi: "{container} ({image}) chạy privileged hoặc mount docker.sock. Nó bị chiếm là kẻ tấn công điều khiển được mọi container và máy chạy Docker."
 fix:
-  en: "Remove privileged: true and the docker.sock volume unless the container really manages Docker."
-  vi: "Bỏ privileged: true và volume docker.sock, trừ khi container đó thật sự quản lý Docker."
+  en: "1. In the compose file of {container}, remove `privileged: true` and the `/var/run/docker.sock` volume unless the container really manages Docker. 2. Apply it: `docker compose up -d` (recreates only the changed containers)."
+  vi: "1. Trong tệp compose của {container}, bỏ `privileged: true` và volume `/var/run/docker.sock`, trừ khi container đó thật sự quản lý Docker. 2. Áp dụng: `docker compose up -d` (chỉ tạo lại container có thay đổi)."
 author: the-last-devops
 tests:
   - {item: {container: a, image: x, privileged: true, mounts_docker_sock: false}, expect: true}

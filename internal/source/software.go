@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -62,7 +63,7 @@ var pathHints = []struct {
 }
 
 func identify(path string) (knownServer, bool) {
-	if s, ok := servers[filepath.Base(path)]; ok {
+	if s, ok := servers[strings.TrimSuffix(filepath.Base(path), ".exe")]; ok {
 		return s, true
 	}
 	lp := strings.ToLower(path)
@@ -223,11 +224,22 @@ func services(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
-// outdatedRunning lists every running Homebrew program with a newer version
-// available, plus one summary item with the total outdated count.
+// outdatedSoftware lists every running Homebrew program with a newer version
+// available, plus one summary item with the total outdated count. On Linux
+// it adds one "packages" item for the apt or dnf updates waiting.
 func outdatedSoftware(ctx context.Context) ([]Item, error) {
+	var pkgs []Item
+	if runtime.GOOS == "linux" {
+		pkgs = linuxPackageUpdates(ctx)
+	}
 	o, err := outdatedOnce()
 	if err != nil {
+		if len(pkgs) > 0 {
+			return pkgs, nil
+		}
+		if _, skip := err.(Skip); skip && runtime.GOOS == "linux" {
+			return nil, Skip{"skip.packages"}
+		}
 		return nil, err
 	}
 	latest := map[string]string{}
@@ -272,5 +284,5 @@ func outdatedSoftware(ctx context.Context) ([]Item, error) {
 		"casks":    len(o.Casks),
 		"total":    len(o.Formulae) + len(o.Casks),
 	})
-	return items, nil
+	return append(items, pkgs...), nil
 }

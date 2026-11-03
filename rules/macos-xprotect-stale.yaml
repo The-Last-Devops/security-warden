@@ -13,8 +13,8 @@ explain:
   en: "Apple usually updates XProtect every one to three weeks. Old definitions miss recent malware."
   vi: "Apple thường cập nhật XProtect mỗi 1–3 tuần. Dữ liệu cũ bỏ sót mã độc mới."
 fix:
-  en: "Run: sudo xprotect update (or turn on security responses in Software Update)."
-  vi: "Chạy: sudo xprotect update (hoặc bật phản hồi bảo mật trong Cập nhật phần mềm)."
+  en: "Run: `sudo xprotect update` (or turn on security responses in Software Update). These commands need admin rights: sudo asks for your password."
+  vi: "Chạy: `sudo xprotect update` (hoặc bật phản hồi bảo mật trong Cập nhật phần mềm). Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {"item": {"os": "macos", "xprotect_age_days": 90}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: Anyone can log in to this machine without a password and use its network.
   vi: Ai cũng đăng nhập được máy này không cần mật khẩu và dùng mạng của nó.
 fix:
-  en: "System Settings > Users & Groups > Guest User > turn off."
-  vi: "Cài đặt hệ thống > Người dùng & Nhóm > Người dùng khách > tắt."
+  en: "Press Fix to do it automatically, or: System Settings › Users & Groups › Guest User › turn off Allow guests to log in to this computer."
+  vi: "Bấm Sửa để tự sửa, hoặc: Cài đặt hệ thống › Người dùng & Nhóm › Người dùng khách › tắt Cho phép khách đăng nhập vào máy tính này."
 author: the-last-devops
 tests:
   - {item: {guest_account: true}, expect: true}

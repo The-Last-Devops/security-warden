@@ -1,0 +1,21 @@
+id: project-dependency-no-fix
+severity: medium
+platforms: [macos, windows, linux]
+source: project_deps
+match: "item.fixed == \"\""
+title:
+  en: "Library with a known vulnerability and no fix yet: {repo_name} · {package} {version}"
+  vi: "Thư viện có lỗ hổng chưa có bản vá: {repo_name} · {package} {version}"
+check:
+  en: "No project dependency with an unfixed known vulnerability"
+  vi: "Không thư viện nào trong dự án có lỗ hổng chưa được vá"
+explain:
+  en: "{lockfile} in {repo} pins {package} {version} ({ecosystem}), which has a published vulnerability that no release fixes yet: {ids}. Vulnerable packages in this repo: {packages}. Matched offline against the OSV database (osv.dev)."
+  vi: "{lockfile} trong {repo} đang dùng {package} {version} ({ecosystem}), bản này có lỗ hổng đã công bố mà chưa bản nào vá: {ids}. Số thư viện có lỗ hổng trong repo này: {packages}. Đối chiếu ngay trên máy với dữ liệu OSV (osv.dev)."
+fix:
+  en: "Read {ids} on osv.dev: many only matter when you use one feature, and some list a workaround. If you do not need {package} directly, `cd {project} && {why}` shows what pulls it in; dropping or replacing that removes it. Otherwise snooze this and check again later."
+  vi: "Đọc {ids} trên osv.dev: nhiều lỗ hổng chỉ ảnh hưởng khi bạn dùng một tính năng cụ thể, có cái còn ghi cách tránh. Nếu không cần {package} trực tiếp, `cd {project} && {why}` cho biết thư viện nào kéo nó vào; bỏ hoặc thay thư viện đó là hết. Nếu không, hãy tạm ẩn mục này và xem lại sau."
+author: the-last-devops
+tests:
+  - {"item": {"repo": "/h/Code/app", "repo_name": "app", "project": "/h/Code/app", "lockfile": "Cargo.lock", "ecosystem": "crates.io", "package": "foo", "version": "0.1.0", "fixed": "", "ids": "RUSTSEC-2026-0001", "more_ids": 0, "severity": "moderate", "severe": false, "packages": 1, "others": 0, "upgrade_cmd": "cargo update -p foo --precise ", "why": "cargo tree -i foo"}, "expect": true}
+  - {"item": {"repo": "/h/Code/app", "repo_name": "app", "project": "/h/Code/app", "lockfile": "Cargo.lock", "ecosystem": "crates.io", "package": "foo", "version": "0.1.0", "fixed": "0.1.1", "ids": "RUSTSEC-2026-0001", "more_ids": 0, "severity": "moderate", "severe": false, "packages": 1, "others": 0, "upgrade_cmd": "cargo update -p foo --precise 0.1.1", "why": "cargo tree -i foo"}, "expect": false}

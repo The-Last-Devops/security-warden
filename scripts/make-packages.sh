@@ -13,4 +13,9 @@ for arch in amd64 arm64; do
     rm -f "dist/nfpm-$arch.yaml"
   done
 done
+# Copies without the version, so one fixed URL always gives the latest
+# release: .../releases/latest/download/security-warden_amd64.deb
+for arch in amd64 arm64; do cp dist/security-warden_"$version"_"$arch".deb dist/security-warden_"$arch".deb; done
+cp dist/security-warden-"$version"-1.x86_64.rpm dist/security-warden-x86_64.rpm
+cp dist/security-warden-"$version"-1.aarch64.rpm dist/security-warden-aarch64.rpm
 ls -l dist/*.deb dist/*.rpm

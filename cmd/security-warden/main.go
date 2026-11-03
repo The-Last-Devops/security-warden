@@ -1,5 +1,6 @@
 // Command security-warden checks a work machine for open doors and
-// secrets lying around. It only reads; it changes nothing and sends nothing.
+// secrets lying around. It only reads; it changes nothing and sends nothing
+// about the machine (the only download is public OSV vulnerability data).
 package main
 
 import (
@@ -55,6 +56,10 @@ func run(args []string) int {
 	if len(args) > 0 && args[0] != "" && args[0][0] != '-' {
 		cmd, args = args[0], args[1:]
 	}
+	if cmd == "mcp" && wantsHelp(args) {
+		fmt.Println(i18n.T(i18n.Detect(langFlag(args)), "mcp.usage"))
+		return 0
+	}
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 	lang := fs.String("lang", "", "language: "+fmt.Sprint(i18n.Supported))
 	asJSON := fs.Bool("json", false, "print JSON")
@@ -70,19 +75,39 @@ func run(args []string) int {
 	tab := fs.Bool("tab", false, "serve: open in a browser tab instead of an app window")
 	background := fs.Bool("background", false, "serve: run as a background service (no browser, scan and notify)")
 	popup := fs.String("popup", "high", "serve --background: open the window for new problems at this level or worse: critical|high|medium|off")
+	days := fs.Int("days", 7, "ignore add: hide for this many days (1 to 30)")
+	scope := fs.String("scope", "", "scan: only machine or code")
+	category := fs.String("category", "", "scan: only one category")
+	byRepo := fs.Bool("by-repo", false, "scan: group code findings per repository")
+	safe := fs.Bool("safe", false, "scan: list what already passes")
+	allowChanges := fs.Bool("allow-changes", false, "mcp: also offer the tools that change things (apply_fix, undo_fix, hide, restore)")
+	experimental := fs.Bool("experimental", false, "scan, fix: also run experimental rules (new, not yet reviewed); they never change the score")
+	ruleSource := fs.String("source", "", "rules new: the source the rule reads")
+	severity := fs.String("severity", "medium", "rules new: critical|high|medium|low")
+	platforms := fs.String("platforms", "", "rules new: comma-separated platforms (default: where the source runs)")
+	dir := fs.String("dir", "rules", "rules new: folder to write the rule in")
+	strict := fs.Bool("strict", false, "rules check: warnings fail too")
+	isNew := fs.Bool("new", false, "rules check: the files are new rules (must start experimental)")
+	idea := fs.String("idea", "", "feedback: suggest a new check, in your words")
+	openLink := fs.Bool("open", false, "feedback: open the link in the browser")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	// Flags may also follow a subcommand argument: "agent status --lang vi".
+	// Flags may also follow subcommand arguments: "ignore add x --days 1".
 	var subArgs []string
-	if fs.NArg() > 0 {
-		subArgs = []string{fs.Arg(0)}
+	for fs.NArg() > 0 {
+		subArgs = append(subArgs, fs.Arg(0))
 		if err := fs.Parse(fs.Args()[1:]); err != nil {
 			return 2
 		}
 	}
 	l := i18n.Detect(*lang)
+	opts := report.Options{Verbose: *verbose, Scope: *scope, Category: *category, ByRepo: *byRepo, Safe: *safe}
+	if err := checkFilters(l, opts); err != "" {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
 
 	var names []string
 	for _, c := range source.All() {
@@ -99,11 +124,8 @@ func run(args []string) int {
 		fmt.Println(version)
 		return 0
 	case "rules":
-		fmt.Printf(i18n.T(l, "cli.rules_header")+"\n\n", len(rs))
-		for _, r := range rs {
-			fmt.Printf("  %-36s %-8s %s\n", r.ID, r.Severity, r.Title.Get(l))
-		}
-		return 0
+		return runRules(l, rs, subArgs, rulesOpts{JSON: *asJSON, Source: *ruleSource, Severity: *severity,
+			Platforms: *platforms, Dir: *dir, Strict: *strict, New: *isNew})
 	case "scan", "fix":
 	case "watch":
 		if *interval < 10*time.Second {
@@ -119,6 +141,8 @@ func run(args []string) int {
 			return 0
 		}
 		return runUpdate(l)
+	case "vulndb":
+		return runVulnDB(l, subArgs)
 	case "start":
 		return runStart(l)
 	case "stop":
@@ -134,11 +158,24 @@ func run(args []string) int {
 		}
 		return runStatus(l)
 	case "ignore":
-		return runIgnore(l, subArgs)
+		return runIgnore(l, rs, subArgs, *days)
+	case "feedback", "report":
+		ideaSet := false
+		fs.Visit(func(f *flag.Flag) { ideaSet = ideaSet || f.Name == "idea" })
+		return runFeedback(os.Stdout, l, rs, subArgs, *idea, ideaSet, *openLink, func() []engine.Finding {
+			s := scanNow(rs, "en", true, true)
+			return append(s.Findings, s.Ignored...)
+		})
+	case "passkey", "passkeys":
+		return runPasskey(l, subArgs, *yes)
+	case "logout":
+		return runLogout(l)
 	case "serve":
 		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab, *background, *popup)
 	case "open":
 		return runOpen(l, rs)
+	case "mcp":
+		return runMCP(l, rs, *allowChanges)
 	case "help":
 		fs.Usage()
 		return 0
@@ -151,8 +188,56 @@ func run(args []string) int {
 		return runUndo(l)
 	}
 
+	s := scanNow(rs, l, !*asJSON, *experimental)
+	findings := s.Findings
+	if cmd == "fix" {
+		return runFix(l, findings, *yes, *dryRun)
+	}
+	if cmd == "scan" {
+		findings = opts.Filter(findings)
+	}
+	if *asJSON {
+		s.Findings, s.Ignored = opts.Filter(s.Findings), opts.Filter(s.Ignored)
+		if err := report.JSON(os.Stdout, s); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+	} else {
+		opts.Rules = rs
+		report.Text(os.Stdout, s, opts)
+	}
+	for _, f := range findings {
+		if f.Severity == "critical" || f.Severity == "high" {
+			return 1
+		}
+	}
+	return 0
+}
+
+// langFlag finds --lang in args before they are parsed.
+func langFlag(args []string) string {
+	for i, a := range args {
+		for _, p := range []string{"--lang=", "-lang="} {
+			if strings.HasPrefix(a, p) {
+				return strings.TrimPrefix(a, p)
+			}
+		}
+		if (a == "--lang" || a == "-lang") && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+// scanNow runs every collector (with a progress line on stderr when
+// progress is set) and evaluates the results.
+func scanNow(rs []*engine.Rule, l string, progress, experimental bool) report.Scan {
+	var names []string
+	for _, c := range source.All() {
+		names = append(names, c.Name)
+	}
 	var prog *report.Progress
-	if !*asJSON {
+	if progress {
 		prog = report.StartProgress(os.Stderr, l, names)
 	}
 	results := source.Run(context.Background(), source.All(), func(n string) {
@@ -163,101 +248,79 @@ func run(args []string) int {
 	if prog != nil {
 		prog.Stop()
 	}
+	return buildScan(rs, results, l, experimental)
+}
 
-	items := map[string][]engine.Item{}
-	ran := map[string]bool{}
-	for _, r := range results {
-		items[r.Name] = r.Items
-		ran[r.Name] = r.SkipKey == "" && r.Err == nil
+// checkFilters validates --scope and --category; "" when they are fine.
+func checkFilters(l string, o report.Options) string {
+	if o.Scope != "" && o.Scope != "machine" && o.Scope != "code" {
+		return fmt.Sprintf(i18n.T(l, "cli.bad_scope"), o.Scope)
 	}
-	_ = ran
-	s := buildScan(rs, results, l)
-	findings := s.Findings
-	if cmd == "fix" {
-		return runFix(l, findings, *yes, *dryRun)
-	}
-	if *asJSON {
-		if err := report.JSON(os.Stdout, s); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 2
+	if o.Category != "" {
+		for _, c := range report.Categories {
+			if c == o.Category {
+				return ""
+			}
 		}
-	} else {
-		report.Text(os.Stdout, s, report.Options{Verbose: *verbose})
+		return fmt.Sprintf(i18n.T(l, "cli.bad_category"), o.Category, strings.Join(report.Categories, ", "))
 	}
-	for _, f := range findings {
-		if f.Severity == "critical" || f.Severity == "high" {
-			return 1
-		}
-	}
-	return 0
+	return ""
 }
 
 // buildScan evaluates collector results into a report in one language.
-func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan {
+// experimental also runs the rules still waiting for review.
+func buildScan(rs []*engine.Rule, results []source.Result, l string, experimental bool) report.Scan {
 	items := map[string][]engine.Item{}
 	ran := map[string]bool{}
 	for _, r := range results {
 		items[r.Name] = r.Items
 		ran[r.Name] = r.SkipKey == "" && r.Err == nil
 	}
-	all := engine.Evaluate(rs, items, platform(), l)
-	checked, passed := engine.Coverage(rs, all, ran, platform())
+	all := engine.EvaluateWith(rs, items, platform(), l, experimental)
+	checked, passed := engine.CoverageWith(rs, all, ran, platform(), experimental)
 	entries, _ := ignore.Default().List(time.Now())
 	findings, ignored := ignore.Split(all, entries, time.Now())
+	for i := range findings {
+		findings[i].Key = engine.FindingID(findings[i])
+	}
+	for i := range ignored {
+		ignored[i].Key = engine.FindingID(ignored[i])
+	}
 	score, gain := engine.Score(rs, findings, ran, platform())
+	scoped := func(scope string) int {
+		var srs []*engine.Rule
+		for _, r := range rs {
+			if report.Scope(r.Source) == scope {
+				srs = append(srs, r)
+			}
+		}
+		var sfs []engine.Finding
+		for _, f := range findings {
+			if report.Scope(f.Source) == scope {
+				sfs = append(sfs, f)
+			}
+		}
+		s, _ := engine.Score(srs, sfs, ran, platform())
+		return s
+	}
 	host, _ := os.Hostname()
 	return report.Scan{
-		Version:  version,
-		Lang:     l,
-		Platform: platform(),
-		Host:     strings.TrimSuffix(host, ".local"),
-		Time:     time.Now().Format("2006-01-02 15:04"),
-		Score:    score,
-		Gain:     gain,
-		Checked:  checked,
-		Passed:   passed,
-		Sources:  report.Statuses(results),
-		Findings: findings,
-		Ignored:  ignored,
-		Root:     os.Geteuid() == 0,
+		Version:      version,
+		Lang:         l,
+		Platform:     platform(),
+		Host:         strings.TrimSuffix(host, ".local"),
+		Time:         time.Now().Format("2006-01-02 15:04"),
+		Score:        score,
+		ScoreMachine: scoped("machine"),
+		ScoreCode:    scoped("code"),
+		Gain:         gain,
+		Checked:      checked,
+		Passed:       passed,
+		Sources:      report.Statuses(results),
+		Findings:     findings,
+		Ignored:      ignored,
+		Root:         os.Geteuid() == 0,
 	}
-}
-
-// runIgnore lists or clears snoozed findings (snoozing happens in the web
-// UI, where each finding has its own button).
-func runIgnore(l string, args []string) int {
-	t := func(k string) string { return i18n.T(l, k) }
-	st := ignore.Default()
-	sub := "list"
-	if len(args) > 0 {
-		sub = args[0]
-	}
-	switch sub {
-	case "clear":
-		if err := st.Remove(nil); err != nil {
-			fmt.Println(err)
-			return 2
-		}
-		fmt.Println(t("ignore.cleared"))
-	default:
-		es, err := st.List(time.Now())
-		if err != nil {
-			fmt.Println(err)
-			return 2
-		}
-		if len(es) == 0 {
-			fmt.Println(t("ignore.none"))
-			return 0
-		}
-		for _, e := range es {
-			until := t("ignore.forever")
-			if !e.Until.IsZero() {
-				until = e.Until.Local().Format("2006-01-02 15:04")
-			}
-			fmt.Printf("  %-12s %-18s %s\n    %s\n", e.ID, until, e.RuleID, engine.Clean(e.Title))
-		}
-	}
-	return 0
 }
 
 // launchedByUser tells a double-click apart from a pipe or a script: the

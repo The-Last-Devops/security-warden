@@ -13,8 +13,8 @@ explain:
   en: "security.workspace.trust.untrustedFiles is \"open\" in {file}: files from untrusted places open in a trusted window."
   vi: "security.workspace.trust.untrustedFiles đang là \"open\" trong {file}: file từ nơi không tin cậy được mở trong cửa sổ đáng tin."
 fix:
-  en: "Set it to \"prompt\" (the default)."
-  vi: "Đặt thành \"prompt\" (mặc định)."
+  en: "Open `{file}` (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and set `\"security.workspace.trust.untrustedFiles\": \"prompt\"` (the default), or delete that line."
+  vi: "Mở `{file}` (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và đặt `\"security.workspace.trust.untrustedFiles\": \"prompt\"` (mặc định), hoặc xoá dòng đó."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": true, "auto_tasks_on": false, "proxy_strict_ssl_off": false, "extension_updates_off": false, "has_secret": false}, "expect": true}

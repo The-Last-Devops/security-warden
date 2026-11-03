@@ -1,0 +1,21 @@
+id: windows-autostart-script-loader
+severity: high
+platforms: [windows]
+source: persistence
+match: item.kind == "autostart" && item.script_loader
+title:
+  en: "A startup item downloads or decodes a script: {name}"
+  vi: "Có mục tự chạy tải về hoặc giải mã script: {name}"
+check:
+  en: "No startup items download or decode scripts"
+  vi: "Không mục tự chạy nào tải về hay giải mã script"
+explain:
+  en: "{name} ({location}) uses {program} to fetch code from the internet or run an encoded command (PowerShell -enc, IEX, mshta, regsvr32 /i:http, certutil -urlcache…). Legitimate software almost never starts this way; fileless malware does."
+  vi: "{name} ({location}) dùng {program} để tải code từ Internet hoặc chạy lệnh đã mã hoá (PowerShell -enc, IEX, mshta, regsvr32 /i:http, certutil -urlcache…). Phần mềm đàng hoàng gần như không bao giờ khởi động kiểu này; mã độc không file thì có."
+fix:
+  en: "1. If you did not set this up, disable it: Task Scheduler > {location} > {name} > Disable for a scheduled task, or Task Manager > Startup apps for a Run key or Startup folder entry (all-users entries need an administrator). 2. Run a Microsoft Defender Offline scan and change the passwords used on this PC."
+  vi: "1. Nếu không phải bạn đặt, hãy tắt nó: Task Scheduler > {location} > {name} > Disable nếu là tác vụ hẹn giờ, hoặc Task Manager > Startup apps nếu là khoá Run hay thư mục Startup (mục của mọi người dùng cần quyền quản trị). 2. Quét Microsoft Defender Offline và đổi mật khẩu đã dùng trên máy này."
+author: the-last-devops
+tests:
+  - {"item": {"kind": "autostart", "where": "scheduled_task", "name": "Health", "location": "Task Scheduler Library\\Sys", "program": "powershell.exe", "in_temp": false, "in_downloads": false, "appdata_root": false, "script_loader": true}, "expect": true}
+  - {"item": {"kind": "autostart", "where": "run_key", "name": "OneDrive", "location": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "program": "C:\\Users\\an\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe", "in_temp": false, "in_downloads": false, "appdata_root": false, "script_loader": false}, "expect": false}

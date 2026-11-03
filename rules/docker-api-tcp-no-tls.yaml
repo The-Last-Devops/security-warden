@@ -13,8 +13,8 @@ explain:
   en: "Anything that can reach port 2375 controls Docker, which means root on the host. Even a web page can reach localhost."
   vi: "Thứ gì chạm được port 2375 là điều khiển được Docker, tức là có quyền root trên máy. Kể cả một trang web cũng chạm được localhost."
 fix:
-  en: "Docker Desktop > Settings > General: untick Expose daemon on tcp://localhost:2375 without TLS. Remove tcp:// hosts from daemon.json."
-  vi: "Docker Desktop > Settings > General: bỏ chọn Expose daemon on tcp://localhost:2375 without TLS. Xoá host tcp:// khỏi daemon.json."
+  en: "Docker Desktop > Settings > General: untick Expose daemon on tcp://localhost:2375 without TLS. Remove `tcp://` hosts from `daemon.json`."
+  vi: "Docker Desktop > Settings > General: bỏ chọn Expose daemon on tcp://localhost:2375 without TLS. Xoá host `tcp://` khỏi `daemon.json`."
 author: the-last-devops
 tests:
   - {"item": {"expose_tcp_no_tls": true, "insecure_registries": 0, "found": true}, "expect": true}

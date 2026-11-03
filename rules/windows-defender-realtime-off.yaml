@@ -1,0 +1,23 @@
+id: windows-defender-realtime-off
+severity: high
+platforms: [windows]
+source: defender
+match: item.kind == "status" && item.active && !item.realtime
+title:
+  en: "Microsoft Defender real-time protection is off"
+  vi: "Bảo vệ thời gian thực của Microsoft Defender đang tắt"
+check:
+  en: "Microsoft Defender real-time protection is on"
+  vi: "Bảo vệ thời gian thực của Microsoft Defender đang bật"
+explain:
+  en: "Defender is this PC's antivirus but no longer checks files as they are downloaded, opened or run, so malware can start without being stopped. Malware often turns it off first."
+  vi: "Defender là phần mềm diệt virus của máy này nhưng đã thôi kiểm tra file lúc tải về, mở hay chạy, nên mã độc chạy được mà không bị chặn. Mã độc thường tắt nó trước tiên."
+fix:
+  en: "Windows Security > Virus & threat protection > Virus & threat protection settings > Manage settings > Real-time protection > On. If you did not turn it off yourself, run a Full scan from the same page. Greyed out means a policy controls it: ask IT."
+  vi: "Bảo mật Windows > Bảo vệ khỏi virus & mối đe doạ > Cài đặt bảo vệ khỏi virus & mối đe doạ > Quản lý cài đặt > Bảo vệ thời gian thực > Bật. Nếu không phải bạn tự tắt, hãy chạy Quét toàn bộ ở cùng trang. Nút bị mờ là do chính sách quản lý: hỏi bộ phận IT."
+author: the-last-devops
+tests:
+  - {item: {kind: status, active: true, realtime: false}, expect: true}
+  - {item: {kind: status, active: true, realtime: true}, expect: false}
+  - {item: {kind: status, active: false, realtime: false}, expect: false, note: another antivirus is in charge and Defender is passive}
+  - {item: {kind: exclusion, active: true, realtime: false}, expect: false}

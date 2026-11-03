@@ -13,8 +13,8 @@ explain:
   en: "launchd passes DYLD_INSERT_LIBRARIES to every app you open. Malware uses this to read what apps do."
   vi: "launchd truyền DYLD_INSERT_LIBRARIES cho mọi app bạn mở. Mã độc dùng cách này để đọc hoạt động của app."
 fix:
-  en: "Run: launchctl unsetenv DYLD_INSERT_LIBRARIES, then find what set it (launchctl getenv, your login items)."
-  vi: "Chạy: launchctl unsetenv DYLD_INSERT_LIBRARIES, rồi tìm thứ đã đặt nó (launchctl getenv, các mục tự chạy)."
+  en: "Run: `launchctl unsetenv DYLD_INSERT_LIBRARIES`, then find what set it (`launchctl getenv`, your login items)."
+  vi: "Chạy: `launchctl unsetenv DYLD_INSERT_LIBRARIES`, rồi tìm thứ đã đặt nó (`launchctl getenv`, các mục tự chạy)."
 author: the-last-devops
 tests:
   - {"item": {"os": "macos", "dyld_insert": true}, "expect": true}

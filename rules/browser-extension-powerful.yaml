@@ -13,8 +13,8 @@ explain:
   en: "It can read and change all pages and also attach a debugger or reroute your traffic (profile {profile})."
   vi: "Nó đọc và sửa được mọi trang, lại còn gắn debugger hoặc lái lưu lượng của bạn đi nơi khác (hồ sơ {profile})."
 fix:
-  en: "Remove {name} unless you rely on it: {browser} > Extensions > Remove."
-  vi: "Gỡ {name} nếu không thật sự cần: {browser} > Extensions > Remove."
+  en: "Unless you rely on {name}: in {browser} open `chrome://extensions`, find {name} and click Remove."
+  vi: "Nếu không thật sự cần {name}: trong {browser} mở `chrome://extensions`, tìm {name} và bấm Remove (Xoá)."
 author: the-last-devops
 tests:
   - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": true, "debugger": true, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false}, "expect": true}

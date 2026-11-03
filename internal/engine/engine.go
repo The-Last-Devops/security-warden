@@ -4,6 +4,7 @@
 package engine
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -96,15 +97,6 @@ func newEnv() (*cel.Env, error) {
 type RemedyCheck func(action, source string, params map[string]string) error
 
 func Load(fsys fs.FS, knownSources []string, checkRemedy RemedyCheck) ([]*Rule, error) {
-	env, err := newEnv()
-	if err != nil {
-		return nil, err
-	}
-	known := map[string]bool{}
-	for _, s := range knownSources {
-		known[s] = true
-	}
-
 	files, err := fs.Glob(fsys, "*.yaml")
 	if err != nil {
 		return nil, err
@@ -116,42 +108,61 @@ func Load(fsys fs.FS, knownSources []string, checkRemedy RemedyCheck) ([]*Rule, 
 		if err != nil {
 			return nil, err
 		}
-		var r Rule
-		dec := yaml.NewDecoder(strings.NewReader(string(b)))
-		dec.KnownFields(true)
-		if err := dec.Decode(&r); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
-		}
-		r.file = path.Base(f)
-		if r.Remedy != nil {
-			if err := checkRemedy(r.Remedy.Action, r.Source, r.Remedy.Params); err != nil {
-				return nil, fmt.Errorf("%s: remedy: %w", f, err)
-			}
-		}
-		if err := validate(&r, known); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
+		r, err := Parse(path.Base(f), b, knownSources, checkRemedy)
+		if err != nil {
+			return nil, err
 		}
 		if other, dup := seen[r.ID]; dup {
 			return nil, fmt.Errorf("%s: id %q already used by %s", f, r.ID, other)
 		}
 		seen[r.ID] = f
-		ast, iss := env.Compile(r.Match)
-		if iss.Err() != nil {
-			return nil, fmt.Errorf("%s: match: %w", f, iss.Err())
-		}
-		// item fields are dyn, so "item.x" alone type-checks as dyn; Matches
-		// still rejects a non-boolean result at run time.
-		if t := ast.OutputType(); t != cel.BoolType && t != cel.DynType {
-			return nil, fmt.Errorf("%s: match must be a boolean expression", f)
-		}
-		// Cost limit: a rule cannot make a scan or watch tick spin.
-		if r.prg, err = env.Program(ast, cel.CostLimit(100_000), cel.InterruptCheckFrequency(100)); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
-		}
-		rules = append(rules, &r)
+		rules = append(rules, r)
 	}
 	sort.Slice(rules, func(i, j int) bool { return rules[i].ID < rules[j].ID })
 	return rules, nil
+}
+
+// Parse loads one rule file exactly as Load does: unknown fields, a bad
+// remedy, missing translations or tests, and a CEL expression that does not
+// compile are errors. name is used in messages and as File().
+func Parse(name string, data []byte, knownSources []string, checkRemedy RemedyCheck) (*Rule, error) {
+	env, err := newEnv()
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, s := range knownSources {
+		known[s] = true
+	}
+	var r Rule
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&r); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	r.file = path.Base(name)
+	if r.Remedy != nil {
+		if err := checkRemedy(r.Remedy.Action, r.Source, r.Remedy.Params); err != nil {
+			return nil, fmt.Errorf("%s: remedy: %w", name, err)
+		}
+	}
+	if err := validate(&r, known); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	ast, iss := env.Compile(r.Match)
+	if iss.Err() != nil {
+		return nil, fmt.Errorf("%s: match: %w", name, iss.Err())
+	}
+	// item fields are dyn, so "item.x" alone type-checks as dyn; Matches
+	// still rejects a non-boolean result at run time.
+	if t := ast.OutputType(); t != cel.BoolType && t != cel.DynType {
+		return nil, fmt.Errorf("%s: match must be a boolean expression", name)
+	}
+	// Cost limit: a rule cannot make a scan or watch tick spin.
+	if r.prg, err = env.Program(ast, cel.CostLimit(100_000), cel.InterruptCheckFrequency(100)); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	return &r, nil
 }
 
 func validate(r *Rule, known map[string]bool) error {
@@ -217,6 +228,58 @@ func Render(s string, it Item) string {
 	})
 }
 
+// markupFields are item fields built by Security Warden itself from fixed
+// tables (no text from the machine), allowed to carry `code` markup.
+var markupFields = map[string]bool{"stop_cmd": true}
+
+// RenderFix is Render for fix texts, where `backticks` mark commands for
+// the web UI. Values from the machine (an attacker can name a file) are made
+// safe two ways: a backtick in a value becomes ' so it cannot end or start a
+// command, and inside a command every value is shell-quoted, so pasting the
+// command never runs anything hidden in a file name.
+func RenderFix(s string, it Item) string {
+	parts := strings.Split(s, "`")
+	for i := range parts {
+		inCode := i%2 == 1
+		parts[i] = fixPlaceholder.ReplaceAllStringFunc(parts[i], func(m string) string {
+			name, quote := strings.CutSuffix(m[1:len(m)-1], "|sh")
+			v, ok := it[name]
+			if !ok {
+				return m
+			}
+			out := Clean(fmt.Sprint(v))
+			switch {
+			case markupFields[name]:
+				return out // built by us, may carry markup
+			case commandFields[name]:
+				return strings.ReplaceAll(out, "`", "'") // already quoted where built
+			case quote || inCode:
+				return ShellQuote(out)
+			}
+			return strings.ReplaceAll(out, "`", "'")
+		})
+	}
+	return strings.Join(parts, "`")
+}
+
+// commandFields hold whole commands that Security Warden assembled itself,
+// quoting their parts; they are not quoted again.
+var commandFields = map[string]bool{"upgrade_cmd": true, "upgrade_command": true, "why": true}
+
+// fixPlaceholder also accepts {field|sh}: the value shell-quoted.
+var fixPlaceholder = regexp.MustCompile(`\{([a-z0-9_]+)(\|sh)?\}`)
+
+// ShellQuote makes s one literal shell word: '...' with any ' written as
+// '\” (and no backticks, which the UI reads as markup). Safe in sh, bash
+// and zsh: nothing inside single quotes is expanded.
+func ShellQuote(s string) string {
+	s = strings.ReplaceAll(s, "`", "'")
+	if s != "" && strings.Trim(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./@+=:,") == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 // Clean makes a value from the machine (a file, repo, process or extension
 // name, all of which an attacker can choose) safe to print: control
 // characters and bidi overrides are shown escaped, so they cannot move the
@@ -252,15 +315,52 @@ type Finding struct {
 	Explain  string  `json:"explain"`
 	Fix      string  `json:"fix"`
 	Remedy   *Remedy `json:"remedy,omitempty"`
-	Item     Item    `json:"item"`
+	// Tier is community or experimental; empty for stable rules.
+	Tier string `json:"tier,omitempty"`
+	Item Item   `json:"item"`
+	// Key identifies this finding (FindingID); filled in reports so tools
+	// can target one place, e.g. "security-warden ignore add <key>".
+	Key string `json:"key,omitempty"`
 }
 
 // Evaluate runs the rules that apply to platform on the collected items.
-// Experimental rules run but never report.
+// Experimental rules are left out (see EvaluateWith).
 func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []Finding {
+	return EvaluateWith(rules, items, platform, lang, false)
+}
+
+// Runs reports whether rule r is evaluated: experimental rules only when
+// the user asked for them.
+func (r *Rule) Runs(experimental bool) bool { return r.Tier != "experimental" || experimental }
+
+// CoreAuthor is the maintainers' GitHub handle: their rules carry no
+// "by @…" credit line.
+const CoreAuthor = "the-last-devops"
+
+// Credit is the GitHub handle of the person who contributed the rule, ""
+// for the maintainers' own rules (and rules with no author).
+func (r *Rule) Credit() string {
+	a := strings.TrimPrefix(strings.TrimSpace(r.Author), "@")
+	if a == "" || strings.EqualFold(a, CoreAuthor) {
+		return ""
+	}
+	return a
+}
+
+// TierLabel is the tier shown next to a finding: empty for stable.
+func (r *Rule) TierLabel() string {
+	if r.Tier == "stable" || r.Tier == "" {
+		return ""
+	}
+	return r.Tier
+}
+
+// EvaluateWith is Evaluate that also runs experimental rules when
+// experimental is set. Their findings are labeled, and never scored.
+func EvaluateWith(rules []*Rule, items map[string][]Item, platform, lang string, experimental bool) []Finding {
 	var out []Finding
 	for _, r := range rules {
-		if r.Tier == "experimental" || !contains(r.Platforms, platform) {
+		if !r.Runs(experimental) || !contains(r.Platforms, platform) {
 			continue
 		}
 		for _, it := range items[r.Source] {
@@ -274,8 +374,9 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 				Source:   r.Source,
 				Title:    Render(r.Title.Get(lang), it),
 				Explain:  Render(r.Explain.Get(lang), it),
-				Fix:      Render(r.Fix.Get(lang), it),
+				Fix:      RenderFix(r.Fix.Get(lang), it),
 				Remedy:   renderRemedy(r.Remedy, it),
+				Tier:     r.TierLabel(),
 				Item:     it,
 			})
 		}
@@ -291,12 +392,18 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 // Coverage lists the rules that ran on platform against a source that
 // worked (ran is the set of such sources) and did not report anything.
 func Coverage(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (checked int, passed []string) {
+	return CoverageWith(rules, findings, ran, platform, false)
+}
+
+// CoverageWith is Coverage that also counts experimental rules when
+// experimental is set.
+func CoverageWith(rules []*Rule, findings []Finding, ran map[string]bool, platform string, experimental bool) (checked int, passed []string) {
 	hit := map[string]bool{}
 	for _, f := range findings {
 		hit[f.RuleID] = true
 	}
 	for _, r := range rules {
-		if r.Tier == "experimental" || !contains(r.Platforms, platform) || !ran[r.Source] {
+		if !r.Runs(experimental) || !contains(r.Platforms, platform) || !ran[r.Source] {
 			continue
 		}
 		checked++

@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"github.com/The-Last-Devops/security-warden/internal/appdir"
@@ -27,6 +28,8 @@ import (
 type pkUser struct {
 	ID    []byte                `json:"id"`
 	Creds []webauthn.Credential `json:"credentials"`
+	// Added: when each credential (hex id) was registered.
+	Added map[string]time.Time `json:"added,omitempty"`
 }
 
 func (u *pkUser) WebAuthnID() []byte                         { return u.ID }
@@ -212,6 +215,10 @@ func (s *Server) handleRegisterFinish(w http.ResponseWriter, r *http.Request, _ 
 		return
 	}
 	u.Creds = append(u.Creds, *cred)
+	if u.Added == nil {
+		u.Added = map[string]time.Time{}
+	}
+	u.Added[hex.EncodeToString(cred.ID)] = time.Now().UTC()
 	if err := s.pk.save(u); err != nil {
 		errJSON(w, http.StatusInternalServerError, "cannot save passkey")
 		return
@@ -225,7 +232,7 @@ func (s *Server) handlePasskeyClear(w http.ResponseWriter, r *http.Request, _ st
 		errJSON(w, http.StatusInternalServerError, "cannot read passkeys")
 		return
 	}
-	u.Creds = nil
+	u.Creds, u.Added = nil, nil
 	if err := s.pk.save(u); err != nil {
 		errJSON(w, http.StatusInternalServerError, "cannot save passkeys")
 		return

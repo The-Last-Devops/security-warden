@@ -13,8 +13,8 @@ explain:
   en: "Line {line_no} starts a coding agent with its safety prompts off. Text in a web page or README can then run commands on your machine."
   vi: "Dòng {line_no} chạy coding agent với bước hỏi quyền bị tắt. Khi đó chữ trong trang web hay README cũng có thể chạy lệnh trên máy bạn."
 fix:
-  en: "Use that mode only inside a container or VM. Allow specific commands instead."
-  vi: "Chỉ dùng chế độ đó trong container hoặc máy ảo. Hãy cho phép từng lệnh cụ thể."
+  en: "Open `{file}`, delete line {line_no} (the alias or function that adds the skip-permissions flag), save, and open a new terminal. Use that mode only inside a container or VM; allow specific commands instead."
+  vi: "Mở `{file}`, xoá dòng {line_no} (alias hoặc hàm thêm cờ bỏ qua xin phép), lưu lại rồi mở cửa sổ terminal mới. Chỉ dùng chế độ đó trong container hoặc máy ảo; thay vào đó hãy cho phép từng lệnh cụ thể."
 author: the-last-devops
 tests:
   - {"item": {"kind": "agent_skip_permissions", "file": "/h/.zshrc", "line_no": 12, "var_name": ""}, "expect": true}

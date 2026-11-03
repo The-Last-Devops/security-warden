@@ -13,8 +13,8 @@ explain:
   en: AppArmor or SELinux limit what a compromised service can touch. Without them a bug in one program reaches all your files.
   vi: AppArmor hoặc SELinux giới hạn những gì một dịch vụ bị chiếm có thể đụng tới. Không có chúng thì lỗi ở một chương trình là lan tới mọi file của bạn.
 fix:
-  en: "Ubuntu/Debian: sudo systemctl enable --now apparmor. Fedora/RHEL: set SELINUX=enforcing in /etc/selinux/config and reboot."
-  vi: "Ubuntu/Debian: sudo systemctl enable --now apparmor. Fedora/RHEL: đặt SELINUX=enforcing trong /etc/selinux/config rồi khởi động lại."
+  en: "Ubuntu/Debian: `sudo systemctl enable --now apparmor`. Fedora/RHEL, step by step (going straight to enforcing can stop the machine from booting): 1. Back up the config with `sudo cp /etc/selinux/config /etc/selinux/config.bak`, then `sudo nano /etc/selinux/config`, set `SELINUX=permissive`, reboot. 2. `sudo fixfiles -F onboot`, reboot (slow: it relabels every file). 3. If `sudo ausearch -m AVC -ts today` shows no denials, set `SELINUX=enforcing` and reboot. These commands need admin rights: sudo asks for your password."
+  vi: "Ubuntu/Debian: `sudo systemctl enable --now apparmor`. Fedora/RHEL, làm từng bước (bật thẳng enforcing có thể khiến máy không khởi động được): 1. Sao lưu cấu hình bằng `sudo cp /etc/selinux/config /etc/selinux/config.bak`, rồi `sudo nano /etc/selinux/config`, đặt `SELINUX=permissive`, khởi động lại. 2. `sudo fixfiles -F onboot`, khởi động lại (lâu vì gắn nhãn lại mọi tệp). 3. Nếu `sudo ausearch -m AVC -ts today` không báo bị chặn gì, đặt `SELINUX=enforcing` và khởi động lại. Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {item: {lsm: none, container: false}, expect: true}

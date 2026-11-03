@@ -73,5 +73,5 @@ func SignedInURL(port int) string {
 
 // ScanNow runs a full scan and returns the findings in the server's language.
 func (s *Server) ScanNow(ctx context.Context) []engine.Finding {
-	return s.Scanner.Evaluate(s.scan(ctx, true), s.Lang).Findings
+	return s.Scanner.Evaluate(s.scan(ctx, true), s.Lang, false).Findings
 }

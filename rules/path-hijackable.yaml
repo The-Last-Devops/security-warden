@@ -13,8 +13,8 @@ explain:
   en: "{dir} is relative, writable by others, or missing where others could create it, and searched before /usr/bin. Someone can drop a fake git or ssh there."
   vi: "{dir} là đường dẫn tương đối, người khác ghi được, hoặc chưa tồn tại mà người khác tạo được, và được tìm trước /usr/bin. Kẻ khác có thể đặt git hay ssh giả vào đó."
 fix:
-  en: "Remove {dir} from PATH in your shell profile, or run: chmod go-w {dir}"
-  vi: "Bỏ {dir} khỏi PATH trong file profile của shell, hoặc chạy: chmod go-w {dir}"
+  en: "Remove `{dir}` from `PATH` in your shell profile, or run: `chmod go-w {dir}`"
+  vi: "Bỏ `{dir}` khỏi `PATH` trong file profile của shell, hoặc chạy: `chmod go-w {dir}`"
 author: the-last-devops
 tests:
   - {"item": {"kind": "path", "dir": "/Users/a/.pyenv/bin", "index": 1, "before_system": true, "relative": false, "exists": false, "world_writable": false, "group_writable_foreign": false, "creatable_by_others": false}, "expect": false, "note": "missing dir inside home"}

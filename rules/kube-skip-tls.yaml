@@ -13,8 +13,8 @@ explain:
   en: "insecure-skip-tls-verify in {file} lets anyone in the middle impersonate the cluster and capture your credentials."
   vi: "insecure-skip-tls-verify trong {file} cho phép kẻ đứng giữa giả làm cluster và lấy thông tin đăng nhập của bạn."
 fix:
-  en: "Put the cluster's CA in certificate-authority-data and remove insecure-skip-tls-verify."
-  vi: "Đưa CA của cluster vào certificate-authority-data và bỏ insecure-skip-tls-verify."
+  en: "1. Get the cluster's CA certificate (`ca.crt`) from your cluster admin or the provider console. 2. `kubectl config get-clusters` shows the cluster names. 3. `kubectl config unset clusters.<cluster>.insecure-skip-tls-verify` 4. `kubectl config set-cluster <cluster> --certificate-authority=ca.crt --embed-certs=true` 5. Check with `kubectl get ns`."
+  vi: "1. Lấy chứng chỉ CA của cluster (`ca.crt`) từ người quản trị cluster hoặc trang quản lý của nhà cung cấp. 2. `kubectl config get-clusters` để xem tên cluster. 3. `kubectl config unset clusters.<cluster>.insecure-skip-tls-verify` 4. `kubectl config set-cluster <cluster> --certificate-authority=ca.crt --embed-certs=true` 5. Kiểm tra bằng `kubectl get ns`."
 author: the-last-devops
 tests:
   - {"item": {"kind": "kubeconfig", "file": "/h/.kube/config", "insecure_skip_tls": true, "static_token": false, "current_context": "dev", "current_is_prod": false, "sa_type": ""}, "expect": true}

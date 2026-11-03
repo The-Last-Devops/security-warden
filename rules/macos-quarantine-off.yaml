@@ -13,8 +13,8 @@ explain:
   en: "Files you download are not marked, so Gatekeeper never checks them before they run."
   vi: "File tải về không được đánh dấu, nên Gatekeeper không kiểm tra chúng trước khi chạy."
 fix:
-  en: "Run: defaults delete com.apple.LaunchServices LSQuarantine, then log out and back in."
-  vi: "Chạy: defaults delete com.apple.LaunchServices LSQuarantine, rồi đăng xuất và đăng nhập lại."
+  en: "Run: `defaults delete com.apple.LaunchServices LSQuarantine`, then log out and back in."
+  vi: "Chạy: `defaults delete com.apple.LaunchServices LSQuarantine`, rồi đăng xuất và đăng nhập lại."
 author: the-last-devops
 tests:
   - {"item": {"os": "macos", "quarantine": false}, "expect": true}

@@ -13,8 +13,8 @@ explain:
   en: "{file} turns off TLS checks or uses a plain-HTTP registry, so packages can be swapped in transit."
   vi: "{file} tắt kiểm tra TLS hoặc dùng registry HTTP thường, nên gói có thể bị tráo trên đường truyền."
 fix:
-  en: "Remove strict-ssl=false / trusted-host / http:// registries from {file}."
-  vi: "Bỏ strict-ssl=false / trusted-host / registry http:// khỏi {file}."
+  en: "Open `{file}` and delete `strict-ssl=false` (npm), `enableStrictSsl: false` (yarn), `trusted-host` (pip) or `ssl_verify: false` (conda), and change `http://` registries to `https://`. Behind a company proxy, point the tool at its CA certificate instead (npm: `cafile=/path/ca.pem`, pip: `cert = /path/ca.pem`)."
+  vi: "Mở `{file}` và xoá `strict-ssl=false` (npm), `enableStrictSsl: false` (yarn), `trusted-host` (pip) hoặc `ssl_verify: false` (conda), và đổi registry `http://` sang `https://`. Nếu đi qua proxy công ty, hãy trỏ công cụ tới chứng chỉ CA của proxy (npm: `cafile=/path/ca.pem`, pip: `cert = /path/ca.pem`)."
 author: the-last-devops
 tests:
   - {"item": {"tool": "npm", "file": "/h/.npmrc", "strict_ssl_off": true, "http_registry": false, "trusted_host": false, "extra_index": false}, "expect": true}

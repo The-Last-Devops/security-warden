@@ -65,8 +65,8 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		Collect: func(ctx context.Context, done func(string)) []source.Result {
 			return source.Run(ctx, source.All(), done)
 		},
-		Evaluate: func(results []source.Result, l string) report.Scan {
-			return buildScan(rs, results, l)
+		Evaluate: func(results []source.Result, l string, experimental bool) report.Scan {
+			return buildScan(rs, results, l, experimental)
 		},
 	})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -80,6 +80,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		srv.Watching = true
 		go watchInBackground(ctx, srv, lang, popup)
 		go autoUpdate(ctx, lang, stop)
+		go vulnDBLoop(ctx)
 		if err := srv.Run(ctx, ln); err != nil {
 			fmt.Println(err)
 			return 2

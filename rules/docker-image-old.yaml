@@ -13,8 +13,8 @@ explain:
   en: "{image} has not been rebuilt for more than six months, so the system libraries inside it miss half a year of security fixes, whatever the app version."
   vi: "{image} đã hơn sáu tháng chưa build lại, nên thư viện hệ thống bên trong thiếu nửa năm bản vá bảo mật, dù app là phiên bản nào."
 fix:
-  en: "Pull or rebuild a current image (docker compose pull && docker compose up -d, or docker build --pull), or move to a maintained tag of {image}."
-  vi: "Kéo về hoặc build lại image mới (docker compose pull && docker compose up -d, hoặc docker build --pull), hoặc chuyển sang tag còn được duy trì của {image}."
+  en: "Pull or rebuild a current image (`docker compose pull && docker compose up -d`, or `docker build --pull`), or move to a maintained tag of {image}."
+  vi: "Kéo về hoặc build lại image mới (`docker compose pull && docker compose up -d`, hoặc `docker build --pull`), hoặc chuyển sang tag còn được duy trì của {image}."
 author: the-last-devops
 tests:
   - {"item": {"container": "app", "image": "acme/app:1.2", "privileged": false, "host_network": false, "host_pid": false, "host_ipc": false, "mounts_docker_sock": false, "risky_mount": "", "dangerous_caps": "", "seccomp_unconfined": false, "apparmor_unconfined": false, "devices": 0, "secret_env": "", "user": "app", "runs_as_root": false, "image_age_days": 400, "latest_tag": false}, "expect": true}

@@ -64,9 +64,9 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mkdir -p web/dist && touch web/dist/.keep
-          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.10
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
           gosec -no-fail -exclude-dir=tools -fmt sarif -out gosec.sarif ./...
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: gosec.sarif
           category: gosec
@@ -89,10 +89,10 @@ jobs:
       - name: Placeholder for the embedded UI
         if: matrix.language == 'go'
         run: mkdir -p web/dist && touch web/dist/.keep
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}

@@ -13,8 +13,8 @@ explain:
   en: "Remote Login is on and {path} lists {count} keys. Each one is a way in."
   vi: "Đăng nhập từ xa đang bật và {path} có {count} khoá. Mỗi khoá là một lối vào."
 fix:
-  en: "Remove keys you don't recognise from {path}, and turn Remote Login off if you don't use it."
-  vi: "Xoá các khoá bạn không nhận ra khỏi {path}, và tắt Đăng nhập từ xa nếu không dùng."
+  en: "1. Open `{path}` in a text editor: each line is one key, and the comment at the end usually names its owner. 2. Delete the lines you don't recognise and save; if you reach this machine over SSH, keep the key you log in with. 3. If nobody logs in remotely, turn SSH off: macOS System Settings › General › Sharing › Remote Login off; Windows Services › OpenSSH SSH Server › Stop, Startup type Disabled; Linux, only while sitting at the machine: `sudo systemctl disable --now ssh.socket ssh` (Fedora: `sudo systemctl disable --now sshd`). These commands need admin rights: sudo asks for your password."
+  vi: "1. Mở `{path}` bằng trình soạn thảo: mỗi dòng là một khoá, phần ghi chú cuối dòng thường là tên chủ khoá. 2. Xoá các dòng bạn không nhận ra rồi lưu; nếu bạn đang vào máy này qua SSH, giữ lại khoá bạn đang dùng. 3. Nếu không ai đăng nhập từ xa, tắt SSH: macOS Cài đặt hệ thống › Cài đặt chung › Chia sẻ › Đăng nhập từ xa: tắt; Windows Services › OpenSSH SSH Server › Stop, Startup type Disabled; Linux, chỉ khi đang ngồi trước máy: `sudo systemctl disable --now ssh.socket ssh` (Fedora: `sudo systemctl disable --now sshd`). Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {"item": {"path": "/h/.ssh/authorized_keys", "count": 2, "weak": 0, "restricted": 0, "ssh_on": true, "mode": "0600", "group_readable": false, "world_readable": false}, "expect": true}

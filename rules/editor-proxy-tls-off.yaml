@@ -13,8 +13,8 @@ explain:
   en: "http.proxyStrictSSL is false in {file}, so extensions and updates can be swapped by anyone on the network."
   vi: "http.proxyStrictSSL đang false trong {file}, nên extension và bản cập nhật có thể bị kẻ trong mạng tráo."
 fix:
-  en: "Remove \"http.proxyStrictSSL\": false. Behind a company proxy, install its CA certificate instead."
-  vi: "Xoá dòng \"http.proxyStrictSSL\": false. Nếu sau proxy công ty, hãy cài chứng chỉ CA của nó thay vào."
+  en: "Open `{file}` (in {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) and delete `\"http.proxyStrictSSL\": false`. Behind a company proxy, install its CA certificate in the system keychain instead."
+  vi: "Mở `{file}` (trong {editor}: Command Palette, Cmd/Ctrl+Shift+P › Preferences: Open User Settings (JSON)) và xoá `\"http.proxyStrictSSL\": false`. Nếu đi qua proxy công ty, hãy cài chứng chỉ CA của proxy vào kho chứng chỉ hệ thống."
 author: the-last-devops
 tests:
   - {"item": {"editor": "VS Code", "file": "/h/settings.json", "secret_settings": "", "workspace_trust_off": false, "untrusted_files_open": false, "auto_tasks_on": false, "proxy_strict_ssl_off": true, "extension_updates_off": false, "has_secret": false}, "expect": true}

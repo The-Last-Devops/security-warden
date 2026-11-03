@@ -1,6 +1,6 @@
 id: process-from-temp
 severity: high
-platforms: [macos, linux]
+platforms: [macos, linux, windows]
 source: processes
 match: "item.from_temp && !item.miner"
 title:
@@ -10,13 +10,14 @@ check:
   en: "No programs run from temporary folders"
   vi: "Không chương trình nào chạy từ thư mục tạm"
 explain:
-  en: "{path} (process {pid}) runs from a folder every user can write to. Real apps run from /Applications, /usr or your home folder; malware dropped by a script often runs from /tmp."
-  vi: "{path} (tiến trình {pid}) chạy từ thư mục ai cũng ghi được. App thật chạy từ /Applications, /usr hoặc thư mục nhà; mã độc do script thả xuống thường chạy từ /tmp."
+  en: "{path} (process {pid}) runs from a folder every user can write to. Real apps run from /Applications, /usr, C:\\Program Files or your home folder; malware dropped by a script often runs from /tmp or %TEMP%."
+  vi: "{path} (tiến trình {pid}) chạy từ thư mục ai cũng ghi được. App thật chạy từ /Applications, /usr, C:\\Program Files hoặc thư mục nhà; mã độc do script thả xuống thường chạy từ /tmp hoặc %TEMP%."
 fix:
-  en: "If you don't recognise {name}, stop it (kill {pid}) and delete {path}. If you built or unpacked it yourself, move it out of the temp folder."
-  vi: "Không nhận ra {name} thì dừng nó (kill {pid}) và xoá {path}. Nếu là thứ bạn tự build hay giải nén, hãy chuyển nó ra khỏi thư mục tạm."
+  en: "If you don't recognise {name}, stop it (`kill {pid}` (Windows: `taskkill /PID {pid}`)) and move `{path}` to the Trash. If you built or unpacked it yourself, move it out of the temp folder."
+  vi: "Nếu không nhận ra {name}, dừng nó (`kill {pid}` (Windows: `taskkill /PID {pid}`)) và chuyển `{path}` vào Thùng rác. Nếu do bạn tự build hoặc giải nén, chuyển nó ra khỏi thư mục tạm."
 author: the-last-devops
 tests:
   - {"item": {"name": "helper", "path": "/tmp/helper", "pid": 4242, "from_temp": true, "from_downloads": false, "miner": false}, "expect": true}
   - {"item": {"name": "helper", "path": "/opt/vendor/helper", "pid": 4242, "from_temp": false, "from_downloads": false, "miner": false}, "expect": false}
+  - {"item": {"name": "svch0st.exe", "path": "C:\\Users\\an\\AppData\\Local\\Temp\\svch0st.exe", "pid": 4242, "from_temp": true, "from_downloads": false, "miner": false}, "expect": true}
   - {"item": {"name": "xmrig", "path": "/tmp/xmrig", "pid": 4242, "from_temp": true, "from_downloads": false, "miner": true}, "expect": false, "note": "process-crypto-miner covers it"}

@@ -13,8 +13,8 @@ explain:
   en: "A repository planted in a shared folder can run its hooks and config as you."
   vi: "Repo bị đặt sẵn trong thư mục dùng chung có thể chạy hook và config dưới tên bạn."
 fix:
-  en: "Run: git config --global --unset-all safe.directory, then add only the folders you need."
-  vi: "Chạy: git config --global --unset-all safe.directory, rồi chỉ thêm các thư mục cần."
+  en: "Run: `git config --global --unset-all safe.directory`, then add only the folders you need."
+  vi: "Chạy: `git config --global --unset-all safe.directory`, rồi chỉ thêm các thư mục cần."
 author: the-last-devops
 tests:
   - {"item": {"credential_store": false, "ssl_verify_off": false, "safe_directory_all": true, "hooks_path": "", "insteadof_downgrade": false, "file_protocol_always": false}, "expect": true}

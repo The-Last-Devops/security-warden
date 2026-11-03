@@ -1,0 +1,23 @@
+id: linux-security-updates-pending
+severity: high
+platforms: [linux]
+source: outdated_software
+match: item.kind == "packages" && item.security > 0
+title:
+  en: "{security} security updates are waiting to be installed"
+  vi: "Có {security} bản cập nhật bảo mật đang chờ cài"
+check:
+  en: "No security updates are waiting"
+  vi: "Không có bản cập nhật bảo mật nào đang chờ"
+explain:
+  en: "{manager} has {security} security fixes ({total} updates in all) that are not installed yet. They close holes that are already public. The count comes from the package list saved at the last refresh, so the real number may be higher."
+  vi: "{manager} có {security} bản vá bảo mật ({total} bản cập nhật tất cả) chưa được cài. Chúng vá những lỗ hổng đã công khai. Con số lấy từ danh sách gói lưu ở lần làm mới gần nhất, nên thực tế có thể còn nhiều hơn."
+fix:
+  en: "Run: `{upgrade_command}` (needs your sudo password), then restart the programs or the machine if asked."
+  vi: "Chạy: `{upgrade_command}` (cần mật khẩu sudo), rồi khởi động lại chương trình hoặc máy nếu được yêu cầu."
+author: the-last-devops
+tests:
+  - {item: {kind: packages, manager: apt, total: 68, security: 40, cache_days: 0, upgrade_command: "sudo apt update && sudo apt upgrade"}, expect: true}
+  - {item: {kind: packages, manager: dnf, total: 2, security: 0, cache_days: 1, upgrade_command: "sudo dnf upgrade --refresh"}, expect: false}
+  - {item: {kind: packages, manager: dnf, total: 30, security: -1, cache_days: 1, upgrade_command: "sudo dnf upgrade --refresh"}, expect: false, note: advisories not cached}
+  - {item: {kind: summary, total: 12, security: 0}, expect: false}

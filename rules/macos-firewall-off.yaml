@@ -13,8 +13,8 @@ explain:
   en: Any app can accept connections from the network you are on, such as café or hotel Wi-Fi.
   vi: App nào cũng nhận được kết nối từ mạng bạn đang dùng, ví dụ Wi-Fi quán cà phê hay khách sạn.
 fix:
-  en: "System Settings > Network > Firewall > On."
-  vi: "Cài đặt hệ thống > Mạng > Tường lửa > Bật."
+  en: "Press Fix to do it automatically, or: System Settings › Network › Firewall › On."
+  vi: "Bấm Sửa để tự sửa, hoặc: Cài đặt hệ thống › Mạng › Tường lửa › Bật."
 author: the-last-devops
 tests:
   - {item: {firewall: false}, expect: true}
