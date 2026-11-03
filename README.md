@@ -24,11 +24,31 @@ passphrase, a token in plain text. It explains each problem and how to fix it, i
 
 ## Quick start
 
+Copy the one line for your system. It installs Security Warden, starts it in the background and opens it in
+your browser.
+
+**macOS** (Homebrew)
+
 ```sh
-brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden
-brew trust the-last-devops/security-warden
-brew install security-warden
-security-warden start
+brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden && brew trust the-last-devops/security-warden && brew install security-warden && security-warden start
+```
+
+**Ubuntu, Debian**
+
+```sh
+wget -qO /tmp/security-warden.deb https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden_$(dpkg --print-architecture).deb && sudo apt install -y /tmp/security-warden.deb && security-warden start
+```
+
+**Fedora, RHEL**
+
+```sh
+sudo dnf install -y https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-$(uname -m).rpm && security-warden start
+```
+
+**Windows** (PowerShell)
+
+```powershell
+iwr https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-windows-amd64.exe -OutFile "$env:LOCALAPPDATA\security-warden.exe"; & "$env:LOCALAPPDATA\security-warden.exe" start
 ```
 
 Your browser opens on Security Warden, already signed in. The first time, it asks you to add a passkey
@@ -70,6 +90,7 @@ Details, updating and uninstalling: [docs/install.md](docs/install.md).
 | `security-warden ignore list` | What is hidden, where, and until when (`clear` shows everything again) |
 | `security-warden passkey list\|clear` | Passkeys that sign in to the web UI (`clear` asks first, unless `--yes`) |
 | `security-warden logout` | Sign every browser out of the web UI |
+| `security-warden mcp` | MCP server for AI agents (read-only; `--allow-changes` to allow fixes). See [docs/mcp.md](docs/mcp.md) |
 | `security-warden rules` | List every rule |
 
 Add `--lang vi` or `--lang en` to any command, or `--json` to the scan (the scope and category

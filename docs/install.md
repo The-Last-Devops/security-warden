@@ -2,6 +2,23 @@
 
 Security Warden is one self-contained program. Pick one way to install it.
 
+## One line per system
+
+These are the commands from the README's Quick start; CI runs the Linux ones on
+Ubuntu, Debian and Fedora after every release.
+
+| System | Command |
+|---|---|
+| macOS | `brew tap the-last-devops/security-warden https://github.com/The-Last-Devops/security-warden && brew trust the-last-devops/security-warden && brew install security-warden && security-warden start` |
+| Ubuntu, Debian | `wget -qO /tmp/security-warden.deb https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden_$(dpkg --print-architecture).deb && sudo apt install -y /tmp/security-warden.deb && security-warden start` |
+| Fedora, RHEL | `sudo dnf install -y https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-$(uname -m).rpm && security-warden start` |
+| Windows (PowerShell) | `iwr https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-windows-amd64.exe -OutFile "$env:LOCALAPPDATA\security-warden.exe"; & "$env:LOCALAPPDATA\security-warden.exe" start` |
+
+The Linux and Windows lines download from GitHub Releases over HTTPS. Releases also
+publish `SHA256SUMS` if you want to check the file first (see Binaries below).
+On Linux, `.deb`/`.rpm` installs do not update themselves yet: run the same line
+again for a new version, or use Homebrew.
+
 ## Homebrew (macOS, Linux)
 
 ```sh

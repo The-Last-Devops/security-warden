@@ -144,17 +144,19 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - name: Download packages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release download "$GITHUB_REF_NAME" -R ${{ github.repository }} -p '*.deb' -p '*.rpm' -D pkgs
-      - name: .deb on Ubuntu and Debian
+      # The exact one-line commands from docs/install.md, as users run them.
+      - name: One-line install on Ubuntu and Debian
         run: |
           for img in ubuntu:24.04 debian:12; do
-            docker run --rm -v "$PWD/pkgs:/p" "$img" sh -c "apt-get install -y -qq /p/security-warden_*_amd64.deb >/dev/null && security-warden version" | tee v.txt
+            docker run --rm "$img" sh -c '
+              apt-get update -qq >/dev/null && apt-get install -y -qq wget ca-certificates >/dev/null
+              wget -qO /tmp/security-warden.deb https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden_$(dpkg --print-architecture).deb && apt-get install -y -qq /tmp/security-warden.deb >/dev/null
+              security-warden version' | tee v.txt
             [ "$(cat v.txt)" = "$GITHUB_REF_NAME" ]
           done
-      - name: .rpm on Fedora
+      - name: One-line install on Fedora
         run: |
-          docker run --rm -v "$PWD/pkgs:/p" fedora:41 sh -c "rpm -i /p/security-warden-*.x86_64.rpm && security-warden version" | tee v.txt
+          docker run --rm fedora:41 sh -c '
+            dnf install -y -q https://github.com/The-Last-Devops/security-warden/releases/latest/download/security-warden-$(uname -m).rpm >/dev/null
+            security-warden version' | tee v.txt
           [ "$(cat v.txt)" = "$GITHUB_REF_NAME" ]

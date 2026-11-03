@@ -91,6 +91,17 @@ jobs:
           bad = [s['name'] for s in r['sources'] if s['name'] in ('posture', 'defender', 'persistence', 'listening_ports', 'processes') and s.get('error')]
           sys.exit('failed on Windows: ' + ', '.join(bad) if bad else 0)
           "
+      # The Quick start line ends with "start": check the background service
+      # really runs and answers on Windows, then stop it.
+      - name: Background service
+        shell: pwsh
+        run: |
+          .\security-warden-windows-amd64.exe start
+          Start-Sleep -Seconds 5
+          .\security-warden-windows-amd64.exe status
+          $r = Invoke-WebRequest -UseBasicParsing -Headers @{ Host = "localhost:7348" } http://127.0.0.1:7348/api/passkey
+          if ($r.StatusCode -ne 200) { throw "service did not answer" }
+          .\security-warden-windows-amd64.exe stop
       - uses: actions/upload-artifact@v4
         with:
           name: smoke-report-windows
