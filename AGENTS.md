@@ -69,8 +69,10 @@ an installed release.
   the new SSH key before removing the old one), say when admin is needed.
 - **Every user-facing string exists in en and vi.** Go strings in the catalog,
   UI strings in `web/src/i18n.js`.
-- **CLI and web UI stay at parity.** A feature in one gets its counterpart in the
-  other in the same change.
+- **Every feature ships on all three surfaces: web UI, CLI and MCP.** A new
+  feature (or a change to one) lands in the web UI, the terminal commands and
+  the MCP server (`security-warden mcp`) in the same change. MCP tools that
+  change the machine are only offered with `--allow-changes`.
 - Keep dependencies minimal; no new module without a strong reason.
 
 ## Releases
