@@ -1,0 +1,47 @@
+name: Bug
+description: Something does not work, or a rule reports a problem that is not there.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems in Security Warden itself: please [report them privately](https://github.com/The-Last-Devops/security-warden/security/advisories/new).
+        Do not paste secret values, tokens or private paths you do not want public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you saw. For a wrong finding, give the rule id.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `security-warden version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: System
+      options: [macOS, Linux, Windows]
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: System version
+      placeholder: macOS 15.5, Ubuntu 24.04, Windows 11 24H2
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options: [Terminal report, Web UI, MCP server, Background service, Install or update]
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The relevant part of the report or `--json` output (remove anything private).
+      render: text

@@ -16,7 +16,8 @@ defineProps({
 })
 const theme = defineModel('theme')
 const lang = defineModel('lang')
-const emit = defineEmits(['close', 'add-passkey', 'clear-passkeys', 'toggle-auto', 'undo', 'logout'])
+const experimental = defineModel('experimental', { type: Boolean, default: false })
+const emit = defineEmits(['close', 'add-passkey', 'clear-passkeys', 'toggle-auto', 'undo', 'logout', 'rules'])
 </script>
 
 <template>
@@ -69,6 +70,16 @@ const emit = defineEmits(['close', 'add-passkey', 'clear-passkeys', 'toggle-auto
 
       <div class="srow-group">
         <h3>{{ t.groupOther }}</h3>
+        <div class="srow">
+          <div><b>{{ t.experimental }}</b><small>{{ t.experimentalHelp }}</small></div>
+          <button type="button" role="switch" :aria-checked="experimental" :aria-label="t.experimental" class="relative h-6 w-11 shrink-0 rounded-full transition-colors" :class="experimental ? 'bg-accent' : 'bg-line'" @click="experimental = !experimental">
+            <span class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all" :class="experimental ? 'left-[22px]' : 'left-0.5'" />
+          </button>
+        </div>
+        <div class="srow">
+          <div><b>{{ t.rulesSources }}</b><small>{{ t.rulesSourcesHelp }}</small></div>
+          <button class="rounded-[10px] bg-panel px-3.5 py-2 text-[13.5px] font-semibold ring-1 ring-line hover:text-accent" @click="emit('rules')">{{ t.open }}</button>
+        </div>
         <div class="srow">
           <div><b>{{ t.undo }}</b><small>{{ t.undoHelp }}</small></div>
           <button class="rounded-[10px] bg-panel px-3.5 py-2 text-[13.5px] font-semibold ring-1 ring-line hover:text-accent disabled:opacity-50" :disabled="busy" @click="emit('undo')">{{ t.undoShort }}</button>

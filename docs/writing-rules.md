@@ -4,8 +4,10 @@ Each check is one YAML file in [`rules/`](../rules), embedded into the binary. A
 facts a source collected, through a [CEL](https://cel.dev) expression: it can never run commands or open
 files, so a contributed rule cannot harm the machine.
 
-The quickest start is to copy a rule close to what you need, for example
-[`rules/backup-none.yaml`](../rules/backup-none.yaml).
+The quickest start is `security-warden rules new <id> --source <source>`, which writes a skeleton with
+every field, or copying a rule close to what you need, for example
+[`rules/backup-none.yaml`](../rules/backup-none.yaml). `security-warden rules check <file>` then checks it
+the way CI does. Step by step, including the pull request: [Contributing a rule](contributing-rules.md).
 
 ## A complete rule
 
@@ -61,9 +63,9 @@ and `vi`. Write the Vietnamese as a native speaker would say it, not word for wo
 
 ## Match expressions
 
-`item` is one fact the source collected: a flat map of fields. Find a source's fields in its collector in
-[`internal/source/`](../internal/source), or in the tests of existing rules for that source. Examples
-from real rules:
+`item` is one fact the source collected: a flat map of fields. `security-warden rules sources <source>`
+lists a source's fields with their types and example values (also in [Rule sources](rule-sources.md)); a
+rule may use only those fields. Examples from real rules:
 
 ```yaml
 match: "!item.configured"                                          # a boolean field
@@ -118,8 +120,16 @@ tests:
   - {item: {path: /h/.aws/credentials, aws_long_term_key: false}, expect: false}
 ```
 
-The tests load every rule exactly as the binary does (fields, translations, CEL, remedies), run every
-sample, and check that no placeholder stays unfilled. Run them in Docker:
+Check a rule with the installed binary alone:
+
+```sh
+security-warden rules check --strict rules/<id>.yaml    # add --new for a rule you are adding
+```
+
+It loads the file exactly as the scanner does (fields, translations, CEL, remedies), runs every sample,
+checks that no placeholder stays unfilled, that every field exists in the source with the right type,
+and lints the fix text for unsafe commands ([the lint codes](contributing-rules.md#5-check-it)). The Go
+tests run the same checks on every rule; in Docker:
 
 ```sh
 docker compose run --rm test
@@ -136,11 +146,16 @@ To see a rule on your own machine, build with `docker compose run --rm build` an
 
 ## Tiers
 
-| Tier | Behavior |
-|---|---|
-| `stable` (default) | Evaluated, reported and counted in the score. |
-| `community` | The same as `stable` today; marks a rule contributed from outside. |
-| `experimental` | Loaded and tested, but never evaluated, reported or scored. |
+| Tier | Runs by default | Score | Label | Who |
+|---|---|---|---|---|
+| `experimental` | No: only with `--experimental`, MCP `experimental: true` or the web UI's "Show experimental checks" | Never counted | "experimental" | Every new contributed rule starts here |
+| `community` | Yes | Counted | "community" | Contributed rules the maintainer reviewed and promoted |
+| `stable` (default) | Yes | Counted | none | Rules the project maintains |
+
+Experimental rules are always loaded and their tests run in CI, so they cannot break anything; they are
+just not evaluated unless asked. The tier also appears as `tier` on each finding in the JSON. Promotion
+is a maintainer pull request that changes `tier:`; a rule goes back to `experimental` when it reports
+false positives. See the [Review guide](review-guide.md#promoting-a-rule).
 
 ## Remedies
 

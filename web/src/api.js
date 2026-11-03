@@ -18,16 +18,26 @@ async function call(method, path, body, retried = false) {
   return data
 }
 
+// Experimental checks are a per-viewer choice, kept in this browser only.
+export function experimentalOn() {
+  try { return localStorage.getItem('sw.experimental') === '1' } catch { return false }
+}
+export function setExperimental(on) {
+  try { on ? localStorage.setItem('sw.experimental', '1') : localStorage.removeItem('sw.experimental') } catch {}
+}
+const exp = () => (experimentalOn() ? '&experimental=1' : '')
+
 export const api = {
   async meta() { const m = await call('GET', '/api/meta'); csrf = m.csrf; return m },
-  scan: lang => call('GET', `/api/scan?lang=${lang}`),
+  scan: lang => call('GET', `/api/scan?lang=${lang}${exp()}`),
   cached: async lang => {
-    const res = await fetch(`/api/scan?lang=${lang}&cached=1`, { credentials: 'same-origin' })
+    const res = await fetch(`/api/scan?lang=${lang}&cached=1${exp()}`, { credentials: 'same-origin' })
     if (res.status === 204) return null
     if (!res.ok) throw Object.assign(new Error(res.statusText), { status: res.status })
     return res.json()
   },
-  rescan: lang => call('POST', `/api/scan?lang=${lang}`),
+  rescan: lang => call('POST', `/api/scan?lang=${lang}${exp()}`),
+  sources: lang => call('GET', `/api/sources?lang=${lang}`),
   startScan: () => call('POST', '/api/scan/start'),
   progress: lang => call('GET', `/api/scan/progress?lang=${lang}`),
   fix: (keys, lang) => call('POST', `/api/fix?lang=${lang}`, { keys }),

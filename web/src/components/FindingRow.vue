@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import SevChip from './SevChip.vue'
+import TierBadge from './TierBadge.vue'
 import FixSteps from './FixSteps.vue'
 import CodeLine from './CodeLine.vue'
 import PerPlace from './PerPlace.vue'
@@ -47,7 +48,7 @@ const chip = computed(() => {
     <div class="grid cursor-pointer grid-cols-[4px_minmax(0,1fr)_auto] items-stretch gap-x-4 select-none" @click="open = !open">
       <span class="rounded-r-sm" :class="bar[f.severity]" />
       <button class="min-w-0 py-3 text-left" :aria-expanded="open" @click.stop="open = !open">
-        <span class="block text-[15.5px] leading-snug font-semibold break-words">{{ title }}</span>
+        <span class="block text-[15.5px] leading-snug font-semibold break-words">{{ title }}<TierBadge v-if="f.tier" class="ml-2 align-[2px]" :tier="f.tier" :t="t" /></span>
         <span v-if="sub" class="mt-0.5 block truncate font-mono text-[12.5px] text-muted">{{ sub }}</span>
       </button>
       <div class="flex items-center gap-2.5 pr-3">

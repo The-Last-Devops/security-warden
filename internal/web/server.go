@@ -23,6 +23,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/report"
+	"github.com/The-Last-Devops/security-warden/internal/rulecheck"
 	"github.com/The-Last-Devops/security-warden/internal/source"
 )
 
@@ -31,7 +32,7 @@ import (
 type Scanner struct {
 	Rules    []*engine.Rule
 	Collect  func(ctx context.Context, done func(name string)) []source.Result
-	Evaluate func(results []source.Result, lang string) report.Scan
+	Evaluate func(results []source.Result, lang string, experimental bool) report.Scan
 }
 
 // Server is the web UI.
@@ -133,6 +134,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/local/logout", s.localOnly(s.handleLocalLogout))
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
+	mux.HandleFunc("GET /api/sources", s.withSession(s.handleSources))
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
 	mux.HandleFunc("POST /api/scan/start", s.withSession(s.handleScanStart))
 	mux.HandleFunc("GET /api/scan/progress", s.withSession(s.handleProgress))
@@ -286,6 +288,10 @@ func (s *Server) scan(ctx context.Context, force bool) []source.Result {
 	return res
 }
 
+// wantsExperimental: the page asked for experimental rules too (its
+// "Show experimental checks" setting).
+func wantsExperimental(r *http.Request) bool { return r.URL.Query().Get("experimental") == "1" }
+
 func langOf(r *http.Request, def string) string {
 	switch l := r.URL.Query().Get("lang"); l {
 	case "en", "vi":
@@ -310,18 +316,19 @@ type apiFinding struct {
 	Place string `json:"place,omitempty"`
 }
 
-func (s *Server) render(results []source.Result, lang string) map[string]any {
-	sc := s.Scanner.Evaluate(results, lang)
+func (s *Server) render(results []source.Result, lang string, experimental bool) map[string]any {
+	sc := s.Scanner.Evaluate(results, lang, experimental)
 	type apiPassed struct {
 		RuleID   string `json:"rule_id"`
 		Label    string `json:"label"`
 		Category string `json:"category"`
 		Severity string `json:"severity"`
+		Tier     string `json:"tier,omitempty"`
 	}
 	passed := []apiPassed{}
 	for _, id := range sc.Passed {
 		if r := s.rule(id); r != nil {
-			passed = append(passed, apiPassed{id, r.Check.Get(lang), report.Category(r.Source), r.Severity})
+			passed = append(passed, apiPassed{id, r.Check.Get(lang), report.Category(r.Source), r.Severity, r.TierLabel()})
 		}
 	}
 	out := make([]apiFinding, 0, len(sc.Findings))
@@ -409,10 +416,10 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request, _ string, _ 
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		writeJSON(w, http.StatusOK, s.render(res, langOf(r, s.Lang)))
+		writeJSON(w, http.StatusOK, s.render(res, langOf(r, s.Lang), wantsExperimental(r)))
 		return
 	}
-	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang)))
+	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), false), langOf(r, s.Lang), wantsExperimental(r)))
 }
 
 // handleScanStart begins a scan in the background; the UI polls progress
@@ -456,7 +463,7 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request, _ string
 }
 
 func (s *Server) handleRescan(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
-	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), true), langOf(r, s.Lang)))
+	writeJSON(w, http.StatusOK, s.render(s.scan(r.Context(), true), langOf(r, s.Lang), wantsExperimental(r)))
 }
 
 func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
@@ -477,7 +484,7 @@ func (s *Server) handleFix(w http.ResponseWriter, r *http.Request, _ string, _ *
 		return
 	}
 	byKey := map[string]engine.Finding{}
-	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
+	for _, f := range s.Scanner.Evaluate(results, s.Lang, true).Findings {
 		byKey[engine.FindingID(f)] = f
 	}
 	batch := fix.NewBatch()
@@ -528,7 +535,7 @@ func (s *Server) handleIgnore(w http.ResponseWriter, r *http.Request, _ string, 
 		want[k] = true
 	}
 	var pick []engine.Finding
-	for _, f := range s.Scanner.Evaluate(results, s.Lang).Findings {
+	for _, f := range s.Scanner.Evaluate(results, s.Lang, true).Findings {
 		if want[engine.FindingID(f)] {
 			pick = append(pick, f)
 		}
@@ -635,4 +642,29 @@ func (s *Server) Run(ctx context.Context, ln net.Listener) error {
 func HasUI(ui fs.FS) bool {
 	_, err := fs.Stat(ui, "index.html")
 	return err == nil
+}
+
+// handleSources lists what each source collects and every rule, for the
+// "Rules & sources" page. Read-only: rules and schema are in the binary.
+func (s *Server) handleSources(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	lang := langOf(r, s.Lang)
+	type apiRule struct {
+		ID        string   `json:"id"`
+		Severity  string   `json:"severity"`
+		Tier      string   `json:"tier"`
+		Source    string   `json:"source"`
+		Category  string   `json:"category"`
+		Platforms []string `json:"platforms"`
+		Title     string   `json:"title"`
+		Check     string   `json:"check"`
+	}
+	rs := []apiRule{}
+	for _, x := range s.Scanner.Rules {
+		rs = append(rs, apiRule{x.ID, x.Severity, x.Tier, x.Source, report.Category(x.Source), x.Platforms, x.Title.Get(lang), x.Check.Get(lang)})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"sources":  rulecheck.Sources(s.Scanner.Rules, lang),
+		"rules":    rs,
+		"docs_url": rulecheck.DocsURL,
+	})
 }

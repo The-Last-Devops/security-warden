@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { api } from './api.js'
+import { api, experimentalOn, setExperimental } from './api.js'
 import { dict } from './i18n.js'
 import { passkeySupported } from './passkey.js'
 import SevChip from './components/SevChip.vue'
@@ -11,6 +11,8 @@ import CodeLine from './components/CodeLine.vue'
 import PerPlace from './components/PerPlace.vue'
 import { perPlace, placeOf } from './fixgroup.js'
 import FindingRow from './components/FindingRow.vue'
+import RulesPage from './components/RulesPage.vue'
+import TierBadge from './components/TierBadge.vue'
 
 // Per-viewer preferences: "auto" follows the browser / system.
 const pref = key => { try { return localStorage.getItem(key) } catch { return null } }
@@ -265,6 +267,10 @@ async function ignoreFindings(list, days) {
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
 const menuOpen = ref(false)
+const rulesOpen = ref(false)
+// Experimental checks: per viewer; the cached scan is evaluated again with them.
+const experimental = ref(experimentalOn())
+watch(experimental, v => { setExperimental(v); if (meta.value) load() })
 const watchOpen = ref(false)
 const upd = ref(null)
 async function refreshUpdate() { try { upd.value = await api.updateStatus() } catch {} }
@@ -273,7 +279,7 @@ async function toggleAuto() {
   try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
 }
 onMounted(refreshUpdate)
-function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false } }
+function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false; rulesOpen.value = false } }
 onMounted(() => document.addEventListener('click', () => { watchOpen.value = false }))
 </script>
 
@@ -389,6 +395,10 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             {{ t.ignoredView }} <span class="num text-muted">{{ ignored.length }}</span>
           </button>
         </nav>
+        <button class="flex items-center gap-2 justify-self-start rounded-lg px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="rulesOpen = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="M5 4h11l3 3v13H5zM9 10h6M9 14h6M9 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          {{ t.rulesSources }}
+        </button>
       </aside>
 
       <!-- right: list -->
@@ -409,7 +419,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             <ul class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               <li v-for="p in g.items" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
                 <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
-                <span>{{ p.label }}</span>
+                <span>{{ p.label }}<TierBadge v-if="p.tier" class="ml-2 align-[2px]" :tier="p.tier" :t="t" /></span>
               </li>
             </ul>
           </section>
@@ -497,7 +507,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             <ul v-if="catPassed.length" class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               <li v-for="p in catPassed" :key="p.rule_id" class="flex items-start gap-2.5 text-[14.5px]">
                 <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ok-bg text-[12px] font-bold text-ok">✓</span>
-                <span>{{ p.label }}</span>
+                <span>{{ p.label }}<TierBadge v-if="p.tier" class="ml-2 align-[2px]" :tier="p.tier" :t="t" /></span>
               </li>
             </ul>
           </section>
@@ -545,10 +555,11 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
       </div>
     </Transition>
 
-    <SettingsDialog v-if="menuOpen" v-model:theme="themePref" v-model:lang="langPref" :t="t" :theme-options="themeOptions" :lang-options="langOptions"
+    <SettingsDialog v-if="menuOpen" v-model:theme="themePref" v-model:lang="langPref" v-model:experimental="experimental" :t="t" :theme-options="themeOptions" :lang-options="langOptions"
       :pk="pk" :can-passkey="canPasskey" :upd="upd" :busy="busy" :checked-at="upd?.checked && new Date(upd.checked).getFullYear() > 2000 ? fmtTime(upd.checked) : ''"
       @close="menuOpen = false" @add-passkey="menuOpen = false; addPasskey()" @clear-passkeys="menuOpen = false; clearPasskeys()"
-      @toggle-auto="toggleAuto" @undo="menuOpen = false; undo()" @logout="menuOpen = false; logout()" />
+      @toggle-auto="toggleAuto" @undo="menuOpen = false; undo()" @logout="menuOpen = false; logout()" @rules="menuOpen = false; rulesOpen = true" />
+    <RulesPage v-if="rulesOpen" :t="t" :lang="lang" @close="rulesOpen = false" />
 
     <!-- hide confirmation -->
     <div v-if="hideAsk" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="hideAsk = null">

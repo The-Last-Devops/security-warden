@@ -32,7 +32,7 @@ func runIgnore(l string, rs []*engine.Rule, args []string, days int) int {
 			fmt.Fprintln(os.Stderr, t("ignore.days"))
 			return 2
 		}
-		s := scanNow(rs, l, true)
+		s := scanNow(rs, l, true, false)
 		pick, err := ignore.Pick(append(append([]engine.Finding(nil), s.Findings...), s.Ignored...), args[1])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, t(err.Error())+"\n", args[1])

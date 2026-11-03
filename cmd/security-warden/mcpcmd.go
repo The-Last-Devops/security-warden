@@ -49,7 +49,9 @@ func runMCP(l string, rs []*engine.Rule, allowChanges bool) int {
 		Collect: func(ctx context.Context) []source.Result {
 			return source.Run(ctx, source.All(), func(string) {})
 		},
-		Evaluate:       func(results []source.Result, lang string) report.Scan { return buildScan(rs, results, lang) },
+		Evaluate: func(results []source.Result, lang string, experimental bool) report.Scan {
+			return buildScan(rs, results, lang, experimental)
+		},
 		AllowChanges:   allowChanges,
 		ServiceRunning: func() bool { return web.RunningHere(web.DefaultPort) },
 		Log:            os.Stderr,

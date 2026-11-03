@@ -71,8 +71,8 @@ var en = map[string]string{
 
 Usage:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
-          [--scope machine|code] [--category NAME] [--by-repo] [--safe]
-  security-warden fix    [--yes] [--dry-run] [--undo]
+          [--scope machine|code] [--category NAME] [--by-repo] [--safe] [--experimental]
+  security-warden fix    [--yes] [--dry-run] [--undo] [--experimental]
   security-warden start                 run in the background and open the window
   security-warden stop                  stop it (and do not start at login)
   security-warden status | open
@@ -84,8 +84,14 @@ Usage:
   security-warden passkey list | clear [--yes]          passkeys that sign in to the web UI
   security-warden logout                sign every browser out of the web UI
   security-warden mcp    [--allow-changes]  serve the checks to AI agents (MCP over stdio)
-  security-warden rules  [--lang en|vi]
+  security-warden rules  [--lang en|vi]               every rule, with its tier
+  security-warden rules sources [NAME] [--json]        what each source collects: fields for rules
+  security-warden rules new ID --source NAME [--severity S] [--platforms macos,linux] [--dir DIR]
+  security-warden rules check FILE... [--strict] [--new] [--json]   validate, test and lint rule files
   security-warden version
+
+--experimental also runs new community rules still waiting for review; they are
+labeled and never change the score.
 
 Scan views: --scope machine|code; --category secrets, exposure, settings, persistence,
 ai, devtools, software, other, code_secrets, code_deps; --by-repo groups code problems
@@ -99,7 +105,8 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 
 Usage:
   security-warden mcp                    read-only tools: scan, list_problems, get_fix,
-                                         explain_rule, list_safe, status
+                                         explain_rule, list_safe, status,
+                                         list_sources, check_rule (writing rules)
   security-warden mcp --allow-changes    also apply_fix, undo_fix, hide, restore
 
 An AI app starts this command itself; add it to the app's MCP settings, for example:
@@ -225,6 +232,54 @@ it only in an app that asks you before each tool call. Logs go to stderr.`,
 	"fix.undone":          "Reverted %d changes.",
 	"fix.nothing":         "There is nothing to undo.",
 	"fix.manual":          "Still to do by hand:",
+
+	"tier.community":                        "community",
+	"tier.experimental":                     "experimental",
+	"rules.sources_header":                  "%d sources. Rules read their items as item.<field> in match and {field} in texts.",
+	"rules.source_line":                     "%s (%s) · %s · %s · %d rules",
+	"rules.fields":                          "Fields:",
+	"rules.unknown_source":                  "Unknown source %q. See security-warden rules sources.",
+	"rules.new_usage":                       "Usage: security-warden rules new ID --source NAME [--severity critical|high|medium|low] [--platforms macos,linux,windows] [--dir DIR]",
+	"rules.check_usage":                     "Usage: security-warden rules check FILE... [--strict] [--new] [--json]",
+	"rules.bad_id":                          "The id %q must be kebab-case: a-z, 0-9 and single dashes.",
+	"rules.bad_severity":                    "Unknown --severity %q. Use critical, high, medium or low.",
+	"rules.bad_platform":                    "Source %s does not run on %q; it runs on %s.",
+	"rules.exists":                          "%s already exists; not overwritten.",
+	"rules.builtin_id":                      "A built-in rule already uses the id %q.",
+	"rules.created":                         "Wrote %s. Next: fill in match, the texts (en and vi) and the tests, then run: security-warden rules check %s --new",
+	"rules.check_ok":                        "%s: ok (%d/%d tests pass)",
+	"rules.check_warn":                      "%s: %d warnings (%d/%d tests pass)",
+	"rules.check_fail":                      "%s: %d errors, %d warnings (%d/%d tests pass)",
+	"rules.check_error":                     "  error   %s: %s",
+	"rules.check_warning":                   "  warning %s: %s",
+	"rules.check_summary":                   "%d files: %d errors, %d warnings.",
+	"rules.check_strict":                    "--strict: warnings fail the check.",
+	"rules.check_flagged":                   "Fix commands were flagged: a maintainer must review them carefully.",
+	"check.invalid":                         "%s",
+	"check.file_name":                       "the file must be named %s",
+	"check.duplicate_id":                    "this id is already used by the built-in rule %s",
+	"check.not_experimental":                "new rules start with tier: experimental; the maintainer promotes them after review",
+	"check.platform":                        "source %s does not run on %s",
+	"check.unknown_field":                   "item.%s is not a field of source %s (see security-warden rules sources)",
+	"check.unknown_placeholder":             "{%s} is not a field of source %s",
+	"check.check_placeholder":               "the check text is shown without an item: remove %s",
+	"check.backticks":                       "unbalanced backticks: every command needs an opening and a closing `",
+	"check.braces":                          "unbalanced { }",
+	"check.todo":                            "still says TODO",
+	"check.untranslated":                    "the Vietnamese text is the same as the English one",
+	"check.test_unknown_field":              "%s is not a field of source %s",
+	"check.field_type":                      "%s is a %s, source %s declares %s",
+	"check.test_error":                      "the match failed on this sample: %s",
+	"check.test_failed":                     "reported %v, expected %v %s",
+	"check.unfilled":                        "{%s} is not filled by test %d: give the sample that field",
+	"check.lint.pipe_to_shell":              "downloads a script and pipes it into a shell: %s. Give a command that downloads to a file the user can read first",
+	"check.lint.rm_rf":                      "deletes recursively without asking: %s. Name exactly what to delete, or move it aside instead",
+	"check.lint.chmod_777":                  "makes a file writable or readable by everyone: %s",
+	"check.lint.disable_security":           "turns a security feature off: %s. If it is only an undo or a test step, the text must say so",
+	"check.lint.sudo_unannounced":           "needs admin rights but the text does not say so: %s. Add a sentence such as \"needs admin rights\"",
+	"check.lint.etc_no_backup":              "changes a file in /etc without a backup step: %s. Add a step like `sudo cp FILE FILE.bak` first",
+	"check.lint.force_push":                 "force-pushes, which overwrites history for everyone: %s",
+	"check.lint.history_rewrite_no_warning": "rewrites Git history but the text does not warn: %s. Say that everyone must clone again and that the secret must be rotated first",
 }
 
 var vi = map[string]string{
@@ -298,8 +353,8 @@ var vi = map[string]string{
 
 Cách dùng:
   security-warden [scan] [--lang en|vi] [--json] [--verbose]
-          [--scope machine|code] [--category TÊN] [--by-repo] [--safe]
-  security-warden fix    [--yes] [--dry-run] [--undo]
+          [--scope machine|code] [--category TÊN] [--by-repo] [--safe] [--experimental]
+  security-warden fix    [--yes] [--dry-run] [--undo] [--experimental]
   security-warden start                 chạy nền và mở cửa sổ
   security-warden stop                  dừng (và không tự bật khi đăng nhập)
   security-warden status | open
@@ -311,8 +366,14 @@ Cách dùng:
   security-warden passkey list | clear [--yes]          passkey dùng để đăng nhập giao diện web
   security-warden logout                đăng xuất mọi trình duyệt khỏi giao diện web
   security-warden mcp    [--allow-changes]  cho AI agent dùng các kiểm tra (MCP qua stdio)
-  security-warden rules  [--lang en|vi]
+  security-warden rules  [--lang en|vi]               mọi rule, kèm mức (tier)
+  security-warden rules sources [TÊN] [--json]         mỗi nguồn thu thập gì: các trường dùng trong rule
+  security-warden rules new ID --source TÊN [--severity S] [--platforms macos,linux] [--dir THƯ_MỤC]
+  security-warden rules check TỆP... [--strict] [--new] [--json]   kiểm tra, chạy test và soát lệnh của rule
   security-warden version
+
+--experimental chạy thêm các rule cộng đồng mới đang chờ duyệt; chúng được gắn nhãn
+và không bao giờ làm đổi điểm.
 
 Cách xem: --scope machine|code; --category secrets, exposure, settings, persistence,
 ai, devtools, software, other, code_secrets, code_deps; --by-repo gom vấn đề trong code
@@ -326,7 +387,8 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 
 Cách dùng:
   security-warden mcp                    công cụ chỉ đọc: scan, list_problems, get_fix,
-                                         explain_rule, list_safe, status
+                                         explain_rule, list_safe, status,
+                                         list_sources, check_rule (viết rule)
   security-warden mcp --allow-changes    thêm apply_fix, undo_fix, hide, restore
 
 Ứng dụng AI tự chạy lệnh này; thêm nó vào phần cài đặt MCP của ứng dụng, ví dụ:
@@ -452,4 +514,52 @@ cách sửa có sẵn (không bao giờ là cách cần quyền admin) và ẩn 
 	"fix.undone":          "Đã hoàn tác %d thay đổi.",
 	"fix.nothing":         "Không có gì để hoàn tác.",
 	"fix.manual":          "Còn phải tự làm:",
+
+	"tier.community":                        "cộng đồng",
+	"tier.experimental":                     "thử nghiệm",
+	"rules.sources_header":                  "%d nguồn. Rule đọc từng mục dưới dạng item.<trường> trong match và {trường} trong các đoạn chữ.",
+	"rules.source_line":                     "%s (%s) · %s · %s · %d rule",
+	"rules.fields":                          "Các trường:",
+	"rules.unknown_source":                  "Không có nguồn %q. Xem security-warden rules sources.",
+	"rules.new_usage":                       "Cách dùng: security-warden rules new ID --source TÊN [--severity critical|high|medium|low] [--platforms macos,linux,windows] [--dir THƯ_MỤC]",
+	"rules.check_usage":                     "Cách dùng: security-warden rules check TỆP... [--strict] [--new] [--json]",
+	"rules.bad_id":                          "Id %q phải viết kiểu kebab-case: a-z, 0-9 và từng dấu gạch ngang.",
+	"rules.bad_severity":                    "Không có --severity %q. Dùng critical, high, medium hoặc low.",
+	"rules.bad_platform":                    "Nguồn %s không chạy trên %q; nó chạy trên %s.",
+	"rules.exists":                          "%s đã có; không ghi đè.",
+	"rules.builtin_id":                      "Đã có rule cài sẵn dùng id %q.",
+	"rules.created":                         "Đã ghi %s. Tiếp theo: điền match, các đoạn chữ (en và vi) và test, rồi chạy: security-warden rules check %s --new",
+	"rules.check_ok":                        "%s: ổn (%d/%d test đạt)",
+	"rules.check_warn":                      "%s: %d cảnh báo (%d/%d test đạt)",
+	"rules.check_fail":                      "%s: %d lỗi, %d cảnh báo (%d/%d test đạt)",
+	"rules.check_error":                     "  lỗi      %s: %s",
+	"rules.check_warning":                   "  cảnh báo %s: %s",
+	"rules.check_summary":                   "%d tệp: %d lỗi, %d cảnh báo.",
+	"rules.check_strict":                    "--strict: có cảnh báo cũng tính là không đạt.",
+	"rules.check_flagged":                   "Có lệnh sửa bị đánh dấu: người duyệt phải xem kỹ.",
+	"check.invalid":                         "%s",
+	"check.file_name":                       "tệp phải tên là %s",
+	"check.duplicate_id":                    "id này đã được rule cài sẵn %s dùng",
+	"check.not_experimental":                "rule mới bắt đầu với tier: experimental; người duyệt sẽ nâng mức sau khi xem",
+	"check.platform":                        "nguồn %s không chạy trên %s",
+	"check.unknown_field":                   "item.%s không phải trường của nguồn %s (xem security-warden rules sources)",
+	"check.unknown_placeholder":             "{%s} không phải trường của nguồn %s",
+	"check.check_placeholder":               "câu check hiện ra mà không có mục nào: bỏ %s",
+	"check.backticks":                       "dấu ` không cân: mỗi lệnh cần một dấu mở và một dấu đóng",
+	"check.braces":                          "dấu { } không cân",
+	"check.todo":                            "vẫn còn TODO",
+	"check.untranslated":                    "bản tiếng Việt giống hệt bản tiếng Anh",
+	"check.test_unknown_field":              "%s không phải trường của nguồn %s",
+	"check.field_type":                      "%s là %s, nguồn %s khai là %s",
+	"check.test_error":                      "match bị lỗi với mẫu này: %s",
+	"check.test_failed":                     "báo %v, đáng lẽ %v %s",
+	"check.unfilled":                        "{%s} không được test %d điền: thêm trường đó vào mẫu",
+	"check.lint.pipe_to_shell":              "tải script về rồi đổ thẳng vào shell: %s. Hãy tải về một tệp để người dùng đọc trước",
+	"check.lint.rm_rf":                      "xoá đệ quy không hỏi: %s. Ghi rõ cần xoá gì, hoặc chuyển sang chỗ khác thay vì xoá",
+	"check.lint.chmod_777":                  "cho mọi người ghi hoặc đọc tệp: %s",
+	"check.lint.disable_security":           "tắt một tính năng bảo mật: %s. Nếu chỉ là bước hoàn tác hay thử, đoạn chữ phải nói rõ",
+	"check.lint.sudo_unannounced":           "cần quyền quản trị mà đoạn chữ không nói: %s. Thêm một câu như \"cần quyền quản trị\"",
+	"check.lint.etc_no_backup":              "sửa tệp trong /etc mà không có bước sao lưu: %s. Thêm bước như `sudo cp TỆP TỆP.bak` trước",
+	"check.lint.force_push":                 "force-push, ghi đè lịch sử của mọi người: %s",
+	"check.lint.history_rewrite_no_warning": "viết lại lịch sử Git mà không cảnh báo: %s. Nói rõ mọi người phải clone lại và phải đổi secret trước",
 }

@@ -41,8 +41,9 @@ an installed release.
 
 ## Adding or changing a rule
 
-1. If the facts already exist in a source, write only `rules/<id>.yaml`. Copy an
-   existing rule (for example `rules/backup-none.yaml`): `id`, `severity`
+1. If the facts already exist in a source (`security-warden rules sources NAME`),
+   write only `rules/<id>.yaml`. Start with `security-warden rules new <id> --source
+   NAME` or copy an existing rule (for example `rules/backup-none.yaml`): `id`, `severity`
    (critical/high/medium/low), `platforms`, `source`, `match` (CEL over `item`),
    and `title`, `check` (the passing state), `explain`, `fix`, each in `en` and `vi`.
 2. `tests`: at least one item that must match and one that must not, each with
@@ -51,7 +52,12 @@ an installed release.
    config keys in `` `backticks` `` and number multi-step fixes `1. … 2. …`;
    the UI and the terminal render steps and copyable commands from that. Values
    inside a command are shell-quoted automatically.
-4. Need new facts? Add fields to a collector (or a new source), plus a label
+4. `security-warden rules check --strict --new rules/<id>.yaml` checks it like CI,
+   including the fix-text safety lint. New contributed rules use `tier:
+   experimental` (off unless `--experimental`); the maintainer promotes them to
+   `community`. See [docs/contributing-rules.md](docs/contributing-rules.md).
+5. Need new facts? Add fields to a collector (or a new source) and to its field
+   list in `internal/source/schema.go`, plus a label
    `source.<name>` in `internal/i18n/catalog.go` (en and vi) and a category in
    `internal/report/category.go`.
 

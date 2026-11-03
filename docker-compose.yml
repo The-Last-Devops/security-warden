@@ -1,8 +1,8 @@
 # Day-to-day commands, all in Docker (no Go on the host):
 #
 #   docker compose run --rm tidy     # go mod tidy (updates go.mod / go.sum)
-#   docker compose run --rm test     # go vet + go test + docs/what-it-checks.md up to date
-#   docker compose run --rm docs     # regenerate docs/what-it-checks.md from rules/
+#   docker compose run --rm test     # go vet + go test + generated docs up to date
+#   docker compose run --rm docs     # regenerate docs/what-it-checks.md and docs/rule-sources.md
 #   docker compose run --rm web      # build the web UI (web/dist)
 #   docker compose run --rm build    # ./dist/security-warden for this Mac
 #   ./dist/security-warden           # run the scan on the host

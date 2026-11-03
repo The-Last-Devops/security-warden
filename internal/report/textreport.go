@@ -337,6 +337,9 @@ func writeGroup(w io.Writer, c style, t func(string) string, g Group, o Options,
 	if len(g.All) > 1 {
 		title = Headline(title)
 	}
+	if f.Tier != "" { // community or experimental rules say so
+		title += " [" + t("tier."+f.Tier) + "]"
+	}
 	pre, rest := "", ""
 	if pill {
 		lbl := c.wrap(sevPill[f.Severity], " "+t("severity."+f.Severity)+" ")
@@ -476,6 +479,9 @@ func safeView(w io.Writer, c style, t func(string) string, s Scan, o Options) {
 		label := engine.Clean(r.Check.Get(s.Lang))
 		if label == "" {
 			label = id
+		}
+		if tl := r.TierLabel(); tl != "" {
+			label += " [" + t("tier."+tl) + "]"
 		}
 		if o.Verbose {
 			label += "  " + c.dim("["+id+"]")

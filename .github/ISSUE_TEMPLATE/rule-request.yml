@@ -1,0 +1,48 @@
+name: Rule request
+description: Suggest a new check (or a change to one).
+title: "Rule: "
+labels: [rule]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A rule reads facts Security Warden already collects (see `security-warden rules sources`)
+        and reports a risky state. You can also write it yourself: [docs/contributing-rules.md](https://github.com/The-Last-Devops/security-warden/blob/main/docs/contributing-rules.md).
+  - type: textarea
+    id: risk
+    attributes:
+      label: The risk
+      description: What risky state should be found, and what can go wrong because of it?
+    validations:
+      required: true
+  - type: textarea
+    id: detect
+    attributes:
+      label: How to detect it
+      description: Which file, setting or command output shows it? Which source has the facts, if you know?
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: How to fix it
+      description: The safe fix a user should follow. Say if it needs admin rights.
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platforms
+      multiple: true
+      options: [macOS, Linux, Windows]
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: References
+      description: Vendor docs, benchmarks (CIS, NIST), advisories.
+  - type: checkboxes
+    id: ai
+    attributes:
+      label: AI authorship
+      options:
+        - label: An AI agent wrote this request.

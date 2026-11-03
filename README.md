@@ -91,7 +91,7 @@ Details, updating and uninstalling: [docs/install.md](docs/install.md).
 | `security-warden passkey list\|clear` | Passkeys that sign in to the web UI (`clear` asks first, unless `--yes`) |
 | `security-warden logout` | Sign every browser out of the web UI |
 | `security-warden mcp` | MCP server for AI agents (read-only; `--allow-changes` to allow fixes). See [docs/mcp.md](docs/mcp.md) |
-| `security-warden rules` | List every rule |
+| `security-warden rules` | List every rule (`sources`, `new`, `check` for [writing rules](docs/contributing-rules.md)) |
 
 Add `--lang vi` or `--lang en` to any command, or `--json` to the scan (the scope and category
 filters apply to the JSON too).
@@ -115,6 +115,12 @@ Linux and Windows. Nothing needs root or opens a permission prompt, and secret v
 stored or sent. Full list: [docs/what-it-checks.md](docs/what-it-checks.md). How the web UI is protected
 and what goes over the network: [docs/security-model.md](docs/security-model.md). All docs:
 [docs/](docs/README.md).
+
+## Contributing
+
+New checks are one YAML file each, and people and AI agents are both welcome to send them. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md) and [Contributing a rule](docs/contributing-rules.md); every pull request
+is reviewed and merged by hand ([review guide](docs/review-guide.md)).
 
 ## License
 

@@ -48,7 +48,7 @@ func testServer() *Server {
 	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>ui</title>")}}
 	sc := Scanner{
 		Collect:  func(context.Context, func(string)) []source.Result { return nil },
-		Evaluate: func([]source.Result, string) report.Scan { return report.Scan{} },
+		Evaluate: func([]source.Result, string, bool) report.Scan { return report.Scan{} },
 	}
 	return New("127.0.0.1:7348", KindLoopback, "test", "en", ui, sc)
 }
@@ -262,5 +262,42 @@ func TestLocalSettings(t *testing.T) {
 	}
 	if u, _ := s.pk.load(); len(u.Creds) != 0 || u.Added != nil {
 		t.Fatal("passkeys still there")
+	}
+}
+
+func TestSourcesAPI(t *testing.T) {
+	s := testServer()
+	h := s.Handler()
+	if w := do(h, "GET", "/api/sources", nil); w.Code != 401 {
+		t.Fatalf("sources without session = %d", w.Code)
+	}
+	w := do(h, "GET", "/login?token="+s.Token(), nil)
+	ck := w.Result().Cookies()[0]
+	w = do(h, "GET", "/api/sources?lang=vi", map[string]string{"Cookie": ck.Name + "=" + ck.Value})
+	if w.Code != 200 {
+		t.Fatalf("sources = %d", w.Code)
+	}
+	var out struct {
+		Sources []struct {
+			Name   string
+			Label  string
+			Fields []struct{ Name, Type string }
+		}
+		Rules   []any
+		DocsURL string `json:"docs_url"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Sources) != len(source.All()) || out.Rules == nil || !strings.HasPrefix(out.DocsURL, "https://github.com/") {
+		t.Fatalf("sources = %d, rules = %v, docs = %q", len(out.Sources), out.Rules, out.DocsURL)
+	}
+	for _, src := range out.Sources {
+		if src.Name == "tailscale" && (len(src.Fields) == 0 || src.Label == "") {
+			t.Errorf("tailscale: %+v", src)
+		}
+	}
+	if w := do(h, "POST", "/api/sources", map[string]string{"Cookie": ck.Name + "=" + ck.Value}); w.Code == 200 {
+		t.Error("POST /api/sources answered")
 	}
 }

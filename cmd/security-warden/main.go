@@ -81,6 +81,13 @@ func run(args []string) int {
 	byRepo := fs.Bool("by-repo", false, "scan: group code findings per repository")
 	safe := fs.Bool("safe", false, "scan: list what already passes")
 	allowChanges := fs.Bool("allow-changes", false, "mcp: also offer the tools that change things (apply_fix, undo_fix, hide, restore)")
+	experimental := fs.Bool("experimental", false, "scan, fix: also run experimental rules (new, not yet reviewed); they never change the score")
+	ruleSource := fs.String("source", "", "rules new: the source the rule reads")
+	severity := fs.String("severity", "medium", "rules new: critical|high|medium|low")
+	platforms := fs.String("platforms", "", "rules new: comma-separated platforms (default: where the source runs)")
+	dir := fs.String("dir", "rules", "rules new: folder to write the rule in")
+	strict := fs.Bool("strict", false, "rules check: warnings fail too")
+	isNew := fs.Bool("new", false, "rules check: the files are new rules (must start experimental)")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -115,11 +122,8 @@ func run(args []string) int {
 		fmt.Println(version)
 		return 0
 	case "rules":
-		fmt.Printf(i18n.T(l, "cli.rules_header")+"\n\n", len(rs))
-		for _, r := range rs {
-			fmt.Printf("  %-36s %-8s %s\n", r.ID, r.Severity, r.Title.Get(l))
-		}
-		return 0
+		return runRules(l, rs, subArgs, rulesOpts{JSON: *asJSON, Source: *ruleSource, Severity: *severity,
+			Platforms: *platforms, Dir: *dir, Strict: *strict, New: *isNew})
 	case "scan", "fix":
 	case "watch":
 		if *interval < 10*time.Second {
@@ -175,7 +179,7 @@ func run(args []string) int {
 		return runUndo(l)
 	}
 
-	s := scanNow(rs, l, !*asJSON)
+	s := scanNow(rs, l, !*asJSON, *experimental)
 	findings := s.Findings
 	if cmd == "fix" {
 		return runFix(l, findings, *yes, *dryRun)
@@ -218,7 +222,7 @@ func langFlag(args []string) string {
 
 // scanNow runs every collector (with a progress line on stderr when
 // progress is set) and evaluates the results.
-func scanNow(rs []*engine.Rule, l string, progress bool) report.Scan {
+func scanNow(rs []*engine.Rule, l string, progress, experimental bool) report.Scan {
 	var names []string
 	for _, c := range source.All() {
 		names = append(names, c.Name)
@@ -235,7 +239,7 @@ func scanNow(rs []*engine.Rule, l string, progress bool) report.Scan {
 	if prog != nil {
 		prog.Stop()
 	}
-	return buildScan(rs, results, l)
+	return buildScan(rs, results, l, experimental)
 }
 
 // checkFilters validates --scope and --category; "" when they are fine.
@@ -255,15 +259,16 @@ func checkFilters(l string, o report.Options) string {
 }
 
 // buildScan evaluates collector results into a report in one language.
-func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan {
+// experimental also runs the rules still waiting for review.
+func buildScan(rs []*engine.Rule, results []source.Result, l string, experimental bool) report.Scan {
 	items := map[string][]engine.Item{}
 	ran := map[string]bool{}
 	for _, r := range results {
 		items[r.Name] = r.Items
 		ran[r.Name] = r.SkipKey == "" && r.Err == nil
 	}
-	all := engine.Evaluate(rs, items, platform(), l)
-	checked, passed := engine.Coverage(rs, all, ran, platform())
+	all := engine.EvaluateWith(rs, items, platform(), l, experimental)
+	checked, passed := engine.CoverageWith(rs, all, ran, platform(), experimental)
 	entries, _ := ignore.Default().List(time.Now())
 	findings, ignored := ignore.Split(all, entries, time.Now())
 	for i := range findings {

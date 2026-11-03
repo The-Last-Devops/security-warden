@@ -13,8 +13,8 @@ explain:
   en: Neither ufw, firewalld nor nftables is active, so every listening port is open to the network you are on.
   vi: ufw, firewalld và nftables đều không chạy, nên port nào đang mở cũng lộ ra mạng bạn đang dùng.
 fix:
-  en: "Ubuntu/Debian: if you reach this machine over SSH, first run `sudo ufw allow OpenSSH` so you are not cut off, then `sudo ufw enable` (other incoming connections are blocked; open more with `sudo ufw allow <port>`; undo with `sudo ufw disable`). Fedora/RHEL: `sudo systemctl enable --now firewalld` (SSH stays allowed by default)."
-  vi: "Ubuntu/Debian: nếu bạn vào máy này qua SSH, chạy `sudo ufw allow OpenSSH` trước để không bị ngắt, rồi `sudo ufw enable` (các kết nối vào khác bị chặn; mở thêm bằng `sudo ufw allow <cổng>`; hoàn tác bằng `sudo ufw disable`). Fedora/RHEL: `sudo systemctl enable --now firewalld` (SSH vẫn được phép theo mặc định)."
+  en: "Ubuntu/Debian: if you reach this machine over SSH, first run `sudo ufw allow OpenSSH` so you are not cut off, then `sudo ufw enable` (other incoming connections are blocked; open more with `sudo ufw allow <port>`; undo with `sudo ufw disable`). Fedora/RHEL: `sudo systemctl enable --now firewalld` (SSH stays allowed by default). These commands need admin rights: sudo asks for your password."
+  vi: "Ubuntu/Debian: nếu bạn vào máy này qua SSH, chạy `sudo ufw allow OpenSSH` trước để không bị ngắt, rồi `sudo ufw enable` (các kết nối vào khác bị chặn; mở thêm bằng `sudo ufw allow <cổng>`; hoàn tác bằng `sudo ufw disable`). Fedora/RHEL: `sudo systemctl enable --now firewalld` (SSH vẫn được phép theo mặc định). Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {item: {firewall: false, container: false}, expect: true}

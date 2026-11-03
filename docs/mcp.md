@@ -12,7 +12,7 @@ The app starts the command itself and talks to it over stdin/stdout (JSON-RPC
 
 - **Read-only by default.** Without flags the server offers only tools that
   read: `scan`, `list_problems`, `get_fix`, `explain_rule`, `list_safe`,
-  `status`. They are marked `readOnlyHint: true`. A scan needs no admin rights,
+  `status`, `list_sources`, `check_rule`. They are marked `readOnlyHint: true`. A scan needs no admin rights,
   opens no permission prompt and sends nothing off the machine (3–6 seconds).
 - **Changes are opt-in.** `apply_fix`, `undo_fix`, `hide` and `restore` exist
   only when the server is started with `--allow-changes`; otherwise they are not
@@ -39,17 +39,21 @@ Every tool returns `structuredContent` (JSON) plus a short text summary in
 `content[0].text`. `lang` (`en` or `vi`, default `en`) sets the language of rule
 texts. Scope is `machine` or `code`; categories are `secrets`, `exposure`,
 `settings`, `persistence`, `ai`, `devtools`, `software`, `other`,
-`code_secrets`, `code_deps`.
+`code_secrets`, `code_deps`. `experimental: true` (on `scan`, `list_problems`,
+`list_safe` and `get_fix`) also evaluates experimental rules, which are off by
+default and never counted in the score ([tiers](writing-rules.md#tiers)).
 
 ### Read-only (always on)
 
 | Tool | Arguments | Returns |
 |---|---|---|
-| `scan` | `scope?`, `category?`, `lang?`, `refresh?` | Scores (overall, machine, code), counts by severity, problems grouped by rule, worst first: `rule_id`, `severity`, `title`, `places`, `gain`, `has_auto_fix`; plus skipped sources. The scan is cached for 60 s; `refresh: true` scans again. |
-| `list_problems` | `scope?`, `category?`, `severity_at_least?` (`critical`/`high`/`medium`/`low`), `limit?` (1–1000, default 100), `lang?` | One entry per place: `key`, `rule_id`, `severity`, `title`, `place`, `category`, `has_auto_fix`. |
-| `get_fix` | `rule_id`, `lang?` | `explain`, parsed `steps` (`text` with short code inline, `commands` to run), the commands for each place when they differ, and `remedy` (built-in fix: action, plan, needs admin, undoable, how to apply it). |
+| `scan` | `scope?`, `category?`, `lang?`, `refresh?`, `experimental?` | Scores (overall, machine, code), counts by severity, problems grouped by rule, worst first: `rule_id`, `severity`, `title`, `places`, `gain`, `has_auto_fix`; plus skipped sources. The scan is cached for 60 s; `refresh: true` scans again. |
+| `list_problems` | `scope?`, `category?`, `severity_at_least?` (`critical`/`high`/`medium`/`low`), `limit?` (1–1000, default 100), `lang?`, `experimental?` | One entry per place: `key`, `rule_id`, `severity`, `title`, `place`, `category`, `has_auto_fix`. |
+| `get_fix` | `rule_id`, `lang?`, `experimental?` | `explain`, parsed `steps` (`text` with short code inline, `commands` to run), the commands for each place when they differ, and `remedy` (built-in fix: action, plan, needs admin, undoable, how to apply it). |
 | `explain_rule` | `rule_id`, `lang?` | Rule metadata whether failing or not: severity, platforms, category, `check`, `explain`, `fix` template, remedy, and its state in the last scan. |
-| `list_safe` | `scope?`, `category?`, `lang?` | Checks that pass. |
+| `list_safe` | `scope?`, `category?`, `lang?`, `experimental?` | Checks that pass. |
+| `list_sources` | `name?`, `lang?` | Every source a rule can read (or one): category, platforms, fields with type, description and an example value. Same as `security-warden rules sources`. |
+| `check_rule` | `yaml` (the rule file's content), `lang?` | Checks a rule without writing it anywhere, like `security-warden rules check`: `ok`, `rule_id`, `tier`, `tests` (`passed`, `total`), `errors` and `warnings` (each `field`, `code`, `message`; `lint.*` codes flag unsafe fix commands). See [Contributing a rule](contributing-rules.md). |
 | `status` | none | Version, background service running, vulnerability data age per ecosystem, whether changes are allowed, age of the cached scan. |
 
 ### Changing (only with `--allow-changes`)

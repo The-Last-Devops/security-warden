@@ -38,8 +38,9 @@ FROM deps AS src
 COPY . .
 COPY --from=ui /web/dist/ web/dist/
 
-# test: vet and unit tests, including every rule's sample items, and a
-# check that docs/what-it-checks.md matches the rules.
+# test: vet and unit tests, including every rule's sample items, the rule
+# check and fix-text lint on every rule, and a check that docs/what-it-checks.md
+# and docs/rule-sources.md match the rules and the source schema.
 FROM src AS test
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w ."; exit 1; }; \

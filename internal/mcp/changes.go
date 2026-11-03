@@ -85,7 +85,7 @@ func (s *Server) toolApplyFix(ctx context.Context, a args) (any, string, error) 
 	}
 	s.changeMu.Lock()
 	defer s.changeMu.Unlock()
-	sc, _, _, err := s.scan(ctx, i18n.Default, false)
+	sc, _, _, err := s.scan(ctx, i18n.Default, false, true)
 	if err != nil {
 		return nil, "", err
 	}
@@ -232,7 +232,7 @@ func (s *Server) toolHide(ctx context.Context, a args) (any, string, error) {
 	}
 	s.changeMu.Lock()
 	defer s.changeMu.Unlock()
-	sc, _, _, err := s.scan(ctx, i18n.Default, false)
+	sc, _, _, err := s.scan(ctx, i18n.Default, false, true)
 	if err != nil {
 		return nil, "", err
 	}

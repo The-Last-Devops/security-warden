@@ -4,6 +4,7 @@
 package engine
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -96,15 +97,6 @@ func newEnv() (*cel.Env, error) {
 type RemedyCheck func(action, source string, params map[string]string) error
 
 func Load(fsys fs.FS, knownSources []string, checkRemedy RemedyCheck) ([]*Rule, error) {
-	env, err := newEnv()
-	if err != nil {
-		return nil, err
-	}
-	known := map[string]bool{}
-	for _, s := range knownSources {
-		known[s] = true
-	}
-
 	files, err := fs.Glob(fsys, "*.yaml")
 	if err != nil {
 		return nil, err
@@ -116,42 +108,61 @@ func Load(fsys fs.FS, knownSources []string, checkRemedy RemedyCheck) ([]*Rule, 
 		if err != nil {
 			return nil, err
 		}
-		var r Rule
-		dec := yaml.NewDecoder(strings.NewReader(string(b)))
-		dec.KnownFields(true)
-		if err := dec.Decode(&r); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
-		}
-		r.file = path.Base(f)
-		if r.Remedy != nil {
-			if err := checkRemedy(r.Remedy.Action, r.Source, r.Remedy.Params); err != nil {
-				return nil, fmt.Errorf("%s: remedy: %w", f, err)
-			}
-		}
-		if err := validate(&r, known); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
+		r, err := Parse(path.Base(f), b, knownSources, checkRemedy)
+		if err != nil {
+			return nil, err
 		}
 		if other, dup := seen[r.ID]; dup {
 			return nil, fmt.Errorf("%s: id %q already used by %s", f, r.ID, other)
 		}
 		seen[r.ID] = f
-		ast, iss := env.Compile(r.Match)
-		if iss.Err() != nil {
-			return nil, fmt.Errorf("%s: match: %w", f, iss.Err())
-		}
-		// item fields are dyn, so "item.x" alone type-checks as dyn; Matches
-		// still rejects a non-boolean result at run time.
-		if t := ast.OutputType(); t != cel.BoolType && t != cel.DynType {
-			return nil, fmt.Errorf("%s: match must be a boolean expression", f)
-		}
-		// Cost limit: a rule cannot make a scan or watch tick spin.
-		if r.prg, err = env.Program(ast, cel.CostLimit(100_000), cel.InterruptCheckFrequency(100)); err != nil {
-			return nil, fmt.Errorf("%s: %w", f, err)
-		}
-		rules = append(rules, &r)
+		rules = append(rules, r)
 	}
 	sort.Slice(rules, func(i, j int) bool { return rules[i].ID < rules[j].ID })
 	return rules, nil
+}
+
+// Parse loads one rule file exactly as Load does: unknown fields, a bad
+// remedy, missing translations or tests, and a CEL expression that does not
+// compile are errors. name is used in messages and as File().
+func Parse(name string, data []byte, knownSources []string, checkRemedy RemedyCheck) (*Rule, error) {
+	env, err := newEnv()
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, s := range knownSources {
+		known[s] = true
+	}
+	var r Rule
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&r); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	r.file = path.Base(name)
+	if r.Remedy != nil {
+		if err := checkRemedy(r.Remedy.Action, r.Source, r.Remedy.Params); err != nil {
+			return nil, fmt.Errorf("%s: remedy: %w", name, err)
+		}
+	}
+	if err := validate(&r, known); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	ast, iss := env.Compile(r.Match)
+	if iss.Err() != nil {
+		return nil, fmt.Errorf("%s: match: %w", name, iss.Err())
+	}
+	// item fields are dyn, so "item.x" alone type-checks as dyn; Matches
+	// still rejects a non-boolean result at run time.
+	if t := ast.OutputType(); t != cel.BoolType && t != cel.DynType {
+		return nil, fmt.Errorf("%s: match must be a boolean expression", name)
+	}
+	// Cost limit: a rule cannot make a scan or watch tick spin.
+	if r.prg, err = env.Program(ast, cel.CostLimit(100_000), cel.InterruptCheckFrequency(100)); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	return &r, nil
 }
 
 func validate(r *Rule, known map[string]bool) error {
@@ -304,18 +315,38 @@ type Finding struct {
 	Explain  string  `json:"explain"`
 	Fix      string  `json:"fix"`
 	Remedy   *Remedy `json:"remedy,omitempty"`
-	Item     Item    `json:"item"`
+	// Tier is community or experimental; empty for stable rules.
+	Tier string `json:"tier,omitempty"`
+	Item Item   `json:"item"`
 	// Key identifies this finding (FindingID); filled in reports so tools
 	// can target one place, e.g. "security-warden ignore add <key>".
 	Key string `json:"key,omitempty"`
 }
 
 // Evaluate runs the rules that apply to platform on the collected items.
-// Experimental rules run but never report.
+// Experimental rules are left out (see EvaluateWith).
 func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []Finding {
+	return EvaluateWith(rules, items, platform, lang, false)
+}
+
+// Runs reports whether rule r is evaluated: experimental rules only when
+// the user asked for them.
+func (r *Rule) Runs(experimental bool) bool { return r.Tier != "experimental" || experimental }
+
+// TierLabel is the tier shown next to a finding: empty for stable.
+func (r *Rule) TierLabel() string {
+	if r.Tier == "stable" || r.Tier == "" {
+		return ""
+	}
+	return r.Tier
+}
+
+// EvaluateWith is Evaluate that also runs experimental rules when
+// experimental is set. Their findings are labeled, and never scored.
+func EvaluateWith(rules []*Rule, items map[string][]Item, platform, lang string, experimental bool) []Finding {
 	var out []Finding
 	for _, r := range rules {
-		if r.Tier == "experimental" || !contains(r.Platforms, platform) {
+		if !r.Runs(experimental) || !contains(r.Platforms, platform) {
 			continue
 		}
 		for _, it := range items[r.Source] {
@@ -331,6 +362,7 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 				Explain:  Render(r.Explain.Get(lang), it),
 				Fix:      RenderFix(r.Fix.Get(lang), it),
 				Remedy:   renderRemedy(r.Remedy, it),
+				Tier:     r.TierLabel(),
 				Item:     it,
 			})
 		}
@@ -346,12 +378,18 @@ func Evaluate(rules []*Rule, items map[string][]Item, platform, lang string) []F
 // Coverage lists the rules that ran on platform against a source that
 // worked (ran is the set of such sources) and did not report anything.
 func Coverage(rules []*Rule, findings []Finding, ran map[string]bool, platform string) (checked int, passed []string) {
+	return CoverageWith(rules, findings, ran, platform, false)
+}
+
+// CoverageWith is Coverage that also counts experimental rules when
+// experimental is set.
+func CoverageWith(rules []*Rule, findings []Finding, ran map[string]bool, platform string, experimental bool) (checked int, passed []string) {
 	hit := map[string]bool{}
 	for _, f := range findings {
 		hit[f.RuleID] = true
 	}
 	for _, r := range rules {
-		if r.Tier == "experimental" || !contains(r.Platforms, platform) || !ran[r.Source] {
+		if !r.Runs(experimental) || !contains(r.Platforms, platform) || !ran[r.Source] {
 			continue
 		}
 		checked++

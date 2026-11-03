@@ -5,6 +5,8 @@ Copilot agents, your own scripts): one command scans the machine and returns
 JSON that says what is wrong, why it matters and exactly how to fix it.
 
 A ready-made skill for Claude Code is in [`skills/security-warden/SKILL.md`](../skills/security-warden/SKILL.md).
+To write and contribute a new rule, use [`skills/security-warden-rule-author`](../skills/security-warden-rule-author/SKILL.md)
+and [Contributing a rule](contributing-rules.md).
 
 ## Ground rules for agents
 
@@ -35,6 +37,10 @@ A ready-made skill for Claude Code is in [`skills/security-warden/SKILL.md`](../
 | Group code problems per repository | `security-warden --by-repo` |
 | What already passes | `security-warden --safe` |
 | All rules with their texts | `security-warden rules` |
+| Sources and the fields a rule can use | `security-warden rules sources [NAME] [--json]` |
+| Start a new rule file | `security-warden rules new <id> --source <name> [--severity S] [--platforms …] [--dir DIR]` |
+| Check rule files (validation, tests, fix-text lint) | `security-warden rules check --strict [--new] [--json] <file>…` |
+| Include experimental rules in a scan | `security-warden --json --experimental` |
 | Apply built-in fixes (after the user agrees) | `security-warden fix --dry-run`, then `security-warden fix --yes` |
 | Undo the last fixes | `security-warden fix --undo` |
 | Hide a problem for 1, 7 or 30 days | `security-warden ignore add <rule_id or key> --days 7` |

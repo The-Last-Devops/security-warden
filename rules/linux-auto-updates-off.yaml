@@ -13,8 +13,8 @@ explain:
   en: Security fixes are only installed when someone remembers to run the package manager.
   vi: Bản vá bảo mật chỉ được cài khi có người nhớ chạy trình quản lý gói.
 fix:
-  en: "Ubuntu/Debian: `sudo apt install unattended-upgrades`, then `sudo dpkg-reconfigure -plow unattended-upgrades` and answer Yes. Fedora/RHEL: `sudo dnf install dnf-automatic`, then `sudo nano /etc/dnf/automatic.conf` and set `apply_updates = yes` under `[commands]` (if the file is new, write those two lines), then `sudo systemctl enable --now dnf-automatic.timer`."
-  vi: "Ubuntu/Debian: `sudo apt install unattended-upgrades`, rồi `sudo dpkg-reconfigure -plow unattended-upgrades` và chọn Yes. Fedora/RHEL: `sudo dnf install dnf-automatic`, rồi `sudo nano /etc/dnf/automatic.conf` và đặt `apply_updates = yes` dưới `[commands]` (nếu tệp mới tạo thì viết đúng hai dòng đó), rồi `sudo systemctl enable --now dnf-automatic.timer`."
+  en: "Ubuntu/Debian: `sudo apt install unattended-upgrades`, then `sudo dpkg-reconfigure -plow unattended-upgrades` and answer Yes. Fedora/RHEL: `sudo dnf install dnf-automatic`, back up the config with `sudo cp /etc/dnf/automatic.conf /etc/dnf/automatic.conf.bak`, then `sudo nano /etc/dnf/automatic.conf` and set `apply_updates = yes` under `[commands]` (if the file is new, write those two lines), then `sudo systemctl enable --now dnf-automatic.timer`. These commands need admin rights: sudo asks for your password."
+  vi: "Ubuntu/Debian: `sudo apt install unattended-upgrades`, rồi `sudo dpkg-reconfigure -plow unattended-upgrades` và chọn Yes. Fedora/RHEL: `sudo dnf install dnf-automatic`, sao lưu cấu hình bằng `sudo cp /etc/dnf/automatic.conf /etc/dnf/automatic.conf.bak`, rồi `sudo nano /etc/dnf/automatic.conf` và đặt `apply_updates = yes` dưới `[commands]` (nếu tệp mới tạo thì viết đúng hai dòng đó), rồi `sudo systemctl enable --now dnf-automatic.timer`. Các lệnh này cần quyền quản trị: sudo sẽ hỏi mật khẩu của bạn."
 author: the-last-devops
 tests:
   - {item: {auto_updates: false, container: false}, expect: true}
