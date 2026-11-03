@@ -71,19 +71,29 @@ func run(args []string) int {
 	tab := fs.Bool("tab", false, "serve: open in a browser tab instead of an app window")
 	background := fs.Bool("background", false, "serve: run as a background service (no browser, scan and notify)")
 	popup := fs.String("popup", "high", "serve --background: open the window for new problems at this level or worse: critical|high|medium|off")
+	days := fs.Int("days", 7, "ignore add: hide for this many days (1 to 30)")
+	scope := fs.String("scope", "", "scan: only machine or code")
+	category := fs.String("category", "", "scan: only one category")
+	byRepo := fs.Bool("by-repo", false, "scan: group code findings per repository")
+	safe := fs.Bool("safe", false, "scan: list what already passes")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	// Flags may also follow a subcommand argument: "agent status --lang vi".
+	// Flags may also follow subcommand arguments: "ignore add x --days 1".
 	var subArgs []string
-	if fs.NArg() > 0 {
-		subArgs = []string{fs.Arg(0)}
+	for fs.NArg() > 0 {
+		subArgs = append(subArgs, fs.Arg(0))
 		if err := fs.Parse(fs.Args()[1:]); err != nil {
 			return 2
 		}
 	}
 	l := i18n.Detect(*lang)
+	opts := report.Options{Verbose: *verbose, Scope: *scope, Category: *category, ByRepo: *byRepo, Safe: *safe}
+	if err := checkFilters(l, opts); err != "" {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
 
 	var names []string
 	for _, c := range source.All() {
@@ -137,7 +147,11 @@ func run(args []string) int {
 		}
 		return runStatus(l)
 	case "ignore":
-		return runIgnore(l, subArgs)
+		return runIgnore(l, rs, subArgs, *days)
+	case "passkey", "passkeys":
+		return runPasskey(l, subArgs, *yes)
+	case "logout":
+		return runLogout(l)
 	case "serve":
 		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab, *background, *popup)
 	case "open":
@@ -154,8 +168,41 @@ func run(args []string) int {
 		return runUndo(l)
 	}
 
+	s := scanNow(rs, l, !*asJSON)
+	findings := s.Findings
+	if cmd == "fix" {
+		return runFix(l, findings, *yes, *dryRun)
+	}
+	if cmd == "scan" {
+		findings = opts.Filter(findings)
+	}
+	if *asJSON {
+		s.Findings, s.Ignored = opts.Filter(s.Findings), opts.Filter(s.Ignored)
+		if err := report.JSON(os.Stdout, s); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+	} else {
+		opts.Rules = rs
+		report.Text(os.Stdout, s, opts)
+	}
+	for _, f := range findings {
+		if f.Severity == "critical" || f.Severity == "high" {
+			return 1
+		}
+	}
+	return 0
+}
+
+// scanNow runs every collector (with a progress line on stderr when
+// progress is set) and evaluates the results.
+func scanNow(rs []*engine.Rule, l string, progress bool) report.Scan {
+	var names []string
+	for _, c := range source.All() {
+		names = append(names, c.Name)
+	}
 	var prog *report.Progress
-	if !*asJSON {
+	if progress {
 		prog = report.StartProgress(os.Stderr, l, names)
 	}
 	results := source.Run(context.Background(), source.All(), func(n string) {
@@ -166,33 +213,23 @@ func run(args []string) int {
 	if prog != nil {
 		prog.Stop()
 	}
+	return buildScan(rs, results, l)
+}
 
-	items := map[string][]engine.Item{}
-	ran := map[string]bool{}
-	for _, r := range results {
-		items[r.Name] = r.Items
-		ran[r.Name] = r.SkipKey == "" && r.Err == nil
+// checkFilters validates --scope and --category; "" when they are fine.
+func checkFilters(l string, o report.Options) string {
+	if o.Scope != "" && o.Scope != "machine" && o.Scope != "code" {
+		return fmt.Sprintf(i18n.T(l, "cli.bad_scope"), o.Scope)
 	}
-	_ = ran
-	s := buildScan(rs, results, l)
-	findings := s.Findings
-	if cmd == "fix" {
-		return runFix(l, findings, *yes, *dryRun)
-	}
-	if *asJSON {
-		if err := report.JSON(os.Stdout, s); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 2
+	if o.Category != "" {
+		for _, c := range report.Categories {
+			if c == o.Category {
+				return ""
+			}
 		}
-	} else {
-		report.Text(os.Stdout, s, report.Options{Verbose: *verbose})
+		return fmt.Sprintf(i18n.T(l, "cli.bad_category"), o.Category, strings.Join(report.Categories, ", "))
 	}
-	for _, f := range findings {
-		if f.Severity == "critical" || f.Severity == "high" {
-			return 1
-		}
-	}
-	return 0
+	return ""
 }
 
 // buildScan evaluates collector results into a report in one language.
@@ -242,43 +279,6 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 		Ignored:      ignored,
 		Root:         os.Geteuid() == 0,
 	}
-}
-
-// runIgnore lists or clears snoozed findings (snoozing happens in the web
-// UI, where each finding has its own button).
-func runIgnore(l string, args []string) int {
-	t := func(k string) string { return i18n.T(l, k) }
-	st := ignore.Default()
-	sub := "list"
-	if len(args) > 0 {
-		sub = args[0]
-	}
-	switch sub {
-	case "clear":
-		if err := st.Remove(nil); err != nil {
-			fmt.Println(err)
-			return 2
-		}
-		fmt.Println(t("ignore.cleared"))
-	default:
-		es, err := st.List(time.Now())
-		if err != nil {
-			fmt.Println(err)
-			return 2
-		}
-		if len(es) == 0 {
-			fmt.Println(t("ignore.none"))
-			return 0
-		}
-		for _, e := range es {
-			until := t("ignore.forever")
-			if !e.Until.IsZero() {
-				until = e.Until.Local().Format("2006-01-02 15:04")
-			}
-			fmt.Printf("  %-12s %-18s %s\n    %s\n", e.ID, until, e.RuleID, engine.Clean(e.Title))
-		}
-	}
-	return 0
 }
 
 // launchedByUser tells a double-click apart from a pipe or a script: the

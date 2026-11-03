@@ -12,6 +12,9 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
+
+	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/The-Last-Devops/security-warden/internal/report"
 	"github.com/The-Last-Devops/security-warden/internal/source"
@@ -218,5 +221,46 @@ func TestTicketSignIn(t *testing.T) {
 	h.ServeHTTP(rec, r)
 	if rec.Code != 401 {
 		t.Fatalf("ticket from non-loopback = %d", rec.Code)
+	}
+}
+
+func TestLocalSettings(t *testing.T) {
+	s := testServer()
+	h := s.Handler()
+	s.pk.path = t.TempDir() + "/passkeys.json"
+	s.auth.newSession("127.0.0.1")
+	s.auth.newSession("127.0.0.1")
+	// Without the secret, or from another machine: refused.
+	if w := do(h, "POST", "/api/local/logout", nil); w.Code != 401 {
+		t.Fatalf("logout without secret = %d", w.Code)
+	}
+	r := httptest.NewRequest("POST", "/api/local/logout", nil)
+	r.Host = "127.0.0.1:7348"
+	r.RemoteAddr = "100.64.1.2:5555"
+	r.Header.Set("Authorization", "Bearer "+s.Token())
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, r)
+	if rec.Code != 401 {
+		t.Fatalf("logout from non-loopback = %d", rec.Code)
+	}
+	bearer := map[string]string{"Authorization": "Bearer " + s.Token()}
+	w := do(h, "POST", "/api/local/logout", bearer)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"ended":2`) || len(s.auth.sessions) != 0 {
+		t.Fatalf("logout = %d %s", w.Code, w.Body.String())
+	}
+	u, _ := s.pk.load()
+	u.Creds = append(u.Creds, webauthn.Credential{ID: []byte{1, 2}})
+	u.Added = map[string]time.Time{"0102": time.Date(2026, 1, 2, 3, 4, 0, 0, time.UTC)}
+	_ = s.pk.save(u)
+	w = do(h, "GET", "/api/local/passkeys", bearer)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "2026-01-02T03:04:00Z") {
+		t.Fatalf("passkeys = %d %s", w.Code, w.Body.String())
+	}
+	w = do(h, "POST", "/api/local/passkeys/clear", bearer)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"removed":1`) {
+		t.Fatalf("clear = %d %s", w.Code, w.Body.String())
+	}
+	if u, _ := s.pk.load(); len(u.Creds) != 0 || u.Added != nil {
+		t.Fatal("passkeys still there")
 	}
 }

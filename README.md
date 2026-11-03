@@ -66,12 +66,22 @@ Other archives: `darwin-amd64`, `linux-amd64`, `linux-arm64` (`.tar.gz`) and `wi
 | `security-warden stop` | Stop it and remove it from login items |
 | `security-warden update` | Update now (`on`/`off` for automatic updates) |
 | `security-warden vulndb` | Vulnerability data: status, `update` now, `on`/`off` for the daily refresh |
-| `security-warden` | Scan once and print a report in the terminal |
+| `security-warden` | Scan once and print a report in the terminal: both scores, one entry per problem with its places, fix steps and the command for each place |
+| `security-warden --scope machine\|code` | Only the machine itself, or only the code on it |
+| `security-warden --category NAME` | Only one category: `secrets`, `exposure`, `settings`, `persistence`, `ai`, `devtools`, `software`, `other`, `code_secrets`, `code_deps` |
+| `security-warden --by-repo` | Code problems grouped per repository (the machine first) |
+| `security-warden --safe` | What already passes, per category |
+| `security-warden --verbose` | Every place, rule ids, and the keys `[in brackets]` that `ignore add` accepts |
 | `security-warden fix` | Fix what can be fixed, asking first (`--dry-run`, `--yes`, `--undo`) |
-| `security-warden ignore list\|clear` | Snoozed findings |
+| `security-warden ignore add RULE\|KEY [--days 1\|7\|30]` | Hide a problem for a while (7 days by default, 30 at most): a rule id hides every place, a key one place |
+| `security-warden ignore restore RULE\|KEY\|all` | Show hidden problems again |
+| `security-warden ignore list` | What is hidden, where, and until when (`clear` shows everything again) |
+| `security-warden passkey list\|clear` | Passkeys that sign in to the web UI (`clear` asks first, unless `--yes`) |
+| `security-warden logout` | Sign every browser out of the web UI |
 | `security-warden rules` | List every rule |
 
-Add `--lang vi` or `--lang en` to any command, or `--json` to the scan.
+Add `--lang vi` or `--lang en` to any command, or `--json` to the scan (the scope and category
+filters apply to the JSON too).
 
 ## Update
 

@@ -13,7 +13,6 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -129,6 +128,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /login", s.handleLogin)
 	mux.HandleFunc("POST /api/ticket", s.handleTicket)
 	mux.HandleFunc("POST /api/logout", s.withSession(s.handleLogout))
+	mux.HandleFunc("GET /api/local/passkeys", s.localOnly(s.handleLocalPasskeys))
+	mux.HandleFunc("POST /api/local/passkeys/clear", s.localOnly(s.handleLocalPasskeysClear))
+	mux.HandleFunc("POST /api/local/logout", s.localOnly(s.handleLocalLogout))
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
@@ -167,7 +169,9 @@ func (s *Server) Handler() http.Handler {
 			http.Error(w, "unexpected Host header", http.StatusMisdirectedRequest)
 			return
 		}
-		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/ticket" {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.URL.Path != "/api/ticket" && !strings.HasPrefix(r.URL.Path, "/api/local/") {
+			// (/api/ticket and /api/local/ need the server secret in a header,
+			// which a page elsewhere cannot send.)
 			// Same-origin only: browsers always send Origin on cross-site
 			// POSTs, so a page elsewhere cannot trigger a fix.
 			if r.Header.Get("Origin") != "http://"+r.Host || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
@@ -333,20 +337,7 @@ func (s *Server) render(results []source.Result, lang string) map[string]any {
 				af.CanFix = !a.NeedsRoot // admin fixes stay in the terminal
 			}
 		}
-		if report.Scope(f.Source) == "code" {
-			if v, ok := f.Item["repo_name"].(string); ok {
-				af.Repo = engine.Clean(v)
-			}
-		}
-		for _, k := range []string{"file", "path", "name"} {
-			if v, ok := f.Item[k].(string); ok && v != "" {
-				af.Place = tilde(engine.Clean(v))
-				if af.Repo != "" && k == "file" {
-					af.Place = af.Repo + "/" + af.Place
-				}
-				break
-			}
-		}
+		af.Repo, af.Place = report.Repo(f), report.Place(f)
 		af.Item = nil // raw items stay on the machine; the UI needs only text
 		out = append(out, af)
 	}
@@ -609,15 +600,7 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request, _ string, _ 
 }
 
 // tilde shows the home folder as ~, like the terminal report.
-func tilde(s string) string {
-	if h, err := os.UserHomeDir(); err == nil && h != "" {
-		// A quoted path keeps working once shortened: '/home/u/a b' becomes
-		// ~/'a b' (inside quotes ~ would not mean the home folder).
-		s = strings.ReplaceAll(s, "'"+h+"/", "~/'")
-		return strings.ReplaceAll(s, h, "~")
-	}
-	return s
-}
+func tilde(s string) string { return report.Tilde(s) }
 
 // rule finds a loaded rule by id.
 func (s *Server) rule(id string) *engine.Rule {

@@ -10,17 +10,10 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 	"github.com/The-Last-Devops/security-warden/internal/fix"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/report"
 )
 
-func tilde(s string) string {
-	if h, err := os.UserHomeDir(); err == nil && h != "" {
-		// A quoted path keeps working once shortened: '/home/u/a b' becomes
-		// ~/'a b' (inside quotes ~ would not mean the home folder).
-		s = strings.ReplaceAll(s, "'"+h+"/", "~/'")
-		return strings.ReplaceAll(s, h, "~")
-	}
-	return s
-}
+func tilde(s string) string { return report.Tilde(s) }
 
 // runFix offers the built-in remedy of each finding, one by one, and
 // applies the ones the user accepts (all of them with --yes).
@@ -105,7 +98,8 @@ func runFix(lang string, findings []engine.Finding, yes, dryRun bool) int {
 	if len(manual) > 0 {
 		fmt.Println("\n  " + t("fix.manual"))
 		for _, f := range manual {
-			fmt.Printf("    • %s\n      → %s\n", tilde(f.Title), strings.ReplaceAll(tilde(f.Fix), "`", ""))
+			fmt.Printf("    • %s\n", engine.Clean(tilde(f.Title)))
+			report.FixText(os.Stdout, f.Fix, "    ")
 		}
 	}
 	if applied > 0 {
