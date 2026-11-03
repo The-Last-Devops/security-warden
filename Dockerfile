@@ -38,11 +38,13 @@ FROM deps AS src
 COPY . .
 COPY --from=ui /web/dist/ web/dist/
 
-# test: vet and unit tests, including every rule's sample items.
+# test: vet and unit tests, including every rule's sample items, and a
+# check that docs/what-it-checks.md matches the rules.
 FROM src AS test
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w ."; exit 1; }; \
-    go vet ./... && GOOS=darwin go vet ./... && GOOS=windows go vet ./... && go test ./...
+    go vet ./... && GOOS=darwin go vet ./... && GOOS=windows go vet ./... && go test ./... && \
+    go run ./tools/gen-rule-docs/main.go -check
 
 # build: cross-compile every target in TARGETS, in parallel.
 FROM ${BUILD_BASE} AS build
