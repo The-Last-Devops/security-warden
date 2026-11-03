@@ -244,6 +244,12 @@ func buildScan(rs []*engine.Rule, results []source.Result, l string) report.Scan
 	checked, passed := engine.Coverage(rs, all, ran, platform())
 	entries, _ := ignore.Default().List(time.Now())
 	findings, ignored := ignore.Split(all, entries, time.Now())
+	for i := range findings {
+		findings[i].Key = engine.FindingID(findings[i])
+	}
+	for i := range ignored {
+		ignored[i].Key = engine.FindingID(ignored[i])
+	}
 	score, gain := engine.Score(rs, findings, ran, platform())
 	scoped := func(scope string) int {
 		var srs []*engine.Rule

@@ -305,6 +305,9 @@ type Finding struct {
 	Fix      string  `json:"fix"`
 	Remedy   *Remedy `json:"remedy,omitempty"`
 	Item     Item    `json:"item"`
+	// Key identifies this finding (FindingID); filled in reports so tools
+	// can target one place, e.g. "security-warden ignore add <key>".
+	Key string `json:"key,omitempty"`
 }
 
 // Evaluate runs the rules that apply to platform on the collected items.

@@ -83,6 +83,17 @@ Other archives: `darwin-amd64`, `linux-amd64`, `linux-arm64` (`.tar.gz`) and `wi
 Add `--lang vi` or `--lang en` to any command, or `--json` to the scan (the scope and category
 filters apply to the JSON too).
 
+## Use with AI agents
+
+Many people let an AI agent run the checkup for them. `security-warden --json`
+gives structured findings with explanations and exact fix steps; scanning is
+read-only and safe to run without asking, while every change (`fix`, `ignore`,
+fix commands) should wait for the user's yes.
+
+- **Agent guide**: [docs/ai-agents.md](docs/ai-agents.md) covers commands, exit codes, the JSON fields and a workflow.
+- **Claude Code skill**: copy [`skills/security-warden`](skills/security-warden) into `~/.claude/skills/` (or your project's `.claude/skills/`).
+- **Changing this repository with an agent**: [AGENTS.md](AGENTS.md) explains the layout, how to add a rule and the rules every change must keep.
+
 ## Update
 
 Homebrew installs **update themselves**: the background service checks once a day and runs
