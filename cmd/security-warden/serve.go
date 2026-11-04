@@ -126,9 +126,13 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 	rank := map[string]int{"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 	limit, popupOn := rank[popup]
 	var lastPopup time.Time
-	known := map[string]bool{}
+	// When each finding was last seen. A source that times out drops its
+	// findings for one scan; they come back on the next and are not new,
+	// so a finding is new only if it was not seen in the last week. Keyed by
+	// rule and title, not FindingID: a restarted process has a new pid.
+	seen := map[string]time.Time{}
 	for _, f := range srv.ScanNow(ctx) {
-		known[engine.FindingID(f)] = true
+		seen[findingKey(f)] = time.Now()
 	}
 	tick := time.NewTicker(30 * time.Minute)
 	defer tick.Stop()
@@ -145,16 +149,7 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 		}
 		last = time.Now()
 		now := srv.ScanNow(ctx)
-		var added []engine.Finding
-		next := map[string]bool{}
-		for _, f := range now {
-			id := engine.FindingID(f)
-			next[id] = true
-			if !known[id] && alertLevels[f.Severity] {
-				added = append(added, f)
-			}
-		}
-		known = next
+		added := newFindings(seen, now, last)
 		for i, f := range added {
 			fmt.Printf("%s  + [%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), f.Severity, engine.Clean(tilde(f.Title)))
 			if i < 3 {
@@ -178,6 +173,29 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 			}
 		}
 	}
+}
+
+// renotifyAfter is how long a finding must be gone before it counts as new
+// again.
+const renotifyAfter = 7 * 24 * time.Hour
+
+// newFindings returns the findings worth a notification (medium and worse,
+// not seen within renotifyAfter) and records every finding as seen at now.
+func newFindings(seen map[string]time.Time, findings []engine.Finding, now time.Time) []engine.Finding {
+	var added []engine.Finding
+	for _, f := range findings {
+		id := findingKey(f)
+		if at, ok := seen[id]; (!ok || now.Sub(at) > renotifyAfter) && alertLevels[f.Severity] {
+			added = append(added, f)
+		}
+		seen[id] = now
+	}
+	for id, at := range seen {
+		if now.Sub(at) > renotifyAfter {
+			delete(seen, id)
+		}
+	}
+	return added
 }
 
 // runOpen opens the running Security Warden, signed in; starts it if needed.
@@ -315,7 +333,7 @@ func runUpdate(lang string) int {
 	}
 	if web.RunningHere(web.DefaultPort) && agent.Installed() {
 		// Restart the background service on the new version.
-		_ = agent.Uninstall()
+		_ = agent.Stop()
 		time.Sleep(time.Second)
 		_, _ = agent.Install(lang)
 	}

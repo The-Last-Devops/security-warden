@@ -162,7 +162,7 @@ func runStart(lang string) int {
 	t := func(k string) string { return i18n.T(lang, k) }
 	// An older version still running (after brew upgrade): replace it.
 	if web.RunningHere(web.DefaultPort) && web.RunningVersion(web.DefaultPort) != version {
-		_ = agent.Uninstall()
+		_ = agent.Stop()
 		for i := 0; i < 25 && web.RunningHere(web.DefaultPort); i++ {
 			time.Sleep(200 * time.Millisecond)
 		}

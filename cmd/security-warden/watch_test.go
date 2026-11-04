@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/The-Last-Devops/security-warden/internal/engine"
 )
@@ -20,5 +21,25 @@ func TestDiff(t *testing.T) {
 	}
 	if countAlerts([]engine.Finding{a, c, {Severity: "low"}}) != 2 {
 		t.Error("countAlerts")
+	}
+}
+
+func TestNewFindingsIgnoresFlappingAndPids(t *testing.T) {
+	t0 := time.Now()
+	a := engine.Finding{RuleID: "tunnel", Title: "ngrok", Severity: "high", Item: engine.Item{"pid": 1}}
+	low := engine.Finding{RuleID: "x", Title: "y", Severity: "low"}
+	seen := map[string]time.Time{}
+	if got := newFindings(seen, []engine.Finding{a, low}, t0); len(got) != 1 {
+		t.Fatalf("first: %v", got)
+	}
+	// Gone for one scan (a source timed out), back with a new pid: not new.
+	newFindings(seen, nil, t0.Add(30*time.Minute))
+	a.Item = engine.Item{"pid": 2}
+	if got := newFindings(seen, []engine.Finding{a}, t0.Add(time.Hour)); len(got) != 0 {
+		t.Errorf("flapping finding notified again: %v", got)
+	}
+	// Gone for more than a week: new again.
+	if got := newFindings(seen, []engine.Finding{a}, t0.Add(9*24*time.Hour)); len(got) != 1 {
+		t.Errorf("after a week: %v", got)
 	}
 }

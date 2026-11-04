@@ -26,6 +26,8 @@ settings. This page explains what protects that, what is stored, and what goes o
 user service on Linux or a background process on Windows. It serves the web UI on `127.0.0.1:7348`,
 rescans every 30 minutes (every 2 hours while a macOS or Linux laptop runs on battery), sends a
 notification about new problems and opens the window for new high or critical ones, at most once an hour.
+A problem is new only if it was not seen in the last week, so one that drops out of a scan (a slow check
+timed out) or comes back under a new process ID is not announced again.
 
 ### Where it listens
 
