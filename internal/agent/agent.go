@@ -35,6 +35,11 @@ func xmlEscape(s string) string {
 	return r.Replace(s)
 }
 
+// AppBundleID is Security Warden.app's (packaging/macos/Info.plist). The
+// plist names it so Login Items shows the agent under the app's name and
+// icon; macOS honors that only for a binary signed by the app's team.
+const AppBundleID = "org.the-last-devops.security-warden.app"
+
 // Plist renders the LaunchAgent for bin.
 func Plist(bin, lang, logPath string) string {
 	args := []string{bin, "serve", "--background"}
@@ -54,6 +59,7 @@ func Plist(bin, lang, logPath string) string {
 		b.WriteString("\t\t<string>" + xmlEscape(a) + "</string>\n")
 	}
 	b.WriteString(`	</array>
+	<key>AssociatedBundleIdentifiers</key><array><string>` + AppBundleID + `</string></array>
 	<key>RunAtLoad</key><true/>
 	<key>KeepAlive</key><true/>
 	<key>ProcessType</key><string>Background</string>

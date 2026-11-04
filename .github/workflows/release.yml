@@ -79,10 +79,14 @@ jobs:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: scripts/make-dmg.sh "$GITHUB_REF_NAME" dist
+      # The darwin binaries and archives come from here, signed with the
+      # .dmg (make-dmg.sh), not from build-mac.
       - uses: actions/upload-artifact@v7
         with:
           name: dmg
-          path: dist/*.dmg
+          path: |
+            dist/*.dmg
+            dist/security-warden-darwin-*
 
   publish:
     needs: [build-mac, build-rest, dmg]
@@ -93,8 +97,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v8
         with:
+          name: dist-rest
           path: dist
-          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: dmg
+          path: dist
       - name: Checksums
         run: cd dist && sha256sum security-warden* > SHA256SUMS && cat SHA256SUMS
       - name: GitHub release
@@ -154,6 +162,12 @@ jobs:
           test -x "/Applications/Security Warden.app/Contents/MacOS/Security Warden"
           codesign --verify --deep --strict "/Applications/Security Warden.app"
           spctl -a -vv "/Applications/Security Warden.app"
+          # The formula's binary is signed by the same team as the app.
+          codesign --verify --strict "$(brew --prefix)/opt/security-warden/bin/security-warden"
+          app_team=$(codesign -dv "/Applications/Security Warden.app" 2>&1 | sed -n 's/^TeamIdentifier=//p')
+          cli_team=$(codesign -dv "$(brew --prefix)/opt/security-warden/bin/security-warden" 2>&1 | sed -n 's/^TeamIdentifier=//p')
+          echo "app $app_team, cli $cli_team"
+          [ -n "$app_team" ] && [ "$app_team" = "$cli_team" ]
       - name: Version matches the tag
         run: |
           got=$(security-warden version)
