@@ -24,8 +24,8 @@ settings. This page explains what protects that, what is stored, and what goes o
 
 `security-warden start` runs `security-warden serve --background` as a LaunchAgent on macOS, a systemd
 user service on Linux or a background process on Windows. It serves the web UI on `127.0.0.1:7348`,
-rescans every 30 minutes (every 2 hours on battery), sends a notification about new problems and opens
-the window for new high or critical ones, at most once an hour.
+rescans every 30 minutes (every 2 hours while a macOS or Linux laptop runs on battery), sends a
+notification about new problems and opens the window for new high or critical ones, at most once an hour.
 
 ### Where it listens
 
@@ -54,6 +54,11 @@ The browser opens by itself only on loopback; for a Tailscale address the sign-i
   browser with it. The request needs the server secret, which is stored in a file only you can read
   (`server-token`, mode 0600), and must come from loopback. A ticket is valid for 60 seconds and works
   once. The secret itself never appears in a URL.
+- **The macOS app.** Security Warden.app runs `security-warden app-url`, which gets a one-time ticket the
+  same way (it needs the server secret file) and prints the sign-in link; the app loads it in its own
+  window. So the app needs no passkey: being able to read that file already proves it is you on this
+  Mac, and WKWebView offers no passkeys on `localhost` anyway. The server is the same one, on loopback
+  only; the app keeps every other page (GitHub, docs) out of its window and opens them in the browser.
 - **Printed link.** `serve` in a terminal prints a sign-in link with the secret, for a browser on another
   device. Keep it private: it works until the server stops, and a new secret is made at every start. After
   sign-in the browser is redirected so the secret leaves the address bar and history. The background
@@ -142,4 +147,7 @@ matching command), and neither sends anything about your machine:
 - The first download is about 270 MB in total (npm alone is 220 MB), read as a stream and deleted; only a
   small gzipped index (about 3 MB) is kept. Daily refreshes are a few KB to a few MB.
 - Turn them off: `security-warden update off` (also in ⚙ Settings) and `security-warden vulndb off`.
+- `security-warden feedback` (and "Report a false positive", "Suggest a new check" in the web UI, the MCP
+  tools `report_false_positive` and `suggest_rule`) make no network call: they only build a GitHub link,
+  with identifying details taken out, that you open and submit yourself.
 - Notifications are local system notifications. There is no telemetry, analytics or crash reporting.

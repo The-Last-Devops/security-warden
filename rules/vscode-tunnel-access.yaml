@@ -1,0 +1,22 @@
+id: vscode-tunnel-access
+severity: high
+platforms: [macos, windows, linux]
+source: remote_tools
+match: item.kind == "tunnel" && item.managed == "vscode"
+title:
+  en: "VS Code Remote Tunnel Access is on"
+  vi: "VS Code đang bật Remote Tunnel Access"
+check:
+  en: "VS Code does not open a tunnel to this machine"
+  vi: "VS Code không mở tunnel vào máy này"
+explain:
+  en: "VS Code keeps a tunnel open through Microsoft's servers: anyone who signs in to your GitHub or Microsoft account can open a terminal and your files on this machine from anywhere, past the firewall and the office network. VS Code starts it again on its own, so stopping the process is not enough."
+  vi: "VS Code giữ một tunnel mở qua máy chủ của Microsoft: ai đăng nhập được tài khoản GitHub hoặc Microsoft của bạn đều mở được terminal và file trên máy này từ bất cứ đâu, vượt qua tường lửa và mạng công ty. VS Code tự bật lại nó, nên chỉ tắt tiến trình là không đủ."
+fix:
+  en: "1. In VS Code, click the account icon at the bottom of the left bar and choose \"Turn off Remote Tunnel Access\" (or open the Command Palette and run \"Remote Tunnel Access: Turn Off\"). No terminal command is needed. 2. Scan again to check it is gone. 3. If it still runs with VS Code closed, stop it in Terminal: `kill {pid}`"
+  vi: "1. Trong VS Code, bấm biểu tượng tài khoản ở cuối thanh bên trái và chọn \"Turn off Remote Tunnel Access\" (hoặc mở Command Palette, chạy \"Remote Tunnel Access: Turn Off\"). Không cần gõ lệnh nào. 2. Quét lại để chắc nó đã tắt. 3. Nếu đã đóng VS Code mà nó vẫn chạy, tắt nó trong Terminal: `kill {pid}`"
+author: the-last-devops
+tests:
+  - {item: {tool: code-tunnel, kind: tunnel, managed: vscode, pid: 62389}, expect: true}
+  - {item: {tool: ngrok, kind: tunnel, managed: "", pid: 42}, expect: false}
+  - {item: {tool: AnyDesk, kind: remote_desktop, managed: ""}, expect: false}

@@ -182,6 +182,14 @@ var tools = []tool{
 		run:         (*Server).toolStatus,
 	},
 	{
+		Name:        "scan_log",
+		Title:       "Scan log",
+		Description: "The scan log: when each scan ran and how long it took, and every check that failed, timed out or was slow, with the commands it waited on (command lines only, never their output). Use it when a scan hangs or a check reports an error. Read-only. Same as `security-warden logs`.",
+		InputSchema: obj(map[string]any{}),
+		Annotations: readOnly("Scan log"),
+		run:         (*Server).toolScanLog,
+	},
+	{
 		Name:  "list_sources",
 		Title: "List sources and their fields",
 		Description: "For writing rules: every source (the facts Security Warden collects), with its category, the platforms it runs on, how many rules read it, and the fields of its items (name, type, description, example value from the rules' tests). " +
@@ -217,6 +225,15 @@ var tools = []tool{
 		InputSchema: obj(map[string]any{"idea": str("What should be checked and why, in a few sentences. No secret values, paths or names from the machine.")}, "idea"),
 		Annotations: readOnly("Draft a request for a new check"),
 		run:         (*Server).toolSuggestRule,
+	},
+	{
+		Name:  "report_bug",
+		Title: "Draft a bug report",
+		Description: "When Security Warden itself misbehaves (a scan hangs, a check errors or times out, the UI or a command fails), draft a GitHub bug report from a short description plus the newest lines of the scan log (see scan_log): returns preview (scrubbed of identifying details) and url. " +
+			"Nothing is sent: show the preview to the user and let them open the link and submit it themselves. Do not open or submit it yourself. For a wrong finding use report_false_positive. Read-only.",
+		InputSchema: obj(map[string]any{"what": str("What happened: what was done, what was expected, what was seen. No secret values."), "include_log": map[string]any{"type": "boolean", "description": "Attach the newest lines of the scan log (default true)."}}, "what"),
+		Annotations: readOnly("Draft a bug report"),
+		run:         (*Server).toolReportBug,
 	},
 	{
 		Name:  "draft_rule",
@@ -973,4 +990,15 @@ func (s *Server) toolCheckRule(_ context.Context, a args) (any, string, error) {
 		b.WriteString("\nFix commands were flagged: change them, or explain in the PR why they are safe.")
 	}
 	return out, b.String(), nil
+}
+
+func (s *Server) toolScanLog(_ context.Context, _ args) (any, string, error) {
+	text, err := source.ReadLog()
+	if err != nil {
+		return nil, "", err
+	}
+	if text == "" {
+		return map[string]any{"path": source.LogDir, "text": ""}, "The scan log is empty: it fills in after the next scan.", nil
+	}
+	return map[string]any{"path": source.LogDir, "text": text}, "Scan log (" + source.LogDir + "):\n" + text, nil
 }

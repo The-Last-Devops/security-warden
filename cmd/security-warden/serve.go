@@ -49,7 +49,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		if kind == web.KindLoopback && web.RunningHere(web.DefaultPort) && strings.HasSuffix(addr, fmt.Sprintf(":%d", web.DefaultPort)) {
 			fmt.Printf("  %s\n  http://localhost:%d/\n", t("serve.already"), web.DefaultPort)
 			if open || background {
-				_ = web.OpenBrowser(web.SignedInURL(web.DefaultPort))
+				_ = web.OpenUI(web.DefaultPort)
 			}
 			return 0
 		}
@@ -80,6 +80,7 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 		srv.Watching = true
 		go watchInBackground(ctx, srv, lang, popup)
 		go autoUpdate(ctx, lang, stop)
+		go autoInstallApp(ctx, lang)
 		go vulnDBLoop(ctx)
 		if err := srv.Run(ctx, ln); err != nil {
 			fmt.Println(err)
@@ -95,12 +96,17 @@ func runServe(lang string, rs []*engine.Rule, listen string, allowLAN, open, tab
 	// Open the browser for the person at this machine; a Tailscale address is
 	// for another device, so only print the link then.
 	if open && kind == web.KindLoopback {
-		openFn := web.OpenBrowser
-		if !tab {
+		// The app window when installed; --tab keeps the browser.
+		openFn := func(url string) error { return web.OpenUI(web.DefaultPort) }
+		if tab || web.AppPath() == "" {
 			openFn = web.OpenBrowser
 		}
 		if err := openFn(srv.LoginURL()); err == nil {
-			fmt.Println("  " + t("serve.opened") + "\n")
+			if tab || web.AppPath() == "" {
+				fmt.Println("  " + t("serve.opened") + "\n")
+			} else {
+				fmt.Println("  " + t("serve.opened_app") + "\n")
+			}
 		}
 	}
 	if err := srv.Run(ctx, ln); err != nil {
@@ -167,7 +173,7 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 			}
 		}
 		if serious && time.Since(lastPopup) >= time.Hour {
-			if web.OpenBrowser(web.SignedInURL(web.DefaultPort)) == nil {
+			if web.OpenUI(web.DefaultPort) == nil {
 				lastPopup = time.Now()
 			}
 		}
@@ -177,10 +183,11 @@ func watchInBackground(ctx context.Context, srv *web.Server, lang, popup string)
 // runOpen opens the running Security Warden, signed in; starts it if needed.
 func runOpen(lang string, rs []*engine.Rule) int {
 	if web.RunningHere(web.DefaultPort) {
-		if err := web.OpenBrowser(web.SignedInURL(web.DefaultPort)); err != nil {
+		if err := web.OpenUI(web.DefaultPort); err != nil {
 			fmt.Println(err)
 			return 2
 		}
+		printAppHint(lang)
 		return 0
 	}
 	return runServe(lang, rs, "", false, true, false, false, "off")
@@ -207,6 +214,42 @@ func autoUpdate(ctx context.Context, lang string, stop context.CancelFunc) {
 			os.Exit(3)
 		}
 	}
+}
+
+// autoInstallApp gives Homebrew installs on macOS the app window once,
+// a few minutes after the service starts, when automatic updates are on and
+// the user has not turned this off (Settings → Updates, or
+// `security-warden app auto off`). It runs in the new version, so people
+// updating from a version without the app get it too. Once done (or when
+// the app is already there) it never installs it again: a removed app stays
+// removed. A failure (no cask yet for this release) is tried at next start.
+func autoInstallApp(ctx context.Context, lang string) {
+	if version == "dev" || web.AppHint() != "brew" && web.AppPath() == "" {
+		return
+	}
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(3 * time.Minute):
+	}
+	st := update.Load()
+	if st.AppDone || !st.Auto || st.NoAutoApp {
+		return
+	}
+	if web.AppPath() != "" {
+		st.AppDone = true
+		_ = update.Save(st)
+		return
+	}
+	if err := update.InstallAppCask(ctx); err != nil {
+		fmt.Printf("%s  app: %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+		return
+	}
+	st = update.Load()
+	st.AppDone = true
+	_ = update.Save(st)
+	fmt.Printf("%s  %s\n", time.Now().Format("2006-01-02 15:04:05"), i18n.T(lang, "app.installed"))
+	notify.Send("Security Warden", i18n.T(lang, "app.installed"), i18n.T(lang, "app.installed_body"))
 }
 
 // checkAndUpdate returns true when a new version was installed.

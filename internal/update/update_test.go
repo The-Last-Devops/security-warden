@@ -68,8 +68,19 @@ func TestUpgradeBrewRefreshesTapFirst(t *testing.T) {
 		t.Fatalf("got %q, %v", got, err)
 	}
 	b, _ := os.ReadFile(log)
-	if string(b) != "update --quiet\nupgrade security-warden\n" {
+	// The formula first; then the app cask, which this fake reports installed.
+	if string(b) != "update --quiet\nupgrade security-warden\nlist --cask "+AppCask+"\nupgrade --cask "+AppCask+"\n" {
 		t.Errorf("brew calls:\n%s", b)
+	}
+}
+
+func TestUpgradeBrewLeavesMissingAppCaskAlone(t *testing.T) {
+	log := fakeBrew(t, "v0.2.5", "v0.2.6", "list")
+	if got, err := UpgradeBrew(context.Background(), "v0.2.5"); err != nil || got != "v0.2.6" {
+		t.Fatalf("got %q, %v", got, err)
+	}
+	if b, _ := os.ReadFile(log); strings.Contains(string(b), "upgrade --cask") {
+		t.Errorf("upgraded a cask that is not installed:\n%s", b)
 	}
 }
 

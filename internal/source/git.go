@@ -42,7 +42,7 @@ func gitSafe(ctx context.Context, repo string, stdin []byte, args ...string) ([]
 	if stdin != nil {
 		cmd.Stdin = bytes.NewReader(stdin)
 	}
-	return cmd.Output()
+	return traced(ctx, cmd, false)
 }
 
 // gitStatus tells, for files of one repo (paths relative to it), which are

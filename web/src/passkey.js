@@ -7,7 +7,11 @@ const b64uToBuf = s => {
 }
 const bufToB64u = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
-export const passkeySupported = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext)
+// In the macOS app (window.swApp, set by the app before the page loads) the
+// app signs in with a one-time ticket instead: WKWebView has no passkeys on
+// localhost.
+export const inApp = () => !!window.swApp
+export const passkeySupported = () => !inApp() && !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext)
 
 function creationOptions(o) {
   const p = o.publicKey

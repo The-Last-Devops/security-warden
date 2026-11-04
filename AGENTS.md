@@ -26,7 +26,8 @@ or in a small web UI (Vue) served on `127.0.0.1:7348`.
 | `internal/feedback/` | GitHub issue links for wrong findings and new-check ideas, with identifying details scrubbed out (never sent by Security Warden) |
 | `web/src/` | Vue 3 + Tailwind UI (`App.vue`, `components/`, `i18n.js`) |
 | `tools/` | Generators for embedded data (gitleaks patterns, removed VS Code extensions) |
-| `packaging/`, `scripts/`, `Formula/` | .deb/.rpm, .dmg, Homebrew formula (updated by the release workflow) |
+| `packaging/`, `scripts/`, `Formula/`, `Casks/` | .deb/.rpm, .dmg, Homebrew formula and the app's cask (both written by the release workflow; the cask only for a notarized .dmg) |
+| `packaging/macos/` | Security Warden.app: a native window around the web UI (`App.swift`, AppKit + WebKit, no dependencies), its icon and Info.plist. Built by `scripts/make-app.sh` on macOS, signed and put in the .dmg by `make-dmg.sh` |
 
 ## Build and test (Docker only, nothing to install on the host)
 

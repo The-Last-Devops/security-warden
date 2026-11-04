@@ -2,35 +2,41 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, experimentalOn, setExperimental } from './api.js'
 import { dict } from './i18n.js'
-import { passkeySupported } from './passkey.js'
+import { inApp, passkeySupported } from './passkey.js'
 import SevChip from './components/SevChip.vue'
 import Segmented from './components/Segmented.vue'
-import SettingsDialog from './components/SettingsDialog.vue'
+import SettingsPage from './components/SettingsPage.vue'
 import FixSteps from './components/FixSteps.vue'
 import CodeLine from './components/CodeLine.vue'
 import PerPlace from './components/PerPlace.vue'
 import { perPlace, placeOf } from './fixgroup.js'
 import FindingRow from './components/FindingRow.vue'
-import RulesPage from './components/RulesPage.vue'
 import TierBadge from './components/TierBadge.vue'
 import FeedbackDialog from './components/FeedbackDialog.vue'
 
 // Per-viewer preferences: "auto" follows the browser / system.
 const pref = key => { try { return localStorage.getItem(key) } catch { return null } }
 const save = (key, v) => { try { localStorage.setItem(key, v) } catch {} }
+// Declared early: lang below reads it during setup.
+const meta = ref(null)
 const langPref = ref(pref('sw.lang') || 'auto')
 const themePref = ref(pref('sw.theme') || 'auto')
 const browserLang = () => ((navigator.languages || [navigator.language || 'en']).find(l => /^(vi|en)/i.test(l)) || 'en').slice(0, 2).toLowerCase()
-const lang = computed(() => (langPref.value === 'auto' ? browserLang() : langPref.value))
+// "Auto" in the macOS app follows the server's language (the app's web view
+// reports English whatever the system uses); in a browser, the browser's.
+const lang = computed(() => (langPref.value === 'auto' ? (inApp() && meta.value?.lang) || browserLang() : langPref.value))
 const t = computed(() => dict[lang.value] || dict.en)
 function applyTheme(v) { const r = document.documentElement; if (v === 'auto') delete r.dataset.theme; else r.dataset.theme = v }
 applyTheme(themePref.value)
 document.documentElement.lang = lang.value
 watch(themePref, v => { save('sw.theme', v); applyTheme(v) })
+// The header's quick switch: from what is shown now to the other one.
+const systemDark = () => globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches
+const shownDark = computed(() => (themePref.value === 'auto' ? systemDark() : themePref.value === 'dark'))
+const flipTheme = () => { themePref.value = shownDark.value ? 'light' : 'dark' }
 watch(langPref, v => save('sw.lang', v))
 watch(lang, l => { document.documentElement.lang = l; if (meta.value) load() })
 
-const meta = ref(null)
 const data = ref(null)
 const busy = ref(false)
 const signedOut = ref(false)
@@ -83,14 +89,18 @@ async function rescan(first = false) {
       const elapsed = performance.now() - started
       const shown = Math.min(p.done.length, Math.floor((p.total * elapsed) / MIN_MS))
       prog.value = { ...p, done: p.done.slice(0, shown), pending: [...p.done.slice(shown).map(d => d.label), ...p.pending] }
-      if (!p.running && p.done.length >= p.total && elapsed >= MIN_MS) break
+      // Sources that timed out never report done: the scan is over when
+      // the server says so, not when every source has finished.
+      if (!p.running && elapsed >= MIN_MS) break
     }
     data.value = await api.scan(lang.value)
     const after = new Set(findings.value.map(f => f.rule_id))
     let added = 0, gone = 0
     for (const k of after) if (!before.has(k)) added++
     for (const k of before) if (!after.has(k)) gone++
-    if (!first) say(t.value.scanDone(after.size, added, gone))
+    const late = (data.value.sources || []).filter(s => s.state === 'error' && s.detail === 'timed out').length
+    if (late) say(t.value.scanTimedOut(late), true, { label: t.value.scanLog, run: () => go('settings/logs') })
+    else if (!first) say(t.value.scanDone(after.size, added, gone))
   } catch (e) { fail(e) } finally { prog.value = null; busy.value = false }
 }
 const progPct = computed(() => (prog.value?.total ? Math.round((prog.value.done.length / prog.value.total) * 100) : 4))
@@ -267,8 +277,21 @@ async function ignoreFindings(list, days) {
 }
 async function restore(keys) { try { await api.unignore(keys); say(t.value.restored); await load() } catch (e) { fail(e) } }
 async function logout() { try { await api.logout() } catch {} ; signedOut.value = true }
-const menuOpen = ref(false)
-const rulesOpen = ref(false)
+// Settings is a full page (☰ menu), in the URL hash so Back works: #settings/<tab>.
+// #settings/<tab> opens one sub-page of the settings.
+const hashParts = () => location.hash.slice(1).split('/')
+// #logs (older links) is the log sub-page.
+const pageOf = () => (['settings', 'logs'].includes(hashParts()[0]) ? 'settings' : '')
+const tabOf = () => (hashParts()[0] === 'logs' ? 'logs' : hashParts()[1] || '')
+const page = ref(pageOf())
+const settingsTab = ref(tabOf())
+window.addEventListener('hashchange', () => { page.value = pageOf(); settingsTab.value = tabOf(); window.scrollTo({ top: 0 }) })
+function go(p) { moreOpen.value = false; watchOpen.value = false; if (p) location.hash = p; else history.pushState(null, '', location.pathname + location.search); page.value = p.split('/')[0]; settingsTab.value = p.split('/')[1] || '' }
+const moreOpen = ref(false)
+// The macOS app, for those who installed before it existed (meta.app_hint).
+const appHintOff = ref(pref('sw.appHint') === 'off')
+const appHintShown = computed(() => !!meta.value?.app_hint && !inApp() && !appHintOff.value && !page.value)
+function hideAppHint() { appHintOff.value = true; save('sw.appHint', 'off') }
 // Feedback dialog: { key } for a wrong finding, { key: '' } for a new idea.
 const feedbackAsk = ref(null)
 // Experimental checks: per viewer; the cached scan is evaluated again with them.
@@ -277,13 +300,24 @@ watch(experimental, v => { setExperimental(v); if (meta.value) load() })
 const watchOpen = ref(false)
 const upd = ref(null)
 async function refreshUpdate() { try { upd.value = await api.updateStatus() } catch {} }
+async function toggleAutoApp() {
+  if (!upd.value) return
+  try { const r = await api.setAutoApp(!upd.value.auto_app); upd.value.auto_app = r.auto_app } catch (e) { fail(e) }
+}
+const installingApp = ref(false)
+async function installApp() {
+  installingApp.value = true
+  try { await api.installApp(); say(t.value.appInstalled); hideAppHint() } catch (e) { fail(e) } finally { installingApp.value = false }
+}
 async function toggleAuto() {
   if (!upd.value) return
   try { const r = await api.setAutoUpdate(!upd.value.auto); upd.value.auto = r.auto } catch (e) { fail(e) }
 }
 onMounted(refreshUpdate)
-function onKey(e) { if (e.key === 'Escape') { sheet.value = null; menuOpen.value = false; watchOpen.value = false; rulesOpen.value = false; feedbackAsk.value = null } }
-onMounted(() => document.addEventListener('click', () => { watchOpen.value = false }))
+function onKey(e) { if (e.key === 'Escape') { if (page.value && !sheet.value && !feedbackAsk.value && !moreOpen.value) go(''); sheet.value = null; watchOpen.value = false; moreOpen.value = false; feedbackAsk.value = null } }
+onMounted(() => document.addEventListener('click', () => { watchOpen.value = false; moreOpen.value = false }))
+// On the document: Esc works with nothing focused too.
+onMounted(() => document.addEventListener('keydown', onKey))
 </script>
 
 <template>
@@ -296,12 +330,13 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 21c0-3.9 3.1-7 7-7 1.5 0 2.9.5 4 1.3M17 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 6v5m0-2h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         {{ t.signInPasskey }}
       </button>
+      <button v-else-if="inApp()" class="mx-auto inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-[15px] font-semibold text-accent-ink hover:brightness-110" @click="window.swApp.signIn()">{{ t.signInAgain }}</button>
       <p v-else-if="pk.count && !pk.available" class="text-[14px] text-muted">{{ t.passkeyNeedsLocalhost }} <a class="font-mono text-accent underline" :href="pk.localhost">{{ pk.localhost }}</a></p>
-      <p class="text-[14px] text-muted">{{ pk.count ? t.signInHelp : t.signedOut }}</p>
+      <p class="text-[14px] text-muted">{{ inApp() ? t.signedOutApp : pk.count ? t.signInHelp : t.signedOut }}</p>
     </section>
   </div>
 
-  <div v-else class="min-h-screen" @keydown="onKey">
+  <div v-else class="min-h-screen">
     <!-- top bar -->
     <header class="border-b border-line">
       <div class="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-6">
@@ -311,11 +346,11 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
         </button>
         <button v-if="upd?.current" class="num -ml-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ring-1"
           :class="upd.available ? 'bg-crit-bg text-crit ring-crit/40' : 'bg-ok-bg text-ok ring-ok/30'"
-          :title="upd.available ? t.newVersion(upd.latest) : t.upToDate" @click.stop="menuOpen = true; watchOpen = false">
+          :title="upd.available ? t.newVersion(upd.latest) : t.upToDate" @click.stop="go('settings/updates')">
           <i class="h-1.5 w-1.5 rounded-full" :class="upd.available ? 'bg-crit' : 'bg-ok'" />{{ upd.current }}
         </button>
         <div v-if="data" class="relative">
-          <button class="flex items-center gap-2 rounded-lg px-2 py-1 text-[13px] text-muted hover:bg-panel2 hover:text-fg" :aria-expanded="watchOpen" @click.stop="watchOpen = !watchOpen; menuOpen = false">
+          <button class="flex items-center gap-2 rounded-lg px-2 py-1 text-[13px] text-muted hover:bg-panel2 hover:text-fg" :aria-expanded="watchOpen" @click.stop="watchOpen = !watchOpen; moreOpen = false">
             <i class="h-2 w-2 rounded-full" :class="data.watching ? 'bg-ok shadow-[0_0_0_4px_var(--color-ok-bg)]' : 'bg-muted/60'" />
             <span class="font-semibold" :class="data.watching ? 'text-fg/85' : ''">{{ data.watching ? t.watching : t.notWatching }}</span>
             <span class="hidden lg:inline">· {{ data.scan.host }} · {{ t.lastScan(fmtTime(data.scanned_at)) }}</span>
@@ -331,13 +366,56 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             <p class="border-t border-line pt-3 text-[13px] text-muted">{{ data.watching ? t.watchNext(fmtTime(new Date(new Date(data.scanned_at).getTime() + 30 * 60000).toISOString())) + ' ' + t.watchStop : t.local }}</p>
           </div>
         </div>
-        <button class="ml-auto flex items-center gap-2 rounded-xl border border-line bg-panel2 px-3 py-2 text-[13.5px] font-semibold text-muted hover:text-fg" :aria-label="t.settings" @click.stop="menuOpen = true; watchOpen = false">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-          <span class="hidden sm:inline">{{ t.settings }}</span>
-        </button>
+        <div class="ml-auto flex items-center gap-2">
+          <select v-model="langPref" :aria-label="t.language" :title="t.language"
+            class="h-10 cursor-pointer rounded-xl border border-line bg-panel2 px-3 text-[14px] font-semibold text-muted hover:text-fg focus:outline-none focus:ring-2 focus:ring-accent">
+            <option value="auto">{{ t.auto }}</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">English</option>
+          </select>
+          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="shownDark ? t.light : t.dark" :title="shownDark ? t.light : t.dark" @click="flipTheme">
+            <svg v-if="shownDark" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+          </button>
+        <div class="relative">
+          <button class="grid h-10 w-10 place-items-center rounded-xl border border-line bg-panel2 text-muted hover:text-fg" :aria-label="t.more" aria-haspopup="menu" :aria-expanded="moreOpen" @click.stop="moreOpen = !moreOpen; watchOpen = false">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg>
+          </button>
+          <div v-if="moreOpen" class="rise absolute right-0 z-30 mt-2 grid w-60 gap-0.5 rounded-2xl border border-line bg-panel p-1.5 shadow-2xl" role="menu" @click.stop>
+            <button role="menuitem" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-semibold hover:bg-panel2" @click="go('settings')">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>{{ t.settings }}
+            </button>
+            <button role="menuitem" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-semibold hover:bg-panel2" @click="go('settings/logs')">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{{ t.scanLog }}
+            </button>
+            <button role="menuitem" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-semibold hover:bg-panel2" @click="go('settings/rules')">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{{ t.rulesSources }}
+            </button>
+            <button role="menuitem" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-semibold hover:bg-panel2" @click="moreOpen = false; feedbackAsk = { key: '', bug: true }">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6a4 4 0 0 1 8 0M6 10h12v4a6 6 0 0 1-12 0zM12 10v10M3 13h3M18 13h3M4 7l2.5 2.5M20 7l-2.5 2.5M4 20l2.5-2.5M20 20l-2.5-2.5" /></svg>{{ t.reportBug }}
+            </button>
+          </div>
+        </div>
+        </div>
       </div>
     </header>
 
+    <SettingsPage v-if="page === 'settings'" :tab="settingsTab" :ui-lang="lang" v-model:theme="themePref" v-model:lang="langPref" v-model:experimental="experimental" :t="t" :theme-options="themeOptions" :lang-options="langOptions"
+      :pk="pk" :can-passkey="canPasskey" :upd="upd" :busy="busy" :checked-at="upd?.checked && new Date(upd.checked).getFullYear() > 2000 ? fmtTime(upd.checked) : ''"
+      @close="go('')" @add-passkey="addPasskey()" @clear-passkeys="clearPasskeys()"
+      @toggle-auto="toggleAuto" @toggle-auto-app="toggleAutoApp" @undo="undo()" @logout="logout()" @bug="feedbackAsk = { key: '', bug: true }" />
+    <template v-else>
+    <!-- macOS without the app: how to get it (once dismissed, gone for good) -->
+    <div v-if="appHintShown" class="mx-auto mt-4 max-w-[1280px] px-4 sm:px-6">
+      <div class="grid gap-2 rounded-xl bg-accent-soft px-4 py-3 text-[14px] ring-1 ring-accent/30 sm:flex sm:flex-wrap sm:items-center sm:gap-x-3">
+        <span class="font-semibold text-accent">{{ t.appHintTitle }}</span>
+        <span class="text-muted">{{ meta.app_hint === 'brew' ? t.appHintBrew : t.appHintDmg }}</span>
+        <button v-if="meta.app_hint === 'brew'" class="justify-self-start rounded-lg bg-accent px-3.5 py-1.5 text-[13.5px] font-semibold text-accent-ink hover:brightness-110 disabled:opacity-60" :disabled="installingApp" @click="installApp">{{ installingApp ? t.appInstalling : t.appInstall }}</button>
+        <CodeLine v-if="meta.app_hint === 'brew'" class="min-w-0 sm:flex-1" code="brew install --cask the-last-devops/security-warden/security-warden-app" :t="t" />
+        <a v-else href="https://github.com/The-Last-Devops/security-warden/releases/latest" target="_blank" rel="noopener noreferrer" class="font-semibold text-accent hover:underline">{{ t.appHintDownload }} ↗</a>
+        <button class="justify-self-start rounded-lg px-2 py-1 text-[13px] font-semibold text-muted hover:text-fg sm:ml-auto" @click="hideAppHint">{{ t.appHintLater }}</button>
+      </div>
+    </div>
     <div v-if="upd && upd.available" class="mx-auto mt-4 flex max-w-[1280px] flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:px-6">
       <div class="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-accent-soft px-4 py-2.5 text-[14px] ring-1 ring-accent/30">
         <span class="font-semibold text-accent">{{ t.newVersion(upd.latest) }}</span>
@@ -398,7 +476,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
             {{ t.ignoredView }} <span class="num text-muted">{{ ignored.length }}</span>
           </button>
         </nav>
-        <button class="flex items-center gap-2 justify-self-start rounded-lg px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="rulesOpen = true">
+        <button class="flex items-center gap-2 justify-self-start rounded-lg px-3 py-1.5 text-[13px] font-semibold text-muted hover:bg-panel2 hover:text-fg" @click="go('settings/rules')">
           <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="shrink-0"><path d="M5 4h11l3 3v13H5zM9 10h6M9 14h6M9 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
           {{ t.rulesSources }}
         </button>
@@ -524,6 +602,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
         <p class="border-t border-line px-5 py-3 text-[13px] text-muted">{{ t.local }}</p>
       </main>
     </div>
+    </template>
 
     <!-- first sign-in: offer a passkey -->
     <div v-if="onboarding" class="fixed inset-0 z-40 grid place-items-center bg-page/90 p-4 backdrop-blur-md">
@@ -564,12 +643,7 @@ onMounted(() => document.addEventListener('click', () => { watchOpen.value = fal
       </div>
     </Transition>
 
-    <SettingsDialog v-if="menuOpen" v-model:theme="themePref" v-model:lang="langPref" v-model:experimental="experimental" :t="t" :theme-options="themeOptions" :lang-options="langOptions"
-      :pk="pk" :can-passkey="canPasskey" :upd="upd" :busy="busy" :checked-at="upd?.checked && new Date(upd.checked).getFullYear() > 2000 ? fmtTime(upd.checked) : ''"
-      @close="menuOpen = false" @add-passkey="menuOpen = false; addPasskey()" @clear-passkeys="menuOpen = false; clearPasskeys()"
-      @toggle-auto="toggleAuto" @undo="menuOpen = false; undo()" @logout="menuOpen = false; logout()" @rules="menuOpen = false; rulesOpen = true" />
-    <RulesPage v-if="rulesOpen" :t="t" :lang="lang" @close="rulesOpen = false" />
-    <FeedbackDialog v-if="feedbackAsk" :t="t" :finding-key="feedbackAsk.key" @close="feedbackAsk = null" />
+    <FeedbackDialog v-if="feedbackAsk" :t="t" :finding-key="feedbackAsk.key" :bug="!!feedbackAsk.bug" @close="feedbackAsk = null" />
 
     <!-- hide confirmation -->
     <div v-if="hideAsk" class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" @click.self="hideAsk = null">

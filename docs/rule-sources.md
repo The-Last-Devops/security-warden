@@ -12,7 +12,7 @@ uses a field that is not listed here. See [Contributing rules](contributing-rule
 - [`backup`](#backup): Backups (2 rules)
 - [`listening_ports`](#listening_ports): Listening ports (1 rules)
 - [`remote_services`](#remote_services): Remote access services (1 rules)
-- [`remote_tools`](#remote_tools): Tunnels and remote desktop apps (2 rules)
+- [`remote_tools`](#remote_tools): Tunnels and remote desktop apps (3 rules)
 - [`services`](#services): Servers running on this machine (2 rules)
 - [`outdated_software`](#outdated_software): Out-of-date software (6 rules)
 - [`docker_containers`](#docker_containers): Docker containers (13 rules)
@@ -164,7 +164,7 @@ Category `exposure` · macOS, Linux, Windows · 1 rules
 
 ## `remote_tools`: Tunnels and remote desktop apps
 
-Category `exposure` · macOS, Linux, Windows · 2 rules
+Category `exposure` · macOS, Linux, Windows · 3 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -172,7 +172,8 @@ Category `exposure` · macOS, Linux, Windows · 2 rules
 | `tool` | string | Tool name, e.g. ngrok or AnyDesk. | `"AnyDesk"` |
 | `pid` | number | Process id. | `42` |
 | `path` | string | Program path. |  |
-| `stop_cmd` | string | Commands to stop it, built by Security Warden (may carry `markup`). | `"sudo ngrok service stop · sudo ngrok service uninstall · kill 42"` |
+| `stop_cmd` | string | Commands to stop it, built by Security Warden (may carry `markup`); not set for VS Code tunnels. | `"sudo ngrok service stop · sudo ngrok service uninstall · kill 42"` |
+| `managed` | string | vscode for VS Code's Remote Tunnel Access (turned off in VS Code), else empty. | `"vscode"` |
 
 <a id="services"></a>
 

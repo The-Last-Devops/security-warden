@@ -75,7 +75,8 @@ Usage:
   security-warden fix    [--yes] [--dry-run] [--undo] [--experimental]
   security-warden start                 run in the background and open the window
   security-warden stop                  stop it (and do not start at login)
-  security-warden status | open
+  security-warden status | open        open shows the Security Warden app (macOS) or the browser
+  security-warden app [install | auto on|off]  the Mac app: state, install it, install it with updates
   security-warden update [on|off]       update now, or turn automatic updates on/off
   security-warden vulndb [update|on|off] vulnerability data (OSV): status, refresh now, daily refresh on/off
   security-warden ignore add RULE|KEY [--days 1|7|30]   hide a problem for a while (30 days at most)
@@ -83,6 +84,7 @@ Usage:
   security-warden ignore list                           what is hidden, and until when
   security-warden passkey list | clear [--yes]          passkeys that sign in to the web UI
   security-warden logout                sign every browser out of the web UI
+  security-warden logs [info|warn|error|path]  scan log: slow, failed or timed out checks and what they waited on
   security-warden mcp    [--allow-changes]  serve the checks to AI agents (MCP over stdio)
   security-warden rules  [--lang en|vi]               every rule, with its tier
   security-warden rules sources [NAME] [--json]        what each source collects: fields for rules
@@ -90,6 +92,7 @@ Usage:
   security-warden rules check FILE... [--strict] [--new] [--json]   validate, test and lint rule files
   security-warden feedback RULE|KEY [--open]     report a wrong finding or fix (a GitHub link you submit)
   security-warden feedback --idea "TEXT" [--open]  suggest a new check (a GitHub link you submit)
+  security-warden feedback --bug "TEXT" [--open]   report a bug, with the scan log (a GitHub link you submit)
   security-warden version
 
 --experimental also runs new community rules still waiting for review; they are
@@ -104,7 +107,7 @@ Language: --lang, else SW_LANG, else your system language.
 Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"cli.rules_header":      "%d rules",
 	"rules.by":              "by @%s (github.com/%s)",
-	"feedback.usage":        "Usage:\n  security-warden feedback RULE|KEY [--open]       report a wrong finding or a fix that does not work\n  security-warden feedback --idea \"TEXT\" [--open]  suggest a new check\nIt prints a GitHub link and exactly what it fills in. Nothing is sent: you open the link and submit it yourself.",
+	"feedback.usage":        "Usage:\n  security-warden feedback RULE|KEY [--open]       report a wrong finding or a fix that does not work\n  security-warden feedback --idea \"TEXT\" [--open]  suggest a new check\n  security-warden feedback --bug \"TEXT\" [--open]   report a bug (the scan log is attached)\nIt prints a GitHub link and exactly what it fills in. Nothing is sent: you open the link and submit it yourself.",
 	"feedback.preview":      "What the link fills in (home folder, user and host names, repositories, emails, addresses and tokens already taken out):",
 	"feedback.nothing_sent": "Nothing has been sent. Open the link, read and edit the text, and submit it yourself on GitHub.",
 	"feedback.link":         "Link:",
@@ -114,6 +117,7 @@ Exit status: 0 no high or critical findings, 1 at least one, 2 error.`,
 	"feedback.shortened":    "Some text was shortened to fit in the link.",
 	"feedback.not_failing":  "%s does not fail on this machine: the report is about the rule itself (for example a wrong fix text).",
 	"feedback.empty_idea":   "The idea is empty. Example: security-warden feedback --idea \"check ~/.npmrc for auth tokens\"",
+	"feedback.empty_bug":    "Say what happened. Example: security-warden feedback --bug \"the scan hangs at 89%\"",
 	"mcp.usage": `security-warden mcp: serve Security Warden to AI agents (Claude, Cursor, …) over MCP on stdin/stdout.
 
 Usage:
@@ -146,6 +150,15 @@ it only in an app that asks you before each tool call. Logs go to stderr.`,
 	"ignore.forever":      "for good",
 	"serve.open":          "Open this link in your browser (it signs you in):",
 	"serve.opened":        "Opened in your browser.",
+	"serve.opened_app":    "Opened in the Security Warden app.",
+	"app.installed":       "The Security Warden app is installed",
+	"app.installed_body":  "Find it in Applications: its own window, no passkey. Turn this off in Settings → Updates.",
+	"app.usage":           "Usage: security-warden app [install | auto on|off]",
+	"app.auto_on":         "The Mac app is installed with automatic updates (once; a removed app is not put back).",
+	"app.auto_off":        "The Mac app is not installed automatically.",
+	"app.status":          "Mac app: %s. Installed with automatic updates: %s.",
+	"app.hint_brew":       "Tip: Security Warden has a Mac app (its own window, no passkey): brew install --cask the-last-devops/security-warden/security-warden-app",
+	"app.hint_dmg":        "Tip: Security Warden has a Mac app (its own window, no passkey): get the latest .dmg from https://github.com/The-Last-Devops/security-warden/releases/latest and run Install.command.",
 	"update.applied":      "Updated to",
 	"update.available":    "A new version is available",
 	"update.how":          "Security Warden %s is out. Update with: brew upgrade security-warden, or download it from GitHub Releases.",
@@ -231,6 +244,9 @@ it only in an app that asks you before each tool call. Logs go to stderr.`,
 	"passkey.cleared":     "Removed %d passkey(s).",
 	"passkey.usage":       "Usage: security-warden passkey list | clear [--yes]",
 	"logout.done":         "Signed out everywhere: %d web session(s) ended. Sign in again with security-warden open.",
+	"logs.empty":          "The scan log is empty: it fills in after the next scan (%s).",
+	"logs.usage":          "Usage: security-warden logs [info|warn|error|path]",
+	"logs.header":         "Scan log (info.log, warn.log, error.log in %s)\nINFO = each scan, WARN = a slow check, ERROR = a check that failed or timed out. Send this when asking for help.",
 	"report.and_more":     "… and %d more (security-warden --verbose)",
 	"fix.none":            "Nothing here can be fixed automatically. Follow the → lines in the report.",
 	"fix.header":          "security-warden can fix %d of %d findings:",
@@ -373,7 +389,8 @@ Cách dùng:
   security-warden fix    [--yes] [--dry-run] [--undo] [--experimental]
   security-warden start                 chạy nền và mở cửa sổ
   security-warden stop                  dừng (và không tự bật khi đăng nhập)
-  security-warden status | open
+  security-warden status | open        open mở app Security Warden (macOS) hoặc trình duyệt
+  security-warden app [install | auto on|off]  app Mac: trạng thái, cài ngay, tự cài cùng lần cập nhật
   security-warden update [on|off]       cập nhật ngay, hoặc bật/tắt tự cập nhật
   security-warden vulndb [update|on|off] dữ liệu lỗ hổng (OSV): xem, tải mới ngay, bật/tắt tải mỗi ngày
   security-warden ignore add RULE|KEY [--days 1|7|30]   ẩn một vấn đề một thời gian (tối đa 30 ngày)
@@ -381,6 +398,7 @@ Cách dùng:
   security-warden ignore list                           những gì đang ẩn, và ẩn tới khi nào
   security-warden passkey list | clear [--yes]          passkey dùng để đăng nhập giao diện web
   security-warden logout                đăng xuất mọi trình duyệt khỏi giao diện web
+  security-warden logs [info|warn|error|path]  nhật ký quét: mục chậm, lỗi, quá giờ và lệnh nó đang chờ
   security-warden mcp    [--allow-changes]  cho AI agent dùng các kiểm tra (MCP qua stdio)
   security-warden rules  [--lang en|vi]               mọi rule, kèm mức (tier)
   security-warden rules sources [TÊN] [--json]         mỗi nguồn thu thập gì: các trường dùng trong rule
@@ -388,6 +406,7 @@ Cách dùng:
   security-warden rules check TỆP... [--strict] [--new] [--json]   kiểm tra, chạy test và soát lệnh của rule
   security-warden feedback RULE|KEY [--open]     báo kết quả sai hoặc cách sửa sai (link GitHub bạn tự gửi)
   security-warden feedback --idea "NỘI DUNG" [--open]  đề xuất kiểm tra mới (link GitHub bạn tự gửi)
+  security-warden feedback --bug "NỘI DUNG" [--open]   báo lỗi, kèm nhật ký quét (link GitHub bạn tự gửi)
   security-warden version
 
 --experimental chạy thêm các rule cộng đồng mới đang chờ duyệt; chúng được gắn nhãn
@@ -402,7 +421,7 @@ Ngôn ngữ: --lang, không có thì SW_LANG, không có nữa thì theo ngôn n
 Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất một, 2 lỗi.`,
 	"cli.rules_header":      "%d rule",
 	"rules.by":              "đóng góp bởi @%s (github.com/%s)",
-	"feedback.usage":        "Cách dùng:\n  security-warden feedback RULE|KEY [--open]           báo một kết quả sai hoặc cách sửa không đúng\n  security-warden feedback --idea \"NỘI DUNG\" [--open]  đề xuất một kiểm tra mới\nLệnh in ra một link GitHub và đúng nội dung link điền sẵn. Không gì được gửi đi: bạn tự mở link và tự gửi.",
+	"feedback.usage":        "Cách dùng:\n  security-warden feedback RULE|KEY [--open]           báo một kết quả sai hoặc cách sửa không đúng\n  security-warden feedback --idea \"NỘI DUNG\" [--open]  đề xuất một kiểm tra mới\n  security-warden feedback --bug \"NỘI DUNG\" [--open]   báo lỗi (kèm nhật ký quét)\nLệnh in ra một link GitHub và đúng nội dung link điền sẵn. Không gì được gửi đi: bạn tự mở link và tự gửi.",
 	"feedback.preview":      "Nội dung link điền sẵn (đã bỏ thư mục home, tên người dùng và tên máy, repo, email, địa chỉ IP và token):",
 	"feedback.nothing_sent": "Chưa có gì được gửi đi. Mở link, đọc và sửa nội dung, rồi tự gửi trên GitHub.",
 	"feedback.link":         "Link:",
@@ -412,6 +431,7 @@ Mã thoát: 0 không có vấn đề cao hay nghiêm trọng, 1 có ít nhất m
 	"feedback.shortened":    "Một phần nội dung đã được rút gọn cho vừa link.",
 	"feedback.not_failing":  "%s không báo lỗi trên máy này: báo cáo sẽ nói về chính rule đó (ví dụ cách sửa bị sai).",
 	"feedback.empty_idea":   "Ý tưởng đang trống. Ví dụ: security-warden feedback --idea \"kiểm tra token trong ~/.npmrc\"",
+	"feedback.empty_bug":    "Hãy tả chuyện gì đã xảy ra. Ví dụ: security-warden feedback --bug \"quét bị treo ở 89%\"",
 	"mcp.usage": `security-warden mcp: cho AI agent (Claude, Cursor, …) dùng Security Warden qua MCP trên stdin/stdout.
 
 Cách dùng:
@@ -444,6 +464,15 @@ cách sửa có sẵn (không bao giờ là cách cần quyền admin) và ẩn 
 	"ignore.forever":      "luôn luôn",
 	"serve.open":          "Mở link này trong trình duyệt (link tự đăng nhập):",
 	"serve.opened":        "Đã mở trong trình duyệt.",
+	"serve.opened_app":    "Đã mở trong app Security Warden.",
+	"app.installed":       "Đã cài app Security Warden",
+	"app.installed_body":  "Mở trong Applications: cửa sổ riêng, không cần passkey. Tắt việc này trong Cài đặt → Cập nhật.",
+	"app.usage":           "Cách dùng: security-warden app [install | auto on|off]",
+	"app.auto_on":         "App Mac được cài cùng lần tự cập nhật (một lần; app đã gỡ sẽ không bị cài lại).",
+	"app.auto_off":        "App Mac không được tự cài.",
+	"app.status":          "App Mac: %s. Tự cài cùng lần cập nhật: %s.",
+	"app.hint_brew":       "Mẹo: Security Warden có app cho Mac (cửa sổ riêng, không cần passkey): brew install --cask the-last-devops/security-warden/security-warden-app",
+	"app.hint_dmg":        "Mẹo: Security Warden có app cho Mac (cửa sổ riêng, không cần passkey): tải file .dmg mới nhất ở https://github.com/The-Last-Devops/security-warden/releases/latest rồi chạy Install.command.",
 	"update.applied":      "Đã cập nhật lên",
 	"update.available":    "Có phiên bản mới",
 	"update.how":          "Đã có Security Warden %s. Cập nhật bằng: brew upgrade security-warden, hoặc tải từ GitHub Releases.",
@@ -529,6 +558,9 @@ cách sửa có sẵn (không bao giờ là cách cần quyền admin) và ẩn 
 	"passkey.cleared":     "Đã xoá %d passkey.",
 	"passkey.usage":       "Cách dùng: security-warden passkey list | clear [--yes]",
 	"logout.done":         "Đã đăng xuất ở mọi nơi: kết thúc %d phiên web. Đăng nhập lại bằng security-warden open.",
+	"logs.empty":          "Nhật ký quét còn trống: sẽ có sau lần quét tới (%s).",
+	"logs.usage":          "Cách dùng: security-warden logs [info|warn|error|path]",
+	"logs.header":         "Nhật ký quét (info.log, warn.log, error.log trong %s)\nINFO = mỗi lần quét, WARN = mục chậm, ERROR = mục lỗi hoặc quá giờ. Gửi kèm khi cần nhờ hỗ trợ.",
 	"report.and_more":     "… và %d chỗ nữa (security-warden --verbose)",
 	"fix.none":            "Không có mục nào sửa tự động được. Làm theo các dòng → trong báo cáo.",
 	"fix.header":          "security-warden sửa được %d trên %d vấn đề:",

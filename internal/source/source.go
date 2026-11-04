@@ -35,6 +35,10 @@ type Result struct {
 	Items   []Item
 	SkipKey string // set when the source does not apply
 	Err     error  // set when the source failed
+	// Took is how long the collector ran (until the deadline if it timed
+	// out); Trace names its slow, failed or still running commands.
+	Took  time.Duration
+	Trace []string
 }
 
 // All returns every collector, in report order.
@@ -95,10 +99,14 @@ func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
 		r Result
 	}
 	ch := make(chan res, len(cs))
+	start := time.Now()
+	traces := make([]*trace, len(cs))
 	for i, c := range cs {
+		cctx, t := withTrace(ctx)
+		traces[i] = t
 		go func() {
-			items, err := c.Collect(ctx)
-			r := Result{Name: c.Name, Items: items}
+			items, err := c.Collect(cctx)
+			r := Result{Name: c.Name, Items: items, Took: time.Since(start), Trace: t.report()}
 			var s Skip
 			if errors.As(err, &s) {
 				r.SkipKey = s.Key
@@ -120,12 +128,14 @@ func Run(ctx context.Context, cs []Collector, done func(name string)) []Result {
 		case <-ctx.Done():
 			for i, c := range cs {
 				if !got[i] {
-					out[i] = Result{Name: c.Name, Err: errors.New("timed out")}
+					out[i] = Result{Name: c.Name, Err: errors.New("timed out"), Took: time.Since(start), Trace: traces[i].report()}
 				}
 			}
+			writeLog(out, time.Since(start))
 			return out
 		}
 	}
+	writeLog(out, time.Since(start))
 	return out
 }
 
@@ -137,7 +147,7 @@ var RunTimeout = 60 * time.Second
 func run(ctx context.Context, name string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	b, err := exec.CommandContext(ctx, name, args...).Output()
+	b, err := traced(ctx, exec.CommandContext(ctx, name, args...), false)
 	return string(b), err
 }
 
@@ -146,7 +156,7 @@ func run(ctx context.Context, name string, args ...string) (string, error) {
 func runCombined(ctx context.Context, name string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	b, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
+	b, err := traced(ctx, exec.CommandContext(ctx, name, args...), true)
 	return string(b), err
 }
 

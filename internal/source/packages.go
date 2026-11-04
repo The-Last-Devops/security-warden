@@ -157,6 +157,6 @@ func runC(ctx context.Context, d time.Duration, name string, args ...string) (st
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Env = append(os.Environ(), "LC_ALL=C")
-	b, err := cmd.Output()
+	b, err := traced(ctx, cmd, false)
 	return string(b), err
 }
