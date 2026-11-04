@@ -10,6 +10,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/feedback"
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
 	"github.com/The-Last-Devops/security-warden/internal/ignore"
+	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/internal/web"
 )
 
@@ -56,6 +57,25 @@ func runFeedback(w io.Writer, l string, rs []*engine.Rule, args []string, idea s
 		fmt.Fprintln(os.Stderr, t("feedback.usage"))
 		return 2
 	}
+	return showDraft(w, l, d, open)
+}
+
+// runBugReport prints a GitHub bug report link with the user's words and
+// the newest lines of the scan log, scrubbed. It never sends anything.
+func runBugReport(w io.Writer, l, text string, open bool) int {
+	if strings.TrimSpace(text) == "" {
+		fmt.Fprintln(os.Stderr, i18n.T(l, "feedback.empty_bug"))
+		return 2
+	}
+	log, _ := source.ReadLog()
+	d := feedback.Bug(text, log, feedback.Info{Version: version, Platform: platform(), Via: "cli"}, feedback.NewScrubber(feedback.DefaultEnv()))
+	return showDraft(w, l, d, open)
+}
+
+// showDraft prints what an issue link fills in, then the link (and opens it
+// with open).
+func showDraft(w io.Writer, l string, d feedback.Draft, open bool) int {
+	t := func(k string) string { return i18n.T(l, k) }
 	fmt.Fprintln(w, t("feedback.preview"))
 	fmt.Fprintln(w)
 	for _, line := range strings.Split(d.Preview, "\n") {

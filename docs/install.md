@@ -5,7 +5,8 @@ Security Warden is one self-contained program. Pick one way to install it.
 ## One line per system
 
 These are the commands from the README's Quick start; CI runs the Linux ones on
-Ubuntu, Debian and Fedora after every release.
+Ubuntu, Debian and Fedora after every release, and starts, checks and stops the
+background service on Windows on every push.
 
 | System | Command |
 |---|---|
@@ -33,13 +34,37 @@ Security Warden in the background, starts it again at login and opens your brows
 The first time, it asks you to add a passkey (Touch ID, Windows Hello or a security key). After that,
 `security-warden open` brings it back.
 
+On macOS, add the app window (no browser tab, no passkey); it installs the formula too if needed:
+
+```sh
+brew install --cask the-last-devops/security-warden/security-warden-app
+```
+
+With the app installed, `start`, `open` and the popups show it instead of the browser, and
+`security-warden update` (and the daily automatic update) upgrade the app along with the formula. The app
+always talks to the installed `security-warden`, so it never starts a second background service next to
+`brew services`.
+
+Installed before the app existed? With automatic updates on, the new version installs the app once, a few
+minutes after it starts, and says so in a notification. It never puts back an app you removed. Turn this
+off in Settings → Updates or with `security-warden app auto off`. With automatic updates off, the web UI
+offers an **Install the app** button (once, until you dismiss it), and `security-warden app install` does
+the same.
+
 ## macOS disk image
 
 Download `security-warden-<version>-macos.dmg` from
 [Releases](https://github.com/The-Last-Devops/security-warden/releases/latest), open it and double-click
-`Install.command`. It copies the program to `/usr/local/bin/security-warden` (it asks for your password)
-and opens Security Warden in your browser while the window stays open. Run `security-warden start` to keep
-it running in the background instead. The program is signed and notarized by Apple.
+`Install.command`. It copies the program to `/usr/local/bin/security-warden` and the **Security Warden app**
+to `/Applications` (it asks for your password), then opens the app while the Terminal window stays open. Run
+`security-warden start` to keep it running in the background instead. Everything is signed and notarized by
+Apple.
+
+The app is one native window around the same web UI: `security-warden open`, `start` and serious-problem
+popups show it (not a browser tab), and opening it again brings the same window back. It signs in by itself
+through the `security-warden` binary, so it never asks for a passkey (see
+[Security model](security-model.md#signing-in)). Without the app (Homebrew, Linux, Windows, or `serve --tab`)
+the default browser is used.
 
 ## Debian, Ubuntu
 

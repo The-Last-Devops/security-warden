@@ -6,7 +6,8 @@ import { api } from '../api.js'
 import SevChip from './SevChip.vue'
 import TierBadge from './TierBadge.vue'
 
-const props = defineProps({ t: { type: Object, required: true }, lang: { type: String, required: true } })
+// inline: shown as a sub-page of Settings (no overlay, no close button).
+const props = defineProps({ t: { type: Object, required: true }, lang: { type: String, required: true }, inline: Boolean })
 const emit = defineEmits(['close'])
 
 const data = ref(null)
@@ -39,9 +40,9 @@ const isOpen = s => open.value[s.name] || (needle.value && (s.fields || []).some
 </script>
 
 <template>
-  <div class="fixed inset-0 z-40 grid place-items-start overflow-y-auto bg-black/50 px-4 py-[6vh] backdrop-blur-sm" @click.self="emit('close')" @keydown.esc="emit('close')">
-    <section class="panel rise mx-auto grid w-full max-w-[860px] min-w-0 gap-4 p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-      <div class="flex items-center gap-3">
+  <div :class="inline ? 'min-w-0' : 'fixed inset-0 z-40 grid place-items-start overflow-y-auto bg-black/50 px-4 py-[6vh] backdrop-blur-sm'" @click.self="inline || emit('close')" @keydown.esc="inline || emit('close')">
+    <section class="grid w-full min-w-0 gap-4" :class="inline ? '' : 'panel rise mx-auto max-w-[860px] p-5 shadow-2xl sm:p-6'" :role="inline ? undefined : 'dialog'" :aria-modal="inline ? undefined : 'true'" aria-labelledby="rules-title">
+      <div v-if="!inline" class="flex items-center gap-3">
         <h2 id="rules-title" class="text-[19px] font-extrabold">{{ t.rulesTitle }}</h2>
         <button class="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted ring-1 ring-line hover:text-fg" :aria-label="t.close" @click="emit('close')">✕</button>
       </div>

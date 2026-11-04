@@ -59,13 +59,16 @@ jobs:
   dmg:
     needs: build-mac
     runs-on: macos-latest
+    outputs:
+      notarized: ${{ steps.dmg.outputs.notarized }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v8
         with:
           name: dist-mac
           path: dist
-      - name: Build .dmg
+      - name: Build .dmg (with Security Warden.app)
+        id: dmg
         env:
           # Developer ID Application certificate (.p12, base64) and its
           # password; App Store Connect API key (.p8, base64) for notarization.
@@ -100,6 +103,11 @@ jobs:
         run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag
       - name: Homebrew formula
         run: scripts/brew-formula.sh "$GITHUB_REF_NAME" dist/SHA256SUMS > security-warden.rb
+      # The app cask only for a notarized .dmg: Gatekeeper would block an
+      # unsigned app, so the tap keeps the previous good one instead.
+      - name: Homebrew cask (macOS app)
+        if: needs.dmg.outputs.notarized == 'true'
+        run: scripts/brew-cask.sh "$GITHUB_REF_NAME" dist/SHA256SUMS > security-warden-app.rb
 
       # This repository is its own Homebrew tap: the formula lives in
       # Formula/ on main, so GITHUB_TOKEN can update it.
@@ -112,7 +120,12 @@ jobs:
           mkdir -p Formula
           cp security-warden.rb Formula/security-warden.rb
           git add Formula/security-warden.rb
-          git commit -m "Homebrew formula for ${GITHUB_REF_NAME}" || exit 0
+          if [ -f security-warden-app.rb ]; then
+            mkdir -p Casks
+            cp security-warden-app.rb Casks/security-warden-app.rb
+            git add Casks/security-warden-app.rb
+          fi
+          git commit -m "Homebrew formula and cask for ${GITHUB_REF_NAME}" || exit 0
           git push origin main
 
   # Install the release the way users do and make sure it really is the new
@@ -129,6 +142,18 @@ jobs:
           brew tap the-last-devops/security-warden https://github.com/${{ github.repository }}
           brew trust the-last-devops/security-warden 2>/dev/null || true
           brew install security-warden
+      - name: App from the cask
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          # Only when this release published a cask (a notarized .dmg).
+          if ! brew info --cask the-last-devops/security-warden/security-warden-app 2>/dev/null | grep -q "${GITHUB_REF_NAME#v}"; then
+            echo "no cask for ${GITHUB_REF_NAME}: skipped"; exit 0
+          fi
+          brew install --cask the-last-devops/security-warden/security-warden-app
+          test -x "/Applications/Security Warden.app/Contents/MacOS/Security Warden"
+          codesign --verify --deep --strict "/Applications/Security Warden.app"
+          spctl -a -vv "/Applications/Security Warden.app"
       - name: Version matches the tag
         run: |
           got=$(security-warden version)

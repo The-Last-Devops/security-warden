@@ -2,7 +2,7 @@
 
 # What it checks
 
-168 rules over 36 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
+169 rules over 36 sources. Nothing needs root, nothing opens a permission prompt, and protected folders
 (Documents, Desktop, Downloads, Mail, Safari…) are never read. Secret values are never shown, stored or
 sent: findings name only the file, the variable or the kind of secret.
 
@@ -57,7 +57,7 @@ Grouped as in the report and the web UI. `{field}` is filled in from the place t
 Severity: critical, high, medium, low. Platforms: macOS, Linux, Windows.
 
 - [Passwords & keys](#secrets) (20)
-- [Open doors](#exposure) (24)
+- [Open doors](#exposure) (25)
 - [System settings](#settings) (47)
 - [Programs that start by themselves](#persistence) (14)
 - [AI agents & MCP](#ai) (4)
@@ -99,7 +99,7 @@ Category `secrets`, 20 rules. Sources: `cloud_config`, `credential_files`, `shel
 
 ### Open doors
 
-Category `exposure`, 24 rules. Sources: `authorized_keys`, `listening_ports`, `network_config`, `remote_services`, `remote_tools`, `services`, `sharing`, `tailscale`.
+Category `exposure`, 25 rules. Sources: `authorized_keys`, `listening_ports`, `network_config`, `remote_services`, `remote_tools`, `services`, `sharing`, `tailscale`.
 
 | Rule | Severity | Platforms | Problem | Passes when |
 |---|---|---|---|---|
@@ -111,6 +111,7 @@ Category `exposure`, 24 rules. Sources: `authorized_keys`, `listening_ports`, `n
 | `service-reachable` | high | macOS, Linux, Windows | {product} accepts connections from other machines (port {port}) | No database or server open to other machines |
 | `tailscale-funnel` | high | macOS, Linux, Windows | Tailscale Funnel publishes this machine to the internet | Tailscale Funnel is off |
 | `tunnel-running` | high | macOS, Linux, Windows | Tunnel is running: {tool} | No tunnels to the internet running |
+| `vscode-tunnel-access` | high | macOS, Linux, Windows | VS Code Remote Tunnel Access is on | VS Code does not open a tunnel to this machine |
 | `authorized-keys-active` | medium | macOS, Linux, Windows | {count} keys can log in to this account over SSH | No keys can log in over SSH |
 | `authorized-keys-weak` (experimental) | medium | macOS, Linux, Windows | {weak} DSA keys can log in to this account over SSH | No DSA keys can log in over SSH |
 | `file-sharing-on` | medium | macOS | File Sharing shares {name} | File Sharing is off |

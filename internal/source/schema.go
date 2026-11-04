@@ -118,7 +118,8 @@ var Schema = map[string]Info{
 		str("tool", "Tool name, e.g. ngrok or AnyDesk."),
 		num("pid", "Process id."),
 		str("path", "Program path."),
-		str("stop_cmd", "Commands to stop it, built by Security Warden (may carry `markup`)."),
+		str("stop_cmd", "Commands to stop it, built by Security Warden (may carry `markup`); not set for VS Code tunnels."),
+		str("managed", "vscode for VS Code's Remote Tunnel Access (turned off in VS Code), else empty."),
 	}},
 	"services": {all3, []Field{
 		str("product", "Server product, e.g. Redis, PostgreSQL."),

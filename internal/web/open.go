@@ -1,10 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // OpenBrowser opens url in a normal browser tab. The URL is one argument,
@@ -57,4 +59,64 @@ func OpenApp(url string) error {
 		}
 	}
 	return OpenBrowser(url)
+}
+
+// AppPath is the installed macOS app (Security Warden.app), or "".
+func AppPath() string {
+	if runtime.GOOS != "darwin" {
+		return ""
+	}
+	home, _ := os.UserHomeDir()
+	for _, p := range []string{"/Applications/Security Warden.app", filepath.Join(home, "Applications", "Security Warden.app")} {
+		if _, err := os.Stat(filepath.Join(p, "Contents", "MacOS")); err == nil {
+			return p
+		}
+	}
+	return ""
+}
+
+// OpenUI shows Security Warden on this machine: the macOS app when it is
+// installed (one window; it signs itself in through this binary, see
+// `security-warden app-url`), else the default browser, signed in with a
+// one-time ticket.
+func OpenUI(port int) error {
+	if app := AppPath(); app != "" {
+		args := []string{"-a", app}
+		// The app asks the binary that opened it for its sign-in ticket, so
+		// a development build opens the development server.
+		if exe, err := os.Executable(); err == nil {
+			args = append(args, "--env", "SW_CLI="+exe)
+		}
+		if exec.Command("open", args...).Run() == nil {
+			return nil
+		}
+	}
+	return OpenBrowser(SignedInURL(port))
+}
+
+// TicketURL is SignedInURL, but fails instead of falling back to the plain
+// address (the app has no other way to sign in).
+func TicketURL(port int) (string, error) {
+	u := SignedInURL(port)
+	if !strings.Contains(u, "/login?ticket=") {
+		return "", fmt.Errorf("no sign-in ticket from the server on port %d", port)
+	}
+	return u, nil
+}
+
+// AppHint says how to get the macOS app when it is missing: "brew" (a
+// Homebrew install: the cask), "dmg" (the release disk image), or "" (not
+// macOS, or already installed).
+func AppHint() string {
+	if runtime.GOOS != "darwin" || AppPath() != "" {
+		return ""
+	}
+	exe, _ := os.Executable()
+	if real, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = real
+	}
+	if strings.Contains(exe, "/Cellar/") {
+		return "brew"
+	}
+	return "dmg"
 }

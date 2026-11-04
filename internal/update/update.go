@@ -133,8 +133,36 @@ func ApplyBrew(ctx context.Context) error {
 			return fmt.Errorf("brew %s: %v: %s", args[0], err, lastLine(string(out)))
 		}
 	}
+	// The app window (cask), when installed, follows. It only wraps this
+	// binary, so an app that fails to upgrade still works: not an error.
+	cmd := exec.CommandContext(ctx, b, "list", "--cask", AppCask)
+	cmd.Env = env
+	if cmd.Run() == nil {
+		up := exec.CommandContext(ctx, b, "upgrade", "--cask", AppCask)
+		up.Env = env
+		_ = up.Run()
+	}
 	return nil
 }
+
+// InstallAppCask installs the macOS app with Homebrew.
+func InstallAppCask(ctx context.Context) error {
+	b := brewPath()
+	if b == "" {
+		return errors.New("brew not found")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, b, "install", "--cask", AppCask)
+	cmd.Env = append(os.Environ(), "HOMEBREW_NO_ENV_HINTS=1", "HOMEBREW_NO_ANALYTICS=1", "HOMEBREW_NO_AUTO_UPDATE=1")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("brew install --cask: %v: %s", err, lastLine(string(out)))
+	}
+	return nil
+}
+
+// AppCask is the Homebrew cask of the macOS app (Security Warden.app).
+const AppCask = "the-last-devops/security-warden/security-warden-app"
 
 // InstalledVersion asks the binary Homebrew links (the one the service
 // runs) for its version, e.g. "v0.2.5". It looks in Homebrew's opt folder
@@ -189,6 +217,12 @@ type State struct {
 	Applied   string    `json:"applied,omitempty"`
 	Notified  string    `json:"notified,omitempty"`
 	LastError string    `json:"last_error,omitempty"`
+	// NoAutoApp turns off installing the macOS app with automatic updates
+	// (on by default, like Auto). AppDone: that happened once, or the app
+	// was already there; it is never installed again after that, so an app
+	// the user removed stays removed.
+	NoAutoApp bool `json:"no_auto_app,omitempty"`
+	AppDone   bool `json:"app_done,omitempty"`
 }
 
 func statePath() string { return appdir.File("update.json") }

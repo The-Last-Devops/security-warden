@@ -30,15 +30,26 @@ if [ -n "${MACOS_CERT_P12:-}" ]; then
   codesign --verify --strict --verbose=2 "$stage/security-warden"
 fi
 
+# The app: a native window around the web UI, with the (signed) binary
+# inside, so it works on its own. Signed inside out.
+"$(dirname "$0")/make-app.sh" "$tag" "$stage/security-warden" "$stage" >/dev/null
+if [ -n "${MACOS_CERT_P12:-}" ]; then
+  codesign --force --options runtime --timestamp -s "$identity" "$stage/Security Warden.app"
+  codesign --verify --deep --strict --verbose=2 "$stage/Security Warden.app"
+fi
+
 cat > "$stage/Install.command" <<'SH'
 #!/bin/sh
 # Copies security-warden to /usr/local/bin (asks for your password).
 here=$(cd "$(dirname "$0")" && pwd)
 sudo mkdir -p /usr/local/bin
 sudo cp "$here/security-warden" /usr/local/bin/security-warden
+# The app window (security-warden open and start show it).
+sudo rm -rf "/Applications/Security Warden.app"
+sudo ditto "$here/Security Warden.app" "/Applications/Security Warden.app"
 echo
-echo "Installed. Opening Security Warden in your browser…"
-echo "Đã cài. Đang mở Security Warden trong trình duyệt…"
+echo "Installed. Opening Security Warden…"
+echo "Đã cài. Đang mở Security Warden…"
 echo "(Keep this window open while you use it / Giữ cửa sổ này mở khi đang dùng)"
 exec /usr/local/bin/security-warden serve
 SH
@@ -47,11 +58,13 @@ chmod +x "$stage/Install.command"
 cat > "$stage/README.txt" <<TXT
 security-warden ${tag}
 
-Double-click Install.command, or copy security-warden anywhere on your PATH.
-Then run in Terminal:  security-warden
+Double-click Install.command: it installs the Security Warden app in
+Applications and the security-warden command in /usr/local/bin.
+Or drag Security Warden.app to Applications and open it.
 
-Nhấp đúp Install.command, hoặc chép security-warden vào thư mục trong PATH.
-Rồi chạy trong Terminal:  security-warden
+Nhấp đúp Install.command: lệnh cài app Security Warden vào Applications và
+lệnh security-warden vào /usr/local/bin.
+Hoặc kéo Security Warden.app vào Applications rồi mở nó.
 
 https://github.com/The-Last-Devops/security-warden
 TXT
@@ -69,6 +82,8 @@ if [ -n "${MACOS_CERT_P12:-}" ]; then
     rm -f "$key"
     xcrun stapler staple "$out"
     spctl -a -t open --context context:primary-signature -vv "$out"
+    # Only a notarized app goes to the Homebrew cask (release.yml).
+    if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "notarized=true" >> "$GITHUB_OUTPUT"; fi
   fi
 fi
 ls -l "$out"

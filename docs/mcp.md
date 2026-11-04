@@ -12,7 +12,7 @@ The app starts the command itself and talks to it over stdin/stdout (JSON-RPC
 
 - **Read-only by default.** Without flags the server offers only tools that
   read: `scan`, `list_problems`, `get_fix`, `explain_rule`, `list_safe`,
-  `status`, `list_sources`, `check_rule`, `draft_rule`, `report_false_positive`, `suggest_rule`.
+  `status`, `scan_log`, `list_sources`, `check_rule`, `draft_rule`, `report_false_positive`, `suggest_rule`.
   They are marked `readOnlyHint: true`. A scan needs no admin rights,
   opens no permission prompt and sends nothing off the machine (3–6 seconds).
 - **Changes are opt-in.** `apply_fix`, `undo_fix`, `hide` and `restore` exist
@@ -60,8 +60,9 @@ default and never counted in the score ([tiers](writing-rules.md#tiers)).
 | `explain_rule` | `rule_id`, `lang?` | Rule metadata whether failing or not: severity, platforms, category, `check`, `explain`, `fix` template, remedy, and its state in the last scan. |
 | `list_safe` | `scope?`, `category?`, `lang?`, `experimental?` | Checks that pass. |
 | `list_sources` | `name?`, `lang?` | Every source a rule can read (or one): category, platforms, fields with type, description and an example value. Same as `security-warden rules sources`. |
-| `check_rule` | `yaml` (the rule file's content), `lang?` | Checks a rule without writing it anywhere, like `security-warden rules check`: `ok`, `rule_id`, `tier`, `tests` (`passed`, `total`), `errors` and `warnings` (each `field`, `code`, `message`; `lint.*` codes flag unsafe fix commands). See [Contributing a rule](contributing-rules.md). |
+| `check_rule` | `yaml` (the rule file's content), `new?` (a rule you are adding: must be `experimental`), `lang?` | Checks a rule without writing it anywhere, like `security-warden rules check`: `ok`, `rule_id`, `tier`, `tests` (`passed`, `total`), `errors` and `warnings` (each `field`, `code`, `message`; `lint.*` codes flag unsafe fix commands). See [Contributing a rule](contributing-rules.md). |
 | `status` | none | Version, background service running, vulnerability data age per ecosystem, whether changes are allowed, age of the cached scan. |
+| `scan_log` | none | The scan log: when each scan ran, and which checks failed, timed out or were slow, with the commands they waited on. Same as `security-warden logs` and Settings → Scan log in the web UI. |
 | `draft_rule` | `id`, `source`, `severity?`, `idea?` | The skeleton of a new rule (`yaml`, the same as `security-warden rules new`, with the idea as a comment), the `path` it belongs at and `next_steps` (fill in the TODOs, `check_rule` with `new: true`, a pull request the maintainers merge by hand). Writes nothing. |
 | `report_false_positive` | `key` or `rule_id`, `experimental?` | A GitHub issue draft for a wrong finding or fix: `preview` (the exact, scrubbed text), `url` (a new-issue link with the form filled in), `instructions`. For a rule that does not fail here, the draft is about the rule itself. Sends nothing. |
 | `suggest_rule` | `idea` | The same for a new check: a rule request from the idea, scrubbed, marked as drafted by an AI agent. Sends nothing. |

@@ -22,6 +22,6 @@ func runPS(ctx context.Context, script string) (string, error) {
 	cmd := exec.CommandContext(ctx, systemExe(`WindowsPowerShell\v1.0\powershell.exe`),
 		"-NoProfile", "-NonInteractive", "-NoLogo", "-Command", line)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
-	b, err := cmd.Output()
+	b, err := traced(ctx, cmd, false)
 	return string(b), err
 }

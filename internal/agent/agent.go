@@ -110,8 +110,12 @@ func Install(lang string) (string, error) {
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		if err := writeFresh(unit, Plist(bin, lang, logPath)); err != nil {
-			return "", err
+		// A rewritten login item makes macOS show "Background Items Added"
+		// again, so leave an identical one alone.
+		if plist := Plist(bin, lang, logPath); !sameFile(unit, plist) {
+			if err := writeFresh(unit, plist); err != nil {
+				return "", err
+			}
 		}
 		domain := fmt.Sprintf("gui/%d", os.Getuid())
 		_ = exec.Command("launchctl", "bootout", domain+"/"+label()).Run() // not loaded yet is fine
@@ -169,6 +173,16 @@ func stopDetached() error {
 	return os.Remove(pidFile())
 }
 
+// sameFile reports whether path is a regular file (not a symlink) holding
+// exactly content.
+func sameFile(path, content string) bool {
+	if fi, err := os.Lstat(path); err != nil || !fi.Mode().IsRegular() {
+		return false
+	}
+	b, err := os.ReadFile(path)
+	return err == nil && string(b) == content
+}
+
 // writeFresh replaces path with content without following a symlink that
 // might already sit there.
 func writeFresh(path, content string) error {
@@ -184,6 +198,16 @@ func writeFresh(path, content string) error {
 		return err
 	}
 	return f.Close()
+}
+
+// Stop stops the service so Install can start a new version. On macOS the
+// login item stays (removing and adding it back shows "Background Items
+// Added" again); elsewhere it is the same as Uninstall.
+func Stop() error {
+	if runtime.GOOS == "darwin" {
+		return exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d/%s", os.Getuid(), label())).Run()
+	}
+	return Uninstall()
 }
 
 // Uninstall stops the service and removes its definition.

@@ -40,6 +40,7 @@ export const api = {
   sources: lang => call('GET', `/api/sources?lang=${lang}`),
   startScan: () => call('POST', '/api/scan/start'),
   progress: lang => call('GET', `/api/scan/progress?lang=${lang}`),
+  logs: () => call('GET', '/api/logs'),
   fix: (keys, lang) => call('POST', `/api/fix?lang=${lang}`, { keys }),
   undo: () => call('POST', '/api/undo'),
   ignore: (keys, days) => call('POST', '/api/ignore', { keys, days }),
@@ -47,10 +48,13 @@ export const api = {
   // Feedback drafts: the server only builds a GitHub link; nothing is sent.
   feedback: key => call('GET', `/api/feedback?key=${encodeURIComponent(key)}`),
   feedbackIdea: text => call('POST', '/api/feedback/idea', { text }),
+  feedbackBug: (text, log) => call('POST', '/api/feedback/bug', { text, log }),
   logout: () => call('POST', '/api/logout'),
   passkeyStatus: () => call('GET', '/api/passkey'),
   updateStatus: () => call('GET', '/api/update'),
   setAutoUpdate: auto => call('POST', '/api/update/auto', { auto }),
+  setAutoApp: on => call('POST', '/api/app/auto', { on }),
+  installApp: () => call('POST', '/api/app/install'),
   async addPasskey() {
     const opts = await call('POST', '/api/passkey/register/begin')
     return call('POST', '/api/passkey/register/finish', await createPasskey(opts))

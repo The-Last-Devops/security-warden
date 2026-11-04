@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/The-Last-Devops/security-warden/internal/update"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -137,6 +138,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/meta", s.withSession(s.handleMeta))
 	mux.HandleFunc("GET /api/scan", s.withSession(s.handleScan))
 	mux.HandleFunc("GET /api/sources", s.withSession(s.handleSources))
+	mux.HandleFunc("GET /api/logs", s.withSession(s.handleLogs))
 	mux.HandleFunc("POST /api/scan", s.withSession(s.handleRescan))
 	mux.HandleFunc("POST /api/scan/start", s.withSession(s.handleScanStart))
 	mux.HandleFunc("GET /api/scan/progress", s.withSession(s.handleProgress))
@@ -145,9 +147,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/ignore", s.withSession(s.handleIgnore))
 	mux.HandleFunc("GET /api/update", s.withSession(s.handleUpdateStatus))
 	mux.HandleFunc("POST /api/update/auto", s.withSession(s.handleUpdateAuto))
+	mux.HandleFunc("POST /api/app/auto", s.withSession(s.handleAppAuto))
+	mux.HandleFunc("POST /api/app/install", s.withSession(s.handleAppInstall))
 	mux.HandleFunc("POST /api/unignore", s.withSession(s.handleUnignore))
 	mux.HandleFunc("GET /api/feedback", s.withSession(s.handleFeedback))
 	mux.HandleFunc("POST /api/feedback/idea", s.withSession(s.handleFeedbackIdea))
+	mux.HandleFunc("POST /api/feedback/bug", s.withSession(s.handleFeedbackBug))
 	mux.HandleFunc("GET /api/passkey", s.handlePasskeyStatus)
 	mux.HandleFunc("POST /api/passkey/register/begin", s.withSession(s.handleRegisterBegin))
 	mux.HandleFunc("POST /api/passkey/register/finish", s.withSession(s.handleRegisterFinish))
@@ -261,6 +266,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, id string,
 func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request, _ string, sess *session) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"version": s.Version, "lang": s.Lang, "csrf": sess.CSRF, "listen": s.Addr, "kind": s.Kind,
+		"app_hint": AppHint(),
 	})
 }
 
@@ -586,7 +592,47 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request, _ st
 	writeJSON(w, http.StatusOK, map[string]any{
 		"current": s.Version, "latest": st.Latest, "auto": st.Auto, "method": update.Method(),
 		"available": update.Newer(st.Latest, s.Version), "checked": st.Checked, "error": st.LastError,
+		// The macOS app: installed with automatic updates unless turned off.
+		"mac": runtime.GOOS == "darwin", "app_installed": AppPath() != "", "auto_app": !st.NoAutoApp,
 	})
+}
+
+// handleAppAuto turns installing the macOS app with automatic updates on
+// or off (`security-warden app auto on|off`).
+func (s *Server) handleAppAuto(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	var req struct {
+		On bool `json:"on"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errJSON(w, http.StatusBadRequest, "send {\"on\": true|false}")
+		return
+	}
+	st := update.Load()
+	st.NoAutoApp = !req.On
+	if err := update.Save(st); err != nil {
+		errJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"auto_app": !st.NoAutoApp})
+}
+
+// handleAppInstall installs the macOS app with Homebrew and opens it (the
+// banner's button; `security-warden app install`). Homebrew installs only:
+// others get the .dmg.
+func (s *Server) handleAppInstall(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	if AppHint() != "brew" {
+		errJSON(w, http.StatusBadRequest, "only for Homebrew installs on macOS without the app")
+		return
+	}
+	if err := update.InstallAppCask(r.Context()); err != nil {
+		errJSON(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	st := update.Load()
+	st.AppDone = true
+	_ = update.Save(st)
+	_ = OpenUI(DefaultPort)
+	writeJSON(w, http.StatusOK, map[string]bool{"installed": true})
 }
 
 func (s *Server) handleUpdateAuto(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
@@ -672,6 +718,24 @@ func (s *Server) handleFeedbackIdea(w http.ResponseWriter, r *http.Request, _ st
 	writeJSON(w, http.StatusOK, draftJSON(d))
 }
 
+// handleFeedbackBug drafts a bug report from the user's words, with the
+// newest lines of the scan log. Like the others, it only builds the link.
+func (s *Server) handleFeedbackBug(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	req := struct {
+		Text string `json:"text"`
+		Log  bool   `json:"log"` // attach the newest lines of the scan log
+	}{Log: true}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Text) == "" {
+		errJSON(w, http.StatusBadRequest, "send {\"text\": \"what happened\", \"log\": true}")
+		return
+	}
+	log := ""
+	if req.Log {
+		log, _ = source.ReadLog()
+	}
+	writeJSON(w, http.StatusOK, draftJSON(feedback.Bug(req.Text, log, s.feedbackInfo(), feedback.NewScrubber(feedback.DefaultEnv()))))
+}
+
 func platformName() string {
 	if runtime.GOOS == "darwin" {
 		return "macos"
@@ -741,4 +805,24 @@ func (s *Server) handleSources(w http.ResponseWriter, r *http.Request, _ string,
 		"rules":    rs,
 		"docs_url": rulecheck.DocsURL,
 	})
+}
+
+// handleLogs returns the scan log (see source.LogDir): when each scan ran,
+// and which sources failed, timed out or were slow, with the commands they
+// waited on. It names commands only, never their output.
+// With ?download=1 it is a text file to attach to a bug report, with the
+// same identifying details taken out as in issue drafts.
+func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request, _ string, _ *session) {
+	text, err := source.ReadLog()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if r.URL.Query().Get("download") == "1" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="security-warden-log.txt"`)
+		_, _ = io.WriteString(w, feedback.ScrubLog(text, feedback.NewScrubber(feedback.DefaultEnv())))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"path": source.LogDir, "text": text})
 }

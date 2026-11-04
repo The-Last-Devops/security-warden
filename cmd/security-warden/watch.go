@@ -14,6 +14,7 @@ import (
 	"github.com/The-Last-Devops/security-warden/internal/ignore"
 	"github.com/The-Last-Devops/security-warden/internal/notify"
 	"github.com/The-Last-Devops/security-warden/internal/source"
+	"github.com/The-Last-Devops/security-warden/internal/update"
 	"github.com/The-Last-Devops/security-warden/internal/web"
 )
 
@@ -161,7 +162,7 @@ func runStart(lang string) int {
 	t := func(k string) string { return i18n.T(lang, k) }
 	// An older version still running (after brew upgrade): replace it.
 	if web.RunningHere(web.DefaultPort) && web.RunningVersion(web.DefaultPort) != version {
-		_ = agent.Uninstall()
+		_ = agent.Stop()
 		for i := 0; i < 25 && web.RunningHere(web.DefaultPort); i++ {
 			time.Sleep(200 * time.Millisecond)
 		}
@@ -181,8 +182,95 @@ func runStart(lang string) int {
 		}
 	}
 	fmt.Printf(t("start.ok")+"\n", web.DefaultPort)
-	_ = web.OpenBrowser(web.SignedInURL(web.DefaultPort))
+	_ = web.OpenUI(web.DefaultPort)
+	printAppHint(lang)
 	return 0
+}
+
+// printAppHint tells a macOS user without the app how to get it.
+func printAppHint(lang string) {
+	if h := web.AppHint(); h != "" {
+		fmt.Println(i18n.T(lang, "app.hint_"+h))
+	}
+}
+
+// runApp shows the macOS app's state, installs it ("install", Homebrew
+// installs) or turns installing it with automatic updates on or off. The
+// web UI has the same switch (Settings → Updates) and button (the banner).
+func runApp(lang string, args []string) int {
+	t := func(k string) string { return i18n.T(lang, k) }
+	st := update.Load()
+	switch {
+	case len(args) == 2 && args[0] == "auto" && (args[1] == "on" || args[1] == "off"):
+		st.NoAutoApp = args[1] == "off"
+		if err := update.Save(st); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+		fmt.Println(t("app.auto_" + args[1]))
+		return 0
+	case len(args) == 1 && args[0] == "install":
+		switch web.AppHint() {
+		case "":
+			if web.AppPath() == "" {
+				fmt.Fprintln(os.Stderr, t("app.usage"))
+				return 2
+			}
+		case "brew":
+			if err := update.InstallAppCask(context.Background()); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return 2
+			}
+			st = update.Load()
+			st.AppDone = true
+			_ = update.Save(st)
+			fmt.Println(t("app.installed"))
+		default:
+			fmt.Println(t("app.hint_dmg"))
+			return 1
+		}
+		_ = web.OpenUI(web.DefaultPort)
+		return 0
+	case len(args) == 0:
+		installed := web.AppPath()
+		if installed == "" {
+			installed = "-"
+		}
+		auto := "on"
+		if st.NoAutoApp || !st.Auto {
+			auto = "off"
+		}
+		fmt.Printf(t("app.status")+"\n", installed, auto)
+		printAppHint(lang)
+		return 0
+	}
+	fmt.Fprintln(os.Stderr, t("app.usage"))
+	return 2
+}
+
+// runAppURL is for the macOS app: it starts the background service when
+// it is not running, then prints a one-time sign-in link (60 seconds, one
+// use). Getting one needs the server secret, a file only this user can
+// read, so the app signs in without a passkey. Nothing else is printed.
+func runAppURL(lang string) int {
+	if !web.RunningHere(web.DefaultPort) {
+		if _, err := agent.Install(lang); err != nil {
+			fmt.Fprintf(os.Stderr, i18n.T(lang, "fix.failed")+"\n", err)
+			return 2
+		}
+	}
+	for i := 0; i < 50; i++ {
+		if web.RunningHere(web.DefaultPort) {
+			if u, err := web.TicketURL(web.DefaultPort); err == nil {
+				fmt.Println(u)
+				return 0
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	_, logPath := agent.Paths()
+	fmt.Fprintf(os.Stderr, i18n.T(lang, "start.slow")+"\n", logPath)
+	return 1
 }
 
 func runStop(lang string) int {

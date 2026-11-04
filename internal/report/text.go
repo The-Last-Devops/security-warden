@@ -38,13 +38,17 @@ type SourceStatus struct {
 	Items   int    `json:"items"`
 	Skipped string `json:"skipped,omitempty"`
 	Error   string `json:"error,omitempty"`
+	// Ms is how long the source took; Trace names its slow, failed or
+	// still running commands (see source.Result).
+	Ms    int64    `json:"ms"`
+	Trace []string `json:"trace,omitempty"`
 }
 
 // Statuses summarises collector results.
 func Statuses(rs []source.Result) []SourceStatus {
 	out := make([]SourceStatus, 0, len(rs))
 	for _, r := range rs {
-		s := SourceStatus{Name: r.Name, Items: len(r.Items), Skipped: r.SkipKey}
+		s := SourceStatus{Name: r.Name, Items: len(r.Items), Skipped: r.SkipKey, Ms: r.Took.Milliseconds(), Trace: r.Trace}
 		if r.Err != nil {
 			s.Error = r.Err.Error()
 		}

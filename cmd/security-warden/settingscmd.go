@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/The-Last-Devops/security-warden/internal/i18n"
+	"github.com/The-Last-Devops/security-warden/internal/source"
 	"github.com/The-Last-Devops/security-warden/internal/web"
 )
 
@@ -82,5 +83,35 @@ func runLogout(l string) int {
 		return 2
 	}
 	fmt.Printf(i18n.T(l, "logout.done")+"\n", n)
+	return 0
+}
+
+// runLogs prints the scan log, merged from its per-level files (the web
+// Scan log page and the MCP scan_log tool show the same text). "logs info",
+// "logs warn" or "logs error" prints one level; "logs path" the folder.
+func runLogs(l string, args []string) int {
+	var levels []string
+	if len(args) > 0 {
+		switch args[0] {
+		case "path":
+			fmt.Println(source.LogDir)
+			return 0
+		case "info", "warn", "error":
+			levels = args[:1]
+		default:
+			fmt.Fprintln(os.Stderr, i18n.T(l, "logs.usage"))
+			return 2
+		}
+	}
+	text, err := source.ReadLog(levels...)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	if text == "" {
+		fmt.Printf(i18n.T(l, "logs.empty")+"\n", source.LogDir)
+		return 0
+	}
+	fmt.Printf(i18n.T(l, "logs.header")+"\n\n%s", source.LogDir, text)
 	return 0
 }

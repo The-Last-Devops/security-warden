@@ -55,6 +55,15 @@ class SecurityWarden < Formula
     error_log_path var/"log/security-warden.log"
   end
 
+  def caveats
+    return unless OS.mac?
+
+    <<~EOS
+      For Security Warden in its own window (no browser tab, no passkey):
+        brew install --cask the-last-devops/security-warden/security-warden-app
+    EOS
+  end
+
   test do
     assert_match version.to_s, shell_output("#{bin}/security-warden version")
   end

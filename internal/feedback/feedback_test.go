@@ -208,3 +208,42 @@ func readTemplate(name string) (string, error) {
 	b, err := os.ReadFile("../../.github/ISSUE_TEMPLATE/" + name)
 	return string(b), err
 }
+
+func TestBugCarriesScrubbedLogNewestFirst(t *testing.T) {
+	s := NewScrubber(Env{Home: "/Users/alice", User: "alice", Host: "alice-mbp", CodeRoots: []string{"Code"}})
+	log := "2026-11-04 10:00:00 INFO  [scan] done in 5.0s, 36 sources, v1 darwin/arm64\n" +
+		"2026-11-04 10:00:00 ERROR [posture] timed out after 60.0s\n" +
+		"2026-11-04 10:00:00 ERROR [git_history] command: git -C /Users/alice/Code/acme-secret-project log (3.0s): signal: killed\n"
+	d := Bug("Scan hangs at 89%", log, Info{Version: "v1", Platform: "macos", Via: "web"}, s)
+	if d.Kind != "bug" || d.Title != "Bug: Scan hangs at 89%" || !strings.Contains(d.URL, "template=bug.yml") {
+		t.Fatalf("draft = %+v", d)
+	}
+	for _, leak := range []string{"alice", "acme-secret-project"} {
+		if strings.Contains(d.Preview, leak) || strings.Contains(d.URL, leak) {
+			t.Fatalf("%q left in the report:\n%s", leak, d.Preview)
+		}
+	}
+	if i, j := strings.Index(d.Preview, "[git_history]"), strings.Index(d.Preview, "[scan]"); i < 0 || j < 0 || i > j {
+		t.Fatalf("errors not first:\n%s", d.Preview)
+	}
+	if e := Bug("", "", Info{Version: "v1", Platform: "linux", Via: "cli"}, s); e.Title != "Bug report" || strings.Contains(e.Preview, "Scan log") {
+		t.Fatalf("empty draft = %+v", e)
+	}
+}
+
+func TestPickLogErrorsFirstAndFoldsRepeats(t *testing.T) {
+	log := "2026-11-04 10:00:00 INFO  [scan] done in 5.0s, 36 sources, v1 darwin/arm64\n" +
+		"2026-11-04 10:00:00 WARN  [git_history] slow: 5.2s\n" +
+		"2026-11-04 10:05:00 INFO  [scan] done in 61.0s, 36 sources, v1 darwin/arm64\n" +
+		"2026-11-04 10:05:00 WARN  [git_history] slow: 5.8s\n" +
+		"2026-11-04 10:05:00 ERROR [posture] timed out after 60.0s\n"
+	got := pickLog(log)
+	want := []string{
+		"2026-11-04 10:05:00 ERROR [posture] timed out after 60.0s",
+		"2026-11-04 10:05:00 WARN  [git_history] slow: 5.8s (×2)",
+		"2026-11-04 10:05:00 INFO  [scan] done in 61.0s, 36 sources, v1 darwin/arm64 (×2)",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("pickLog:\n%s", strings.Join(got, "\n"))
+	}
+}

@@ -101,6 +101,31 @@ func (s *Server) toolSuggestRule(_ context.Context, a args) (any, string, error)
 	return out, text, nil
 }
 
+func (s *Server) toolReportBug(_ context.Context, a args) (any, string, error) {
+	what, err := a.str("what")
+	if err != nil {
+		return nil, "", err
+	}
+	if strings.TrimSpace(what) == "" {
+		return nil, "", fail("what is empty: say what happened")
+	}
+	if len(what) > feedback.MaxIdea {
+		return nil, "", fail("what is too long (%d bytes, at most %d)", len(what), feedback.MaxIdea)
+	}
+	withLog := true // attached unless include_log is false
+	if _, given := a["include_log"]; given {
+		if withLog, err = a.boolean("include_log"); err != nil {
+			return nil, "", err
+		}
+	}
+	log := ""
+	if withLog {
+		log, _ = source.ReadLog()
+	}
+	out, text := draftResult(feedback.Bug(what, log, s.info(), feedback.NewScrubber(feedback.DefaultEnv())))
+	return out, text, nil
+}
+
 var kebab = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
 func (s *Server) toolDraftRule(_ context.Context, a args) (any, string, error) {

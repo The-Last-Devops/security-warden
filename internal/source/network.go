@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -150,6 +151,7 @@ var remoteToolKinds = map[string]string{
 	"frpc":                       "tunnel",
 	"bore":                       "tunnel",
 	"code-tunnel":                "tunnel",
+	"code-tunnel-insiders":       "tunnel",
 	"localtunnel":                "tunnel",
 	"zrok":                       "tunnel",
 	"AnyDesk":                    "remote_desktop",
@@ -170,9 +172,21 @@ func remoteTools(ctx context.Context) ([]Item, error) {
 		if !ok || seen[name] {
 			continue
 		}
+		// VS Code's code-tunnel helper also runs its agent host and
+		// serve-web: only the tunnel subcommand opens a tunnel. Such a
+		// tunnel is VS Code's Remote Tunnel Access, turned off in VS Code
+		// (rule vscode-tunnel-access), not with a `code` command, which is
+		// often not on the PATH.
+		managed := ""
+		if strings.HasPrefix(name, "code-tunnel") {
+			if args, err := processArgs(ctx, pid); err == nil && !codeTunnelRunsTunnel(args) {
+				continue
+			}
+			managed = "vscode"
+		}
 		seen[name] = true
-		it := Item{"tool": name, "kind": kind, "pid": pid, "path": path}
-		if kind == "tunnel" {
+		it := Item{"tool": name, "kind": kind, "pid": pid, "path": path, "managed": managed}
+		if kind == "tunnel" && managed == "" {
 			it["stop_cmd"] = tunnelStopCmd(name, pid)
 		}
 		items = append(items, it)
@@ -180,13 +194,43 @@ func remoteTools(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
+// codeTunnelRuns reports whether a code-tunnel command line runs a tunnel:
+// "…/code-tunnel tunnel --name x" yes, "…/code-tunnel --cli-data-dir d
+// agent host" no. The program path may hold spaces, so the words are read
+// after the program name.
+func codeTunnelRunsTunnel(args string) bool {
+	i := strings.LastIndex(args, "code-tunnel")
+	if i < 0 {
+		return false
+	}
+	words := strings.Fields(args[i:])
+	for _, w := range words[1:] {
+		if w == "tunnel" {
+			return true
+		}
+	}
+	return false
+}
+
+// processArgs is the command line of one process (for telling apart what
+// one program is doing). When it cannot be read, callers assume the worst.
+func processArgs(ctx context.Context, pid int) (string, error) {
+	switch runtime.GOOS {
+	case "linux":
+		b, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+		return strings.ReplaceAll(string(b), "\x00", " "), err
+	case "windows":
+		return runPS(ctx, fmt.Sprintf(`(Get-CimInstance Win32_Process -Filter "ProcessId=%d").CommandLine`, pid))
+	}
+	return run(ctx, "ps", "-o", "args=", "-p", strconv.Itoa(pid))
+}
+
 // tunnelStops are the commands that stop a tunnel tool and keep it from
 // starting again, in order. Each is safe to run when nothing is running or
 // installed (it only prints an error). Checked against each tool's --help:
-// code tunnel (VS Code CLI 1.144), ngrok service (3.39), cloudflared service
-// (2026.10). Tools without a service mode just get kill <pid>.
+// ngrok service (3.39), cloudflared service (2026.10). Tools without a
+// service mode just get kill <pid>. VS Code tunnels have their own rule.
 var tunnelStops = map[string][]string{
-	"code-tunnel": {"code tunnel service uninstall", "code tunnel kill", "code tunnel unregister"},
 	"ngrok":       {"sudo ngrok service stop", "sudo ngrok service uninstall"},
 	"cloudflared": {"sudo cloudflared service uninstall", "cloudflared service uninstall"},
 }
@@ -195,10 +239,7 @@ var tunnelStops = map[string][]string{
 // " · ". The values are fixed text plus a pid, never anything the machine
 // can choose, so they are safe to copy into a terminal.
 func tunnelStopCmd(tool string, pid int) string {
-	cmds := append([]string(nil), tunnelStops[tool]...)
-	if tool != "code-tunnel" {
-		cmds = append(cmds, fmt.Sprintf("kill %d", pid))
-	}
+	cmds := append(append([]string(nil), tunnelStops[tool]...), fmt.Sprintf("kill %d", pid))
 	// The rule wraps {stop_cmd} in backticks; closing and reopening them
 	// here gives each command its own code span (and copy button).
 	return strings.Join(cmds, "` · `")

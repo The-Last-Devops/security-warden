@@ -15,6 +15,22 @@ they never collide with an installed release.
 [AGENTS.md](../AGENTS.md) describes the layout and the rules every change must keep;
 [Writing rules](writing-rules.md) covers adding a check.
 
+## The macOS app
+
+`packaging/macos/App.swift` is Security Warden.app: a WKWebView window that signs in through
+`security-warden app-url`. It is built on macOS only (no Docker), with Xcode's command line tools:
+
+```sh
+go build -o dist/security-warden ./cmd/security-warden      # or docker compose run --rm build
+scripts/make-app.sh dev dist/security-warden dist             # dist/Security Warden.app
+./dist/security-warden serve --no-open &                      # the development server (port 7349)
+open "dist/Security Warden.app" --env SW_CLI="$PWD/dist/security-warden"
+```
+
+`SW_CLI` tells the app which binary to ask for its sign-in link; `security-warden open` and `start` set it
+to themselves, so a development build opens the development server. The page knows it runs in the app
+from `window.swApp` (no passkeys there; "Sign in again" asks the app for a new ticket).
+
 ## Checks on every push
 
 CI runs the same Dockerfile as a laptop (gofmt, `go vet` for Linux, macOS and Windows, all tests, the

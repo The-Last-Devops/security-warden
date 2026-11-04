@@ -47,6 +47,7 @@ func run(args []string) int {
 		appdir.Dev = true
 		web.DefaultPort = appdir.Port()
 	}
+	source.LogDir, source.Version = appdir.File("logs"), version
 	cmd := "scan"
 	// Double-clicked (Finder, Explorer, a .command file): no terminal to read
 	// a report in, so open the web UI instead.
@@ -89,6 +90,7 @@ func run(args []string) int {
 	strict := fs.Bool("strict", false, "rules check: warnings fail too")
 	isNew := fs.Bool("new", false, "rules check: the files are new rules (must start experimental)")
 	idea := fs.String("idea", "", "feedback: suggest a new check, in your words")
+	bug := fs.String("bug", "", "feedback: report a bug, in your words (the scan log is attached)")
 	openLink := fs.Bool("open", false, "feedback: open the link in the browser")
 	fs.Usage = func() { fmt.Fprintln(os.Stderr, i18n.T(i18n.Detect(*lang), "cli.usage")) }
 	if err := fs.Parse(args); err != nil {
@@ -160,8 +162,11 @@ func run(args []string) int {
 	case "ignore":
 		return runIgnore(l, rs, subArgs, *days)
 	case "feedback", "report":
-		ideaSet := false
-		fs.Visit(func(f *flag.Flag) { ideaSet = ideaSet || f.Name == "idea" })
+		ideaSet, bugSet := false, false
+		fs.Visit(func(f *flag.Flag) { ideaSet = ideaSet || f.Name == "idea"; bugSet = bugSet || f.Name == "bug" })
+		if bugSet {
+			return runBugReport(os.Stdout, l, *bug, *openLink)
+		}
 		return runFeedback(os.Stdout, l, rs, subArgs, *idea, ideaSet, *openLink, func() []engine.Finding {
 			s := scanNow(rs, "en", true, true)
 			return append(s.Findings, s.Ignored...)
@@ -170,10 +175,16 @@ func run(args []string) int {
 		return runPasskey(l, subArgs, *yes)
 	case "logout":
 		return runLogout(l)
+	case "logs", "log":
+		return runLogs(l, subArgs)
 	case "serve":
 		return runServe(l, rs, *listen, *allowLAN, !*noOpen, *tab, *background, *popup)
 	case "open":
 		return runOpen(l, rs)
+	case "app-url":
+		return runAppURL(l)
+	case "app":
+		return runApp(l, subArgs)
 	case "mcp":
 		return runMCP(l, rs, *allowChanges)
 	case "help":

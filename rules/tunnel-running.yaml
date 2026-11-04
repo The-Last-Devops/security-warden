@@ -2,7 +2,7 @@ id: tunnel-running
 severity: high
 platforms: [macos, windows, linux]
 source: remote_tools
-match: item.kind == "tunnel"
+match: item.kind == "tunnel" && item.managed != "vscode"
 title:
   en: "Tunnel is running: {tool}"
   vi: "Đang chạy tunnel: {tool}"
@@ -17,6 +17,6 @@ fix:
   vi: "1. Mở Terminal, chạy lần lượt từng lệnh (nếu lệnh báo không có gì đang chạy hoặc chưa cài thì bỏ qua, làm tiếp): `{stop_cmd}` 2. Quét lại để chắc nó đã tắt. 3. Khi cần dùng lại, chỉ bật trong lúc làm việc đó và đặt đăng nhập cho thứ nó mở ra, đừng để link công khai."
 author: the-last-devops
 tests:
-  - {item: {tool: ngrok, kind: tunnel, pid: 42, stop_cmd: "sudo ngrok service stop · sudo ngrok service uninstall · kill 42"}, expect: true}
-  - {item: {tool: code-tunnel, kind: tunnel, pid: 7, stop_cmd: "code tunnel service uninstall · code tunnel kill · code tunnel unregister"}, expect: true}
-  - {item: {tool: AnyDesk, kind: remote_desktop}, expect: false}
+  - {item: {tool: ngrok, kind: tunnel, managed: "", pid: 42, stop_cmd: "sudo ngrok service stop · sudo ngrok service uninstall · kill 42"}, expect: true}
+  - {item: {tool: code-tunnel, kind: tunnel, managed: vscode, pid: 7}, expect: false}
+  - {item: {tool: AnyDesk, kind: remote_desktop, managed: ""}, expect: false}

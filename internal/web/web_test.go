@@ -374,3 +374,45 @@ func TestFeedbackAPI(t *testing.T) {
 		t.Errorf("scan has no author: %s", w.Body)
 	}
 }
+
+func TestLogsBugAndAppAPI(t *testing.T) {
+	s := testServer()
+	h := s.Handler()
+	if w := do(h, "GET", "/api/logs", nil); w.Code != 401 {
+		t.Fatalf("logs without session = %d", w.Code)
+	}
+	c := do(h, "GET", "/login?token="+s.Token(), nil).Result().Cookies()[0]
+	ck := c.Name + "=" + c.Value
+	if w := do(h, "GET", "/api/logs", map[string]string{"Cookie": ck}); w.Code != 200 || !strings.Contains(w.Body.String(), `"text"`) {
+		t.Fatalf("logs = %d %s", w.Code, w.Body)
+	}
+	if w := do(h, "GET", "/api/logs?download=1", map[string]string{"Cookie": ck}); w.Code != 200 || !strings.Contains(w.Header().Get("Content-Disposition"), "attachment") {
+		t.Fatalf("log download = %d %v", w.Code, w.Header())
+	}
+	var meta struct{ CSRF string }
+	_ = json.Unmarshal(do(h, "GET", "/api/meta", map[string]string{"Cookie": ck}).Body.Bytes(), &meta)
+	post := func(path, body string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest("POST", path, strings.NewReader(body))
+		r.Host, r.RemoteAddr = "127.0.0.1:7348", "127.0.0.1:5555"
+		r.Header.Set("Cookie", ck)
+		r.Header.Set("Origin", "http://127.0.0.1:7348")
+		r.Header.Set("X-CSRF-Token", meta.CSRF)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, r)
+		return rec
+	}
+	w := post("/api/feedback/bug", `{"text":"the scan hangs at 89%","log":false}`)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "bug.yml") || strings.Contains(w.Body.String(), "Scan log") {
+		t.Fatalf("bug = %d %s", w.Code, w.Body)
+	}
+	if w := post("/api/feedback/bug", `{"text":" "}`); w.Code != 400 {
+		t.Errorf("empty bug = %d", w.Code)
+	}
+	// Installing the app is only for Homebrew installs on macOS without it;
+	// a test binary is never one, so nothing runs brew here.
+	if AppHint() != "brew" {
+		if w := post("/api/app/install", ``); w.Code != 400 {
+			t.Errorf("app install outside Homebrew = %d", w.Code)
+		}
+	}
+}
