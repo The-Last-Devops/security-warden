@@ -2,27 +2,27 @@ class SecurityWarden < Formula
   desc "Checks your machine for open doors and secrets lying around"
   homepage "https://github.com/The-Last-Devops/security-warden"
   license "Apache-2.0"
-  version "1.4.0"
+  version "1.5.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.4.0/security-warden-darwin-arm64.tar.gz"
-      sha256 "0d0b3fffecbd8f6618d90c5e2e63f1007974523648758e59b10d069895b6a282"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.5.0/security-warden-darwin-arm64.tar.gz"
+      sha256 "8e6a2f4204c346341e372f82696d0c807e64d09dc991dc55647448ef66d949c6"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.4.0/security-warden-darwin-amd64.tar.gz"
-      sha256 "c945fa0e7dd5b55a1a31793554ec03869f2a1d34410e1669a78d25914c010e8e"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.5.0/security-warden-darwin-amd64.tar.gz"
+      sha256 "719ed5619b8497d013d6108fb6d3f1e258fd873cf445fb20ef3d95052dc76571"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.4.0/security-warden-linux-arm64.tar.gz"
-      sha256 "2bd33676ec868e86ee1ba7b127ce1c8fe3c9cd018dc81f04cbbab441e3bad83f"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.5.0/security-warden-linux-arm64.tar.gz"
+      sha256 "a31dd2a5cbef3137c9cdfec369c860c00a7c98183a325f6e669f81b0f5786000"
     end
     on_intel do
-      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.4.0/security-warden-linux-amd64.tar.gz"
-      sha256 "97ed4fc9889a4401b56fc37224a4c3c28cefadded3236077c4858aafaba832b3"
+      url "https://github.com/The-Last-Devops/security-warden/releases/download/v1.5.0/security-warden-linux-amd64.tar.gz"
+      sha256 "138fdd76a4f9b72b92ee9fee7e532099b737e79a3678814df9bbeb9a4a8d170f"
     end
   end
 
@@ -37,6 +37,15 @@ class SecurityWarden < Formula
     keep_alive true
     log_path var/"log/security-warden.log"
     error_log_path var/"log/security-warden.log"
+  end
+
+  def caveats
+    return unless OS.mac?
+
+    <<~EOS
+      For Security Warden in its own window (no browser tab, no passkey):
+        brew install --cask the-last-devops/security-warden/security-warden-app
+    EOS
   end
 
   test do
