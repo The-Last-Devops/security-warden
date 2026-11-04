@@ -1,0 +1,26 @@
+id: tailscale-serve-on
+severity: low
+platforms: [macos, windows, linux]
+source: tailscale
+tier: experimental
+match: item.serve && !item.funnel
+title:
+  en: Tailscale Serve shares a service from this machine with your tailnet
+  vi: Tailscale Serve đang chia sẻ một dịch vụ của máy này cho tailnet
+check:
+  en: "Tailscale Serve shares nothing"
+  vi: "Tailscale Serve không chia sẻ gì"
+explain:
+  en: "Devices in tailnet {tailnet} that the ACL allows can reach the service shared with Serve. It is not on the internet, but a forgotten share of a dev server or an admin page stays open."
+  vi: "Thiết bị trong tailnet {tailnet} được ACL cho phép có thể vào dịch vụ chia sẻ bằng Serve. Nó không ra internet, nhưng một máy chủ dev hay trang quản trị bị quên vẫn cứ mở."
+fix:
+  en: "1. See what is shared: `tailscale serve status` 2. If you no longer need it, stop sharing: `tailscale serve reset`"
+  vi: "1. Xem đang chia sẻ gì: `tailscale serve status` 2. Nếu không cần nữa, dừng chia sẻ: `tailscale serve reset`"
+references:
+  - https://tailscale.com/kb/1312/serve
+  - https://tailscale.com/kb/1242/tailscale-serve
+author: the-last-devops
+tests:
+  - {item: {tailnet: example.com, serve: true, funnel: false}, expect: true}
+  - {item: {tailnet: example.com, serve: false, funnel: false}, expect: false}
+  - {item: {tailnet: example.com, serve: true, funnel: true}, expect: false, note: tailscale-funnel covers it}

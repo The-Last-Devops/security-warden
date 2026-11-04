@@ -1,0 +1,26 @@
+id: tailscale-web-client-on
+severity: medium
+platforms: [macos, windows, linux]
+source: tailscale
+tier: experimental
+match: has(item.web_client) && item.web_client
+title:
+  en: The Tailscale web client is open to your tailnet
+  vi: Trang quản lý web của Tailscale đang mở cho tailnet
+check:
+  en: "The Tailscale web client is off"
+  vi: "Trang quản lý web của Tailscale đang tắt"
+explain:
+  en: "Devices in tailnet {tailnet} can open this machine's Tailscale settings page on port 5252. Changing settings there still needs a login check, but it is one more way in that most machines do not need."
+  vi: "Thiết bị trong tailnet {tailnet} mở được trang cài đặt Tailscale của máy này ở cổng 5252. Muốn đổi cài đặt ở đó vẫn phải xác minh đăng nhập, nhưng đó vẫn là thêm một lối vào mà đa số máy không cần."
+fix:
+  en: "Run: `tailscale set --webclient=false`. You can still open the page on this machine itself with `tailscale web`."
+  vi: "Chạy: `tailscale set --webclient=false`. Bạn vẫn mở được trang này ngay trên máy bằng `tailscale web`."
+references:
+  - https://tailscale.com/kb/1325/device-web-interface
+  - https://tailscale.com/kb/1080/cli#set
+author: the-last-devops
+tests:
+  - {item: {tailnet: example.com, web_client: true}, expect: true}
+  - {item: {tailnet: example.com, web_client: false}, expect: false}
+  - {item: {tailnet: example.com}, expect: false, note: prefs unreadable}

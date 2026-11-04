@@ -9,4 +9,4 @@ for new checks help just as much: `security-warden feedback`.
 
 | Author | Rules |
 |---|---|
-| [@the-last-devops](https://github.com/the-last-devops) (maintainers) | 159 |
+| [@the-last-devops](https://github.com/the-last-devops) (maintainers) | 169 |

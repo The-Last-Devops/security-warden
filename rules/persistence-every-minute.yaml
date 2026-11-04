@@ -1,0 +1,26 @@
+id: persistence-every-minute
+severity: low
+platforms: [macos, linux]
+source: persistence
+tier: experimental
+match: "item.kind == \"cron\" && item.runs_every_minute && !item.fetches_network && !item.pipes_to_shell"
+title:
+  en: "A cron job runs {command} every minute"
+  vi: "Một cron job chạy {command} mỗi phút"
+check:
+  en: "No cron jobs run every minute"
+  vi: "Không cron job nào chạy mỗi phút"
+explain:
+  en: "Line {line_no} of your crontab starts with * * * * *, so {command} runs every minute. Few real tasks need that; it is a common way for malware and coin miners to restart themselves."
+  vi: "Dòng {line_no} trong crontab bắt đầu bằng * * * * *, nên {command} chạy mỗi phút. Ít việc thật sự cần như vậy; đây là cách mã độc và máy đào coin hay dùng để tự chạy lại."
+fix:
+  en: "Run `crontab -l` and find line {line_no}. If it is yours, keep it. Otherwise: 1. Save a copy: `crontab -l > ~/crontab-backup.txt` 2. Run `crontab -e`, delete that line, save and quit. To undo: `crontab ~/crontab-backup.txt`"
+  vi: "Chạy `crontab -l` và tìm dòng {line_no}. Nếu là của bạn thì cứ giữ. Nếu không: 1. Lưu bản sao: `crontab -l > ~/crontab-backup.txt` 2. Chạy `crontab -e`, xoá dòng đó, lưu và thoát. Muốn hoàn tác: `crontab ~/crontab-backup.txt`"
+references:
+  - https://man7.org/linux/man-pages/man5/crontab.5.html
+  - https://attack.mitre.org/techniques/T1053/003/
+author: the-last-devops
+tests:
+  - {"item": {"kind": "cron", "line_no": 2, "command": "sync.sh", "url_host": "", "fetches_network": false, "pipes_to_shell": false, "runs_every_minute": true}, "expect": true}
+  - {"item": {"kind": "cron", "line_no": 2, "command": "backup.sh", "url_host": "", "fetches_network": false, "pipes_to_shell": false, "runs_every_minute": false}, "expect": false}
+  - {"item": {"kind": "cron", "line_no": 2, "command": "curl", "url_host": "x.example", "fetches_network": true, "pipes_to_shell": false, "runs_every_minute": true}, "expect": false, "note": "cron-fetches-network covers it"}

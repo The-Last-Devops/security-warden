@@ -1,0 +1,25 @@
+id: browser-extension-native-messaging
+severity: medium
+platforms: [macos, windows, linux]
+source: browser_extensions
+tier: experimental
+match: "item.native && item.enabled && !(item.all_urls && (item.debugger || item.proxy))"
+title:
+  en: "{browser} extension {name} can talk to a program on your computer"
+  vi: "Extension {name} trên {browser} trao đổi được với một chương trình trên máy"
+check:
+  en: "No extension talks to programs outside the browser"
+  vi: "Không extension nào trao đổi với chương trình ngoài trình duyệt"
+explain:
+  en: "{name} (profile {profile}) has the nativeMessaging permission: it can send messages to a program installed on this computer, which runs outside the browser's sandbox. Password managers and some company tools need this; an extension you do not recognise should not have it."
+  vi: "{name} (hồ sơ {profile}) có quyền nativeMessaging: nó gửi lệnh được cho một chương trình cài trên máy, chạy bên ngoài vùng cách ly của trình duyệt. Trình quản lý mật khẩu và vài công cụ của công ty cần quyền này; extension bạn không nhận ra thì không nên có."
+fix:
+  en: "If you do not recognise {name} or the program it works with: in {browser} open `chrome://extensions`, find {name} and click Remove."
+  vi: "Nếu bạn không nhận ra {name} hoặc chương trình đi kèm: trong {browser} mở `chrome://extensions`, tìm {name} và bấm Remove (Xoá)."
+references:
+  - https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging
+author: the-last-devops
+tests:
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": true, "cookies": false, "web_request_blocking": false, "enabled": true, "blocklisted": ""}, "expect": true}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": false, "debugger": false, "proxy": false, "native": false, "cookies": false, "web_request_blocking": false, "enabled": true, "blocklisted": ""}, "expect": false}
+  - {"item": {"browser": "Chrome", "profile": "Default", "id": "abc", "name": "Helper", "unpacked": false, "from_webstore": true, "external": false, "all_urls": true, "debugger": true, "proxy": false, "native": true, "cookies": false, "web_request_blocking": false, "enabled": true, "blocklisted": ""}, "expect": false, "note": "browser-extension-powerful covers it"}

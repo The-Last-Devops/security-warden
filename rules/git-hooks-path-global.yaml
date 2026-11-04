@@ -1,0 +1,25 @@
+id: git-hooks-path-global
+severity: medium
+platforms: [macos, windows, linux]
+source: git_config
+tier: experimental
+match: "item.hooks_path != \"\""
+title:
+  en: "Git runs hooks from one folder for every repository"
+  vi: "Git chạy hook từ một thư mục cho mọi repository"
+check:
+  en: "Global Git config does not set core.hooksPath"
+  vi: "Cấu hình Git toàn cục không đặt core.hooksPath"
+explain:
+  en: "core.hooksPath in your global Git config points to {hooks_path}. Scripts there run on every commit, checkout or push in every repository on this machine, so whoever can change that folder runs code each time you use Git. Some tools set this on purpose; make sure you know which one did."
+  vi: "core.hooksPath trong cấu hình Git toàn cục trỏ tới {hooks_path}. Script trong đó chạy mỗi lần commit, checkout hay push ở mọi repository trên máy, nên ai sửa được thư mục đó là chạy được mã mỗi lần bạn dùng Git. Có công cụ cố ý đặt giá trị này; hãy chắc là bạn biết công cụ nào đã đặt."
+fix:
+  en: "1. Check the value: `git config --global --get core.hooksPath` 2. Open the folder {hooks_path} and read the scripts in it. 3. If you or your company's tooling did not set it, remove it: `git config --global --unset core.hooksPath` (each repository then uses its own `.git/hooks` again)."
+  vi: "1. Xem giá trị: `git config --global --get core.hooksPath` 2. Mở thư mục {hooks_path} và đọc các script trong đó. 3. Nếu không phải bạn hay công cụ của công ty đặt, gỡ nó đi: `git config --global --unset core.hooksPath` (mỗi repository sẽ lại dùng `.git/hooks` của riêng nó)."
+references:
+  - https://git-scm.com/docs/git-config#Documentation/git-config.txt-corehooksPath
+  - https://git-scm.com/docs/githooks
+author: the-last-devops
+tests:
+  - {"item": {"credential_store": false, "ssl_verify_off": false, "safe_directory_all": false, "hooks_path": "~/.githooks", "insteadof_downgrade": false, "file_protocol_always": false}, "expect": true}
+  - {"item": {"credential_store": false, "ssl_verify_off": false, "safe_directory_all": false, "hooks_path": "", "insteadof_downgrade": false, "file_protocol_always": false}, "expect": false}

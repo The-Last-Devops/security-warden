@@ -15,27 +15,27 @@ uses a field that is not listed here. See [Contributing rules](contributing-rule
 - [`remote_tools`](#remote_tools): Tunnels and remote desktop apps (3 rules)
 - [`services`](#services): Servers running on this machine (2 rules)
 - [`outdated_software`](#outdated_software): Out-of-date software (6 rules)
-- [`docker_containers`](#docker_containers): Docker containers (13 rules)
+- [`docker_containers`](#docker_containers): Docker containers (15 rules)
 - [`docker_ports`](#docker_ports): Docker published ports (1 rules)
-- [`tailscale`](#tailscale): Tailscale (4 rules)
-- [`ssh_keys`](#ssh_keys): SSH keys (4 rules)
+- [`tailscale`](#tailscale): Tailscale (6 rules)
+- [`ssh_keys`](#ssh_keys): SSH keys (5 rules)
 - [`credential_files`](#credential_files): Credential files (3 rules)
-- [`persistence`](#persistence): Login items, scheduled tasks and cron (9 rules)
+- [`persistence`](#persistence): Login items, scheduled tasks and cron (10 rules)
 - [`processes`](#processes): Running programs (3 rules)
 - [`apps`](#apps): App signatures (1 rules)
 - [`network_config`](#network_config): Proxy and hosts file (4 rules)
 - [`privilege`](#privilege): sudo and PATH (3 rules)
 - [`shell_rc`](#shell_rc): Shell startup files (5 rules)
 - [`ssh_config`](#ssh_config): SSH client settings (3 rules)
-- [`git_config`](#git_config): Git settings (4 rules)
+- [`git_config`](#git_config): Git settings (5 rules)
 - [`pkg_config`](#pkg_config): Package manager settings (2 rules)
 - [`docker_config`](#docker_config): Docker daemon settings (2 rules)
 - [`ai_agents`](#ai_agents): AI agents and MCP servers (4 rules)
-- [`cloud_config`](#cloud_config): Kubernetes and cloud credentials (4 rules)
+- [`cloud_config`](#cloud_config): Kubernetes and cloud credentials (5 rules)
 - [`shell_history`](#shell_history): Shell history (2 rules)
 - [`sharing`](#sharing): File, printer and Internet sharing (4 rules)
-- [`authorized_keys`](#authorized_keys): Keys allowed to log in (3 rules)
-- [`browser_extensions`](#browser_extensions): Browser extensions (5 rules)
+- [`authorized_keys`](#authorized_keys): Keys allowed to log in (4 rules)
+- [`browser_extensions`](#browser_extensions): Browser extensions (6 rules)
 - [`browser_settings`](#browser_settings): Browser protection settings (2 rules)
 - [`editor_settings`](#editor_settings): VS Code and Cursor settings (6 rules)
 - [`editor_extensions`](#editor_extensions): VS Code and Cursor extensions (3 rules)
@@ -225,7 +225,7 @@ Category `software` · macOS, Linux · 6 rules
 
 ## `docker_containers`: Docker containers
 
-Category `devtools` · macOS, Linux, Windows · 13 rules
+Category `devtools` · macOS, Linux, Windows · 15 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -274,7 +274,7 @@ Category `devtools` · macOS, Linux, Windows · 1 rules
 
 ## `tailscale`: Tailscale
 
-Category `exposure` · macOS, Linux, Windows · 4 rules
+Category `exposure` · macOS, Linux, Windows · 6 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -285,20 +285,20 @@ Category `exposure` · macOS, Linux, Windows · 4 rules
 | `advertises_subnets` | bool | Advertises subnet routes. | `false` |
 | `subnet_routes` | string | The advertised subnets. | `"192.168.1.0/24"` |
 | `funnel` | bool | Funnel publishes something to the internet. | `true` |
-| `serve` | bool | Serve publishes something to the tailnet. |  |
-| `web_client` | bool | The Tailscale web client is on (when preferences could be read). |  |
+| `serve` | bool | Serve publishes something to the tailnet. | `true` |
+| `web_client` | bool | The Tailscale web client is on (when preferences could be read). | `true` |
 
 <a id="ssh_keys"></a>
 
 ## `ssh_keys`: SSH keys
 
-Category `secrets` · macOS, Linux, Windows · 4 rules
+Category `secrets` · macOS, Linux, Windows · 5 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
 | `name` | string | Key file name. | `"id_dsa"` |
 | `path` | string | Key file path. | `"/Users/a/.ssh/id_dsa"` |
-| `format` | string | Key file format. |  |
+| `format` | string | Key file format. | `"pem"` |
 | `key_type` | string | rsa, dsa, ecdsa, ed25519… | `"dsa"` |
 | `bits` | number | Key size in bits. | `1024` |
 | `encrypted` | bool | Protected by a passphrase. | `true` |
@@ -326,7 +326,7 @@ Category `secrets` · macOS, Linux, Windows · 3 rules
 
 ## `persistence`: Login items, scheduled tasks and cron
 
-Category `persistence` · macOS, Linux, Windows · 9 rules
+Category `persistence` · macOS, Linux, Windows · 10 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -460,7 +460,7 @@ Category `devtools` · macOS, Linux, Windows · 3 rules
 
 ## `git_config`: Git settings
 
-Category `devtools` · macOS, Linux, Windows · 4 rules
+Category `devtools` · macOS, Linux, Windows · 5 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -469,7 +469,7 @@ Category `devtools` · macOS, Linux, Windows · 4 rules
 | `safe_directory_all` | bool | safe.directory is *. | `false` |
 | `insteadof_downgrade` | bool | A url.insteadOf rewrite downgrades to http or git://. | `false` |
 | `file_protocol_always` | bool | protocol.file.allow is always. | `false` |
-| `hooks_path` | string | core.hooksPath, empty if not set. | `""` |
+| `hooks_path` | string | core.hooksPath, empty if not set. | `"~/.githooks"` |
 
 <a id="pkg_config"></a>
 
@@ -522,14 +522,14 @@ Category `ai` · macOS, Linux, Windows · 4 rules
 
 ## `cloud_config`: Kubernetes and cloud credentials
 
-Category `secrets` · macOS, Linux, Windows · 4 rules
+Category `secrets` · macOS, Linux, Windows · 5 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
 | `kind` | string | Which kind of item this is: kubeconfig, gcloud_adc, …. | `"gcloud_adc"` |
 | `file` | string | Config file path. | `"/h/.kube/config"` |
 | `insecure_skip_tls` | bool | kubeconfig: a cluster skips TLS checks. | `false` |
-| `client_cert` | bool | kubeconfig: a user has a client certificate and key. | `true` |
+| `client_cert` | bool | kubeconfig: a user has a client certificate and key. | `false` |
 | `client_cert_context` | string | kubeconfig: context using it. | `"prod-admin"` |
 | `current_context` | string | kubeconfig: current context. | `"dev"` |
 | `current_is_prod` | bool | kubeconfig: the current context looks like production. | `false` |
@@ -569,7 +569,7 @@ Category `exposure` · macOS · 4 rules
 
 ## `authorized_keys`: Keys allowed to log in
 
-Category `exposure` · macOS, Linux, Windows · 3 rules
+Category `exposure` · macOS, Linux, Windows · 4 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
@@ -586,7 +586,7 @@ Category `exposure` · macOS, Linux, Windows · 3 rules
 
 ## `browser_extensions`: Browser extensions
 
-Category `devtools` · macOS, Linux, Windows · 5 rules
+Category `devtools` · macOS, Linux, Windows · 6 rules
 
 | Field | Type | What | Example |
 |---|---|---|---|
