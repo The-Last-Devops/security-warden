@@ -7,7 +7,7 @@ import (
 
 func TestPlistEscapesAndRunsWatch(t *testing.T) {
 	p := Plist("/Users/a&b/bin/security-warden", "vi", "/Users/a&b/Library/Logs/sw.log")
-	for _, want := range []string{"<string>/Users/a&amp;b/bin/security-warden</string>", "<string>--background</string>", "<string>vi</string>", "<key>KeepAlive</key><true/>"} {
+	for _, want := range []string{"<string>/Users/a&amp;b/bin/security-warden</string>", "<string>--background</string>", "<string>vi</string>", "<key>KeepAlive</key><true/>", "<string>org.the-last-devops.security-warden.app</string>"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("plist missing %q", want)
 		}

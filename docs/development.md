@@ -40,7 +40,8 @@ Windows runners. Security scans run too: govulncheck and OSV-Scanner (vulnerable
 
 ## Releases
 
-Push a `v*` tag. GitHub Actions builds every platform, signs and notarizes the `.dmg`, builds `.deb` and
+Push a `v*` tag. GitHub Actions builds every platform, signs and notarizes the `.dmg` (and signs the macOS
+binaries Homebrew installs, so Login Items lists the agent under the app), builds `.deb` and
 `.rpm`, publishes the release and updates `Formula/security-warden.rb` (this repository is its own
 Homebrew tap), then installs the release on macOS, Ubuntu, Debian and Fedora to check it.
 
