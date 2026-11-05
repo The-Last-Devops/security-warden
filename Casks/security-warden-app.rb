@@ -1,6 +1,6 @@
 cask "security-warden-app" do
-  version "1.5.0"
-  sha256 "e9097f14a06904d2ef411dda7173e1dffdce7f7c3138f12c4c81c6de7b1d52eb"
+  version "1.5.1"
+  sha256 "cf881204897abc809a1e08ff8251703d11adbb28746d3f649e59ad6d7ccfcdbd"
 
   url "https://github.com/The-Last-Devops/security-warden/releases/download/v#{version}/security-warden-v#{version}-macos.dmg"
   name "Security Warden"
