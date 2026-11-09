@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container: golang:1.27
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: govulncheck
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -31,7 +31,7 @@ jobs:
   osv-scanner:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: OSV-Scanner
         run: |
           docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:v2.2.4 \
@@ -41,7 +41,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: gitleaks
@@ -59,7 +59,7 @@ jobs:
       security-events: write
     container: golang:1.27
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: gosec
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -81,7 +81,7 @@ jobs:
       matrix:
         language: [go, javascript-typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         if: matrix.language == 'go'
         with:

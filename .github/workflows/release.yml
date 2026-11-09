@@ -15,7 +15,7 @@ jobs:
   build-mac:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       - name: Build darwin/arm64 darwin/amd64
         run: |
@@ -35,7 +35,7 @@ jobs:
   build-rest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       - name: Build linux/amd64 linux/arm64 windows/amd64
         run: |
@@ -62,7 +62,7 @@ jobs:
     outputs:
       notarized: ${{ steps.dmg.outputs.notarized }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist-mac
@@ -94,7 +94,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist-rest
