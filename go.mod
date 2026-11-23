@@ -3,7 +3,7 @@ module github.com/The-Last-Devops/security-warden
 go 1.27
 
 require (
-	cel.dev/cel-go v0.33.2
+	cel.dev/cel-go v0.33.4
 	github.com/go-webauthn/webauthn v0.18.2
 	gopkg.in/yaml.v3 v3.0.1
 )
